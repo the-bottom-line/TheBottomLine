@@ -39,8 +39,6 @@ class GameManager {
             p.reveal = false;
             p.playableAssets = 1;
             p.playableLiabilities = 1;
-            p.maxTempCards = 3;
-            p.maxKeepCards = 2;
         });
     }  
     initLobby() {
@@ -87,10 +85,18 @@ class GameManager {
         this.uiManager.showScreen('main');
 
         this.uiManager.mainContainer.removeChildren();
+        this.uiManager.handContainer.removeChildren();
+
         this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
         this.uiManager.displayPlayerAssets(this.gameState.players, this.uiManager.mainContainer);
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
-        this.gameState.getCurrentPlayer().positionCardsInHand();
+
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        currentPlayer.hand.forEach(card => {
+            card.makePlayable();
+            this.uiManager.handContainer.addChild(card.sprite);
+        });
+        currentPlayer.positionCardsInHand();
         
         this.uiManager.handContainer.sortChildren();
 
@@ -179,7 +185,7 @@ class GameManager {
 
             // Attach event listeners for playing/discarding cards
             this.makeCardPlayable(newCard);
-            this.makeCardDiscardable(newCard);            
+                    
 
             localPlayer.addCardToHand(newCard);
             this.uiManager.handContainer.addChild(newCard.sprite);
@@ -215,30 +221,24 @@ class GameManager {
     }
     makeCardDiscardable(newCard){
         const currentPlayer = this.gameState.getCurrentPlayer();
-        newCard.sprite.on('cardDiscarded', (discardedCard) => {
-            const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
-            if (cardIndex !== -1) {
-                this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex+currentPlayer.hand.length });
-                this.uiManager.tempCardsContainer.removeChild(discardedCard.sprite);
+        newCard.sprite.on('cardDiscarded', (discardCard) => {
+            const cardIndex = currentPlayer.hand.indexOf(discardCard);
+            this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex });
+                /*this.uiManager.tempCardsContainer.removeChild(discardedCard.sprite);
                 this.uiManager.tempCardsContainer.removeChild(discardedCard.discardButton);
                 currentPlayer.tempHand.splice(cardIndex, 1);
-                currentPlayer.positionTempCards();
+                currentPlayer.positionTempCards();*/
 
-                if (currentPlayer.tempHand.length === currentPlayer.maxKeepCards) {
-                    currentPlayer.tempHand.forEach(remainingCard => {
-                        currentPlayer.addCardToHand(remainingCard);
-                        this.uiManager.mainContainer.addChild(remainingCard.sprite);
-                        if (remainingCard.discardButton) {
-                            this.uiManager.tempCardsContainer.removeChild(remainingCard.discardButton);
-                        }
-                    });
-                    this.youPutBackCard(); // This will trigger phase switch
-                    
-                }
-            }
+                /*if (currentPlayer.tempHand.length === currentPlayer.maxKeepCards) {
+                    // When the number of cards in temp hand equals the max cards to keep,
+                    // it implies the player has made their choice.
+                    // We can now inform the server which cards are being kept.
+                    const keptCardIndices = currentPlayer.tempHand.map(card => currentPlayer.hand.length + currentPlayer.tempHand.indexOf(card));
+                    this.networkManager.sendCommand("PutBackCard", { kept_card_indices: keptCardIndices });
+                }*/
+            
         });
     }
-
     async youDrewCard(data) {
         console.log("You Drew Card:", data);
         const cardData = data.card;
@@ -264,58 +264,63 @@ class GameManager {
 
         await newCard.initializeSprite();
 
+        newCard.isTemporary = true;
         this.makeCardPlayable(newCard);
         this.makeCardDiscardable(newCard);
 
-        currentPlayer.addCardToTempHand(newCard);
+        currentPlayer.addCardToHand(newCard);
         this.uiManager.displayTempCards(currentPlayer);
+
+        if (data.can_draw_cards === false && data.can_give_back_cards === false) {
+            currentPlayer.hand.forEach(card => {
+                card.isTemporary = false;
+                this.uiManager.handContainer.addChild(card.sprite);
+                if (card.discardButton) {
+                    this.uiManager.tempCardsContainer.removeChild(card.discardButton);
+                }
+            });
+            //this.youPutBackCard({ kept_cards: [] }); // Passing empty array to avoid errors, as cards are already moved.
+        }
     }
     async drewCard(data){
-        console.log("Drew Card:", data);
-        /*const currentPlayer = this.getCurrentPlayer();
-        if (currentPlayer.playerID != this.myID){
-            let cardBack;
-            if(data.cardType == 'Asset'){
-                const assetBackTexture = await Assets.load("./assets/asset_back.webp");
-                cardBack = new Sprite(assetBackTexture);
-                cardBack.scale.set(0.3);
-                cardBack.anchor.set(0.5);
-            }
-            else{
-                const liabilityBackTexture = await Assets.load("liabilities/liability_back.webp");
-                const cardBackTexture = liabilityBackTexture;
-                cardBack = new Sprite(cardBackTexture);
-                cardBack.scale.set(0.3);
-                cardBack.anchor.set(0.5);
-            }
-            currentPlayer.addCardToTempHand(cardBack);
-            this.elseTurnContainer.addChild(cardBack);
-            const startX = (window.innerWidth - (3 * 180)) / 2 + 180 / 2;
-            const y = window.innerHeight/2; 
-
-
-            currentPlayer.tempHand.forEach((card, index) => {
-                cardBack.x = startX + (index * 180);
-                cardBack.y = y;
-            });
-            this.sprite.x = x;
-            this.sprite.y = y;
-            //currentPlayer.positionTempCards();
-
-        }*/
-
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
+            console.log("Drew Card:", data);
+            currentPlayer.othersHand.push(data.card_type);
+        }
     }
     youPutBackCard(data) {
-        const currentPlayer = this.gameState.getCurrentPlayer();
-        // All necessary cards have been put back, now we can move the kept cards to the hand.
-        currentPlayer.tempHand.forEach(card => {
-            currentPlayer.addCardToHand(card);
-            if (card.discardButton) {
-                this.uiManager.tempCardsContainer.removeChild(card.discardButton);
-            }
-        });
-        currentPlayer.tempHand = [];
+        const localPlayer = this.gameState.getLocalPlayer();
+        if (!localPlayer) return;
+        
+        const cardIndex = data.card_idx;
+        const card = localPlayer.hand[cardIndex];
+        console.log(localPlayer.hand, card);
+        this.uiManager.tempCardsContainer.removeChild(card.sprite);
+        localPlayer.hand.splice(cardIndex,1);
+
+
+        if (data.can_draw_cards === false && data.can_give_back_cards === false) {
+            localPlayer.hand.forEach(card => {
+                card.isTemporary = false;
+                this.uiManager.handContainer.addChild(card.sprite);
+                if (card.discardButton) {
+                    this.uiManager.tempCardsContainer.removeChild(card.discardButton);
+                }
+            });
+        }
         this.switchToMainPhase();
+    }
+    putBackCard(data){
+        const currentPlayer = this.gameState.getPlayerById(data.player_id);
+        
+        
+        if (currentPlayer && currentPlayer.playerID != this.gameState.myId) {
+            console.log("Other player put back a card:", data);
+
+            currentPlayer.othersHand.splice(currentPlayer.othersHand.indexOf(data.card_type),1)
+            this.otherPlayerScreenSetup();
+        }
     }
     newPlayer(data) {
         this.uiManager.statsText.text = `${data.usernames.length} / 4 Players`;
@@ -328,7 +333,7 @@ class GameManager {
     }
 
     chairmanSelectCharacter(data){
-        const currentPlayer = this.gameState.getPlayerById(data.chairman_id); // This is now correct
+        const currentPlayer = this.gameState.getPlayerById(data.chairman_id); 
         this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
         currentPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
@@ -366,8 +371,6 @@ class GameManager {
         } else {
             console.log("Not player's turn for character selection.");
         }
-
-        
     }
     youSelectedCharacter(data) {
         // This function might be used to confirm your character selection
@@ -399,9 +402,8 @@ class GameManager {
             currentPlayer.playableAssets = 1;
             currentPlayer.playableLiabilities = 1;
             currentPlayer.cash += recieveCash;
-            currentPlayer.maxTempCards = drawableCards;
             currentPlayer.reveal = true;
-            currentPlayer.tempHand = [];
+            currentPlayer.drawableCards = drawableCards;
             this.startTurnPlayerVisibilty();
 
         } else {

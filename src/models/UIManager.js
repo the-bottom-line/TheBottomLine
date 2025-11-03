@@ -57,6 +57,7 @@ class UIManager {
         );
 
         this.handContainer.sortableChildren = true;
+        this.tempCardsContainer.sortableChildren = true;
     }
 
     getGradient() {
@@ -154,6 +155,7 @@ class UIManager {
             sprite.y = window.innerHeight / 2;
             sprite.on('pointerdown', () => onSelectCallback(character));
             this.characterCardsContainer.addChild(sprite);
+            
         });
     }
 
@@ -198,13 +200,15 @@ class UIManager {
 
     displayTempCards(player) {
         this.tempCardsContainer.removeChildren();
+        const tempCards = player.hand.filter(c => c.isTemporary);
+
         const cardWidth = 590 * 0.25;
         const cardHeight = 940 * 0.25;
         const spacing = 180;
-        const startX = (window.innerWidth - (player.maxTempCards * spacing)) / 2 + spacing / 2;
+        const startX = (window.innerWidth - (player.drawableCards * spacing)) / 2 + spacing / 2;
         const y = window.innerHeight / 2;
 
-        for (let i = 0; i < player.maxTempCards; i++) {
+        for (let i = 0; i < player.drawableCards; i++) {
             const backdrop = new Graphics()
                 .roundRect(0, 0, cardWidth + 10, cardHeight + 10, 15)
                 .stroke({ width: 4, color: 0xCBC28E })
@@ -214,16 +218,33 @@ class UIManager {
             this.tempCardsContainer.addChild(backdrop);
         }
 
-        player.tempHand.forEach(card => {
+        tempCards.forEach(card => {
             this.tempCardsContainer.addChild(card.sprite);
             if (card.discardButton) this.tempCardsContainer.addChild(card.discardButton);
         });
         player.positionTempCards();
     }
 
+    async displayOtherPlayerDrewCard(player, cardType) {
+        /*const spacing = 180;
+        const startX = (window.innerWidth - (player.maxTempCards * spacing)) / 2 + spacing / 2;
+        const y = window.innerHeight / 2;
+        const texturePath = cardType == 'Asset' ? "./assets/asset_back.webp" : "liabilities/liability_back.webp";
+        const cardBackTexture = await Assets.load(texturePath);
+        const cardBack = new Sprite(cardBackTexture);
+        cardBack.scale.set(0.25);
+        cardBack.anchor.set(0.5);
+
+        const cardIndex = player.tempHand.length;
+        cardBack.position.set(startX + (cardIndex * spacing), y);
+        player.tempHand.push(cardBack);
+        this.elseTurnContainer.addChild(cardBack);*/
+    }
+
     async displayOtherPlayerHand(assets, liabilities) {
+        
         this.elseTurnContainer.removeChildren();
-        const baseY = window.innerHeight - 150;
+        const baseY = window.innerHeight - 100;
         const spacing = 60;
 
         const totalAssetsWidth = (assets.length - 1) * spacing;
@@ -232,7 +253,7 @@ class UIManager {
 
         for (let i = 0; i < assets.length; i++) {
             const cardBack = new Sprite(assetBackTexture);
-            cardBack.scale.set(0.4);
+            cardBack.scale.set(0.25);
             cardBack.anchor.set(0.5);
             cardBack.x = assetsStartX + i * spacing;
             cardBack.y = baseY;
@@ -245,7 +266,7 @@ class UIManager {
 
         for (let i = 0; i < liabilities.length; i++) {
             const cardBack = new Sprite(liabilityBackTexture);
-            cardBack.scale.set(0.4);
+            cardBack.scale.set(0.25);
             cardBack.anchor.set(0.5);
             cardBack.x = liabilitiesStartX - i * spacing;
             cardBack.y = baseY;

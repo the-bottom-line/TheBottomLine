@@ -4,7 +4,8 @@ class GeneralCard {
     constructor(texturePath) {
         this.texturePath = texturePath;
         this.sprite = null;   
-        this.discardButton = null;     
+        this.discardButton = null;
+        this.isTemporary = false;
         this.initializeSprite();
     }
 
@@ -16,25 +17,30 @@ class GeneralCard {
         this.sprite = new Sprite(texture);
         this.sprite.scale.set(0.25);
         this.sprite.anchor.set(0.5);
-        
-   
 
         this.discardButton = new Sprite(buttonTex);
         this.discardButton.eventMode = 'static';
-        this.discardButton.on('pointerdown', () => { this.sprite.emit('cardDiscarded', this); });
+        this.discardButton.cursor = "pointer";
         this.discardButton.anchor.set(0.5);
         this.discardButton.width = 30;
         this.discardButton.height = 30;
+        this.discardButton.on('mousedown', () => { 
+            this.sprite.emit('cardDiscarded', this); 
+        });
     }
-    
 
     makePlayable() {
-
         this.sprite.interactive = true;
         this.sprite.cursor = 'pointer';
         this.sprite.on('mousedown', () => {
             this.sprite.emit('cardPlayed', this);
         });
+    }
+
+    makeUnplayable() {
+        this.sprite.interactive = false;
+        this.sprite.cursor = 'default';
+        this.sprite.off('mousedown');
     }
 
     setPosition(x, y) {

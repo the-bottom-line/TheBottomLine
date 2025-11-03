@@ -16,6 +16,7 @@ class NetworkManager {
             "YouDrewCard": this.gameManager.youDrewCard.bind(this.gameManager),
             "DrewCard": this.gameManager.drewCard.bind(this.gameManager),
             "YouPutBackCard": this.gameManager.youPutBackCard.bind(this.gameManager),
+            "PutBackCard": this.gameManager.putBackCard.bind(this.gameManager),
             "SelectedCharacter" : this.gameManager.receiveSelectableCharacters.bind(this.gameManager), 
             "YouSelectedCharacter": this.gameManager.youSelectedCharacter.bind(this.gameManager),
             "TurnStarts": this.gameManager.turnStarts.bind(this.gameManager),

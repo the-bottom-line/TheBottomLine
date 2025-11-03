@@ -9,6 +9,7 @@ class Asset extends GeneralCard{
         this.silver = silver;
         this.ability = ability || null;
     }
+
 }
 
 export default Asset;

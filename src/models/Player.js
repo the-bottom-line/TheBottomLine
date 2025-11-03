@@ -10,6 +10,7 @@ class Player {
         this.playerID = id;
         this.othersHand = []; 
         this.isChaiman = false;
+        this.drawableCards;
 
         this.assetList = [];
         this.cash = 0;
@@ -22,10 +23,6 @@ class Player {
         this.gold = 0;
 
         this.cardSpacing = 180;
-
-        this.tempHand = []; 
-        this.maxTempCards = 3;
-        this.maxKeepCards = 2;
 
         this.skipNextTurn = false;
         this.reveal = false;
@@ -58,9 +55,8 @@ class Player {
 
     addCardToHand(card) {
         this.hand.push(card);
-        card.makePlayable(); // Convert card to playable mode 
-        // Assign a unique and increasing zIndex to ensure new cards are on top
         if (card.sprite) card.sprite.zIndex = this._nextZIndex++;
+        if (card.discardButton) card.discardButton.zIndex =this._nextZIndex + 1;
     }
     playLiability(cardIndex) {
         const card = this.hand[cardIndex];
@@ -86,39 +82,15 @@ class Player {
         card.sprite.x = window.innerWidth / 2 + 145;
         card.sprite.y = window.innerHeight / 2 - 50;
     }
-    addCardToTempHand(card) {
-        if (this.tempHand.length < this.maxTempCards) {
-            this.tempHand.push(card);
-            return true;
-        }
-        return false;
-    }
-
-    confirmCardSelection(selectedIndices) {
-        if (selectedIndices.length !== this.maxKeepCards) {
-            return false;
-        }
-
-        selectedIndices.forEach(index => {
-            if (index >= 0 && index < this.tempHand.length) {
-                this.addCardToHand(this.tempHand[index]);
-            }
-        });
-
-        this.tempHand = [];
-        return true;
-    }
 
     positionTempCards() {
-        const startX = (window.innerWidth - (this.maxTempCards * this.cardSpacing)) / 2 
-                        + this.cardSpacing / 2;
+        const tempCards = this.hand.filter(c => c.isTemporary);
+
+        const startX = (window.innerWidth - (this.drawableCards * this.cardSpacing)) / 2 + this.cardSpacing / 2;
         const y = window.innerHeight/2; 
 
-        this.tempHand.forEach((card, index) => {
-            card.setPosition(
-                startX + (index * this.cardSpacing),
-                y
-            );
+        tempCards.forEach((card, index) => {
+            card.setPosition(startX + (index * this.cardSpacing), y);
         });
    }
 
