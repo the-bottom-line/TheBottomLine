@@ -162,7 +162,7 @@ class UIManager {
         });
     }
 
-    displayAllPlayerStats(players, container) {
+    displayAllPlayerStats(players, container, currentPlayer) {
         
         players.forEach(async (player, playerIndex) => {
             const texture = await Assets.load(player.reveal ? player.character.iconPath : "./miscellaneous/noneCharacter.png");
@@ -174,10 +174,22 @@ class UIManager {
             characterIcon.anchor.set(0.5);
             container.addChild(characterIcon);
 
+            if (player === currentPlayer) {
+                const outline = new Graphics()
+                    .circle(0, 0, characterIcon.width / 2 + 4)
+                    .stroke({ width: 3, color: 0xCBC28E });
+                outline.position.copyFrom(characterIcon.position);
+                container.addChild(outline);
+                container.addChild(characterIcon); // ensure icon is on top of outline
+            }
+
+            console.log(`player: ${player.name}`,player.assetList);
+
             player.assetList.forEach((card, cardIndex) => {
                 const rect = new Graphics()
-                    .fill(card.color)
-                    .roundRect(x - 20, 60 + cardIndex * 30, 20, 20, 50);
+                    .roundRect(x - 20, 60 + cardIndex * 30, 20, 20, 50)
+                    .fill(card.color);
+                console.log(`card: ${card.title}`);
                 container.addChild(rect);
             });
         });
@@ -214,7 +226,7 @@ class UIManager {
         for (let i = 0; i < player.drawableCards; i++) {
             const backdrop = new Graphics()
                 .roundRect(0, 0, cardWidth + 10, cardHeight + 10, 15)
-                .stroke({ width: 4, color: 0xCBC28E })
+                .stroke({ width: 4, color: 0xCBC28E }) // 0xCBC28E -> gold color
                 .fill({ alpha: 0 });
             backdrop.position.set(startX + (i * spacing), y);
             backdrop.pivot.set((cardWidth + 10) / 2, (cardHeight + 10) / 2);
@@ -294,7 +306,17 @@ class UIManager {
         
         
     }
-    displayPlayerPlayedCards(assets, liabilities){
+    async displayPlayerPlayedCards(assets, liabilities){
+        this.playedCardsContainer.removeChildren();
+        const texture = await Assets.load('./miscellaneous/cardBackdrop.svg');
+        const cardBackdrop = Sprite.from(texture);
+        cardBackdrop.width = 250;
+        cardBackdrop.height = 250;
+        cardBackdrop.anchor.set(0.5);
+        cardBackdrop.position.set(window.innerWidth / 2, window.innerHeight / 2 - 10);
+        
+        this.playedCardsContainer.addChild(cardBackdrop);
+        
         assets.forEach(card =>{
             this.playedCardsContainer.addChild(card.sprite);
         });

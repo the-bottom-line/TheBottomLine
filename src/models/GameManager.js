@@ -75,7 +75,7 @@ class GameManager {
 
         this.otherCards();
 
-        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer);
+        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     switchToMainPhase() {
@@ -86,7 +86,7 @@ class GameManager {
         this.uiManager.playedCardsContainer.removeChildren();
 
         this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
-        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer);
+        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
 
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -124,7 +124,7 @@ class GameManager {
                 if (card.sprite) card.sprite.visible = true;
             });
         }
-
+        
     }
     
     async otherCards() {
@@ -151,7 +151,7 @@ class GameManager {
         this.gameState.players.push(localPlayer);
 
         this.initPlayers(data.player_info);
-        
+        //this.gameState.players.sort();
         if (!localPlayer) {
             console.error("Could not find the local player in server data!");
             return;
@@ -184,7 +184,7 @@ class GameManager {
             localPlayer.addCardToHand(newCard);
             this.uiManager.handContainer.addChild(newCard.sprite);
         }
-
+        this.players
         localPlayer.positionCardsInHand();
         this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
         this.initRound();
@@ -431,6 +431,7 @@ class GameManager {
         player.positionCardsInHand();
         player.positionAssetsToPile();
         this.uiManager.playedCardsContainer.addChild(card.sprite);
+        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
         this.updateUI();
     }
     async boughtAsset(data){
@@ -453,6 +454,7 @@ class GameManager {
             player.othersHand.splice(assetIndex,1);
             //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this into a function 
             this.otherCards();
+            this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
             this.updateUI();
         }
     }
