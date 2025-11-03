@@ -13,6 +13,7 @@ class UIManager {
         this.characterContainer = new Container();
         this.characterCardsContainer = new Container();
         this.decksContainer = new Container();
+        this.playedCardsContainer = new Container();
         this.tempCardsContainer = new Container();
         this.handContainer = new Container();
         this.elseTurnContainer = new Container();
@@ -43,9 +44,10 @@ class UIManager {
         this.app.stage.addChild(backGroundGradient, sprites);
 
         this.characterContainer.addChild(this.characterCardsContainer);
-        this.mainContainer.addChild(this.handContainer);
+        this.mainContainer.addChild(this.handContainer, this.playedCardsContainer);
         this.pickingContainer.addChild(this.decksContainer, this.tempCardsContainer);
         this.characterContainer.addChildAt(this.draftOverlay, 0);
+        this.elseTurnContainer.addChild(this.playedCardsContainer);
 
         sprites.addChild(
             this.characterContainer,
@@ -81,6 +83,7 @@ class UIManager {
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
         this.draftOverlay.visible = screenName === 'character';
+
     }
 
     createInputBox(onEnterCallback) {
@@ -159,8 +162,8 @@ class UIManager {
         });
     }
 
-    displayPlayerAssets(players, container) {
-        // We should be more specific about what to remove, but for now this is ok.
+    displayAllPlayerStats(players, container) {
+        
         players.forEach(async (player, playerIndex) => {
             const texture = await Assets.load(player.reveal ? player.character.iconPath : "./miscellaneous/noneCharacter.png");
             const characterIcon = new Sprite(texture);
@@ -241,37 +244,63 @@ class UIManager {
         this.elseTurnContainer.addChild(cardBack);*/
     }
 
-    async displayOtherPlayerHand(assets, liabilities) {
-        
-        this.elseTurnContainer.removeChildren();
+    async displayOtherPlayerHand(assets, liabilities) {        
         const baseY = window.innerHeight - 100;
         const spacing = 60;
-
+    
+        // Hide all cards first
+        this.elseTurnContainer.children.forEach(child => {
+            if (child.isCardBack) child.visible = false;
+        });
+    
         const totalAssetsWidth = (assets.length - 1) * spacing;
         const assetsStartX = window.innerWidth / 2 - totalAssetsWidth - 100;
         const assetBackTexture = await Assets.load("./assets/asset_back.webp");
-
+    
         for (let i = 0; i < assets.length; i++) {
-            const cardBack = new Sprite(assetBackTexture);
-            cardBack.scale.set(0.25);
-            cardBack.anchor.set(0.5);
+            let cardBack = this.elseTurnContainer.children.find(c => c.isCardBack && c.cardType === 'Asset' && !c.visible);
+            if (!cardBack) {
+                cardBack = new Sprite(assetBackTexture);
+                cardBack.scale.set(0.25);
+                cardBack.anchor.set(0.5);
+                cardBack.isCardBack = true;
+                cardBack.cardType = 'Asset';
+                this.elseTurnContainer.addChild(cardBack);
+            }
+            cardBack.visible = true;
             cardBack.x = assetsStartX + i * spacing;
             cardBack.y = baseY;
-            this.elseTurnContainer.addChild(cardBack);
         }
-
+    
         const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
         const liabilitiesStartX = window.innerWidth / 2 + 100 + totalLiabilitiesWidth;
         const liabilityBackTexture = await Assets.load("liabilities/liability_back.webp");
-
+    
         for (let i = 0; i < liabilities.length; i++) {
-            const cardBack = new Sprite(liabilityBackTexture);
-            cardBack.scale.set(0.25);
-            cardBack.anchor.set(0.5);
+            let cardBack = this.elseTurnContainer.children.find(c => c.isCardBack && c.cardType === 'Liability' && !c.visible);
+            if (!cardBack) {
+                cardBack = new Sprite(liabilityBackTexture);
+                cardBack.scale.set(0.25);
+                cardBack.anchor.set(0.5);
+                cardBack.isCardBack = true;
+                cardBack.cardType = 'Liability';
+                this.elseTurnContainer.addChild(cardBack);
+            }
+            cardBack.visible = true;
             cardBack.x = liabilitiesStartX - i * spacing;
             cardBack.y = baseY;
-            this.elseTurnContainer.addChild(cardBack);
         }
+        
+        
+        
+    }
+    displayPlayerPlayedCards(assets, liabilities){
+        assets.forEach(card =>{
+            this.playedCardsContainer.addChild(card.sprite);
+        });
+        liabilities.forEach(card =>{
+            this.playedCardsContainer.addChild(card.sprite);
+        });
     }
 }
 

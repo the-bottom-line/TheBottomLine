@@ -22,12 +22,7 @@ class GameManager {
         await this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "deck": "Asset" }));
         await this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "deck": "Liability" }));
 
-        this.gameState.currentPhase = 'character';
-        this.uiManager.characterContainer.visible = true;
-        this.uiManager.mainContainer.visible = false;
-        this.uiManager.pickingContainer.visible = false;
-        this.uiManager.elseTurnContainer.visible = false;
-        this.uiManager.lobbyContainer.visible = false;
+        
         
         this.uiManager.draftOverlay.clear().rect(0, 0, this.uiManager.app.screen.width, this.uiManager.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
 
@@ -67,28 +62,31 @@ class GameManager {
     showLocalPlayerPicking(player){
         this.uiManager.showScreen('picking');
         this.uiManager.displayTempCards(player);
-
+        this.uiManager.statsText.text = `${player.name} is ${player.character.name} and is picking cards`;
         player.positionCardsInHand();
 
         this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
         this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
     }
     otherPlayerScreenSetup(){
-        this.otherCards();
         this.uiManager.showScreen('elseTurn');
         this.uiManager.elseTurnContainer.removeChildren();
-        this.uiManager.displayPlayerAssets(this.gameState.players, this.uiManager.elseTurnContainer);
+        this.uiManager.playedCardsContainer.removeChildren();
+
+        this.otherCards();
+
+        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer);
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     switchToMainPhase() {
-        this.gameState.currentPhase = 'main';
         this.uiManager.showScreen('main');
 
         this.uiManager.mainContainer.removeChildren();
         this.uiManager.handContainer.removeChildren();
+        this.uiManager.playedCardsContainer.removeChildren();
 
         this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
-        this.uiManager.displayPlayerAssets(this.gameState.players, this.uiManager.mainContainer);
+        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer);
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
 
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -98,41 +96,35 @@ class GameManager {
         });
         currentPlayer.positionCardsInHand();
         
+        this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         this.uiManager.handContainer.sortChildren();
+        this.uiManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList);
 
-        this.uiManager.mainContainer.addChild(this.uiManager.handContainer);
+        this.uiManager.mainContainer.addChild(this.uiManager.handContainer, this.uiManager.playedCardsContainer);
         this.updateUI();
     }
     updateUI() {
         const currentPlayer = this.gameState.getCurrentPlayer();
 
-        if (this.gameState.currentPhase == 'picking') {
-            this.uiManager.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character?.name || 'Error Name'} is picking cards`;
-        } else if (this.gameState.currentPhase == "main") {
-            this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
-        }
-
         this.gameState.players.forEach(player => {
+            
             player.hand.forEach(card => {
                 if (card.sprite) card.sprite.visible = false;
             });
             player.assetList.forEach(card => {
-                if (card.sprite) card.sprite.visible = false;
+                if (card.sprite) card.sprite.visible = true;
             });
             player.liabilityList.forEach(card => {
-                if (card.sprite) card.sprite.visible = false;
+                if (card.sprite) card.sprite.visible = true;
             });
         });
 
-        currentPlayer.hand.forEach(card => {
-            if (card.sprite) card.sprite.visible = true;
-        });
-        currentPlayer.assetList.forEach(card => {
-            if (card.sprite) card.sprite.visible = true;
-        });
-        currentPlayer.liabilityList.forEach(card => {
-            if (card.sprite) card.sprite.visible = true;
-        });
+        if (currentPlayer.playerID === this.gameState.myId) {
+            currentPlayer.hand.forEach(card => {
+                if (card.sprite) card.sprite.visible = true;
+            });
+        }
+
     }
     
     async otherCards() {
@@ -141,8 +133,10 @@ class GameManager {
         const othersHand = currentPlayer.othersHand;
         const assets = othersHand.filter(cardType => cardType == 'Asset');
         const liabilities = othersHand.filter(cardType => cardType == 'Liability');
-
+        this.uiManager.elseTurnContainer.addChild(this.uiManager.playedCardsContainer);
         this.uiManager.displayOtherPlayerHand(assets, liabilities);
+        this.uiManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList);
+    
        
     }
     async messageStartGame(data) {
@@ -207,7 +201,7 @@ class GameManager {
     }
     makeCardPlayable(newCard){
         const localPlayer = this.gameState.getLocalPlayer();
-        newCard.sprite.on('cardPlayed', () => { // `localPlayer` is not defined here. It should be retrieved.
+        newCard.sprite.on('cardPlayed', () => { 
                 const cardIndex = localPlayer.hand.indexOf(newCard); // Assuming localPlayer is accessible
                 if (cardIndex !== -1) {
                     if (newCard instanceof Asset) {                        
@@ -332,7 +326,10 @@ class GameManager {
         });
     }
 
-    chairmanSelectCharacter(data){
+    chairmanSelectCharacter(data){ 
+        this.uiManager.showScreen("character");
+        this.gameState.resetForNewRound();
+
         const currentPlayer = this.gameState.getPlayerById(data.chairman_id); 
         this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
         currentPlayer.isChaiman = true;
@@ -386,7 +383,7 @@ class GameManager {
         const drawableCards = data.draws_n_cards;
         const recieveCash = data.player_turn_cash;
 
-        this.uiManager.statsText.text = `${data.player_character}'s turn`;
+       
         const nextPlayerIndex = this.gameState.players.findIndex(p => p.playerID == data.player_turn);
 
         if (nextPlayerIndex !== -1) {
@@ -404,6 +401,10 @@ class GameManager {
             currentPlayer.cash += recieveCash;
             currentPlayer.reveal = true;
             currentPlayer.drawableCards = drawableCards;
+
+            this.uiManager.statsText.text = `${currentPlayer.name}'s turn`; // `${player.name} is ${player.character.name} and is picking cards`;
+            
+
             this.startTurnPlayerVisibilty();
 
         } else {
@@ -427,20 +428,33 @@ class GameManager {
         player.hand.splice(cardIndex, 1);
         player.playableAssets--;
 
-
         player.positionCardsInHand();
-        player.moveAssetToPile(card);
+        player.positionAssetsToPile();
+        this.uiManager.playedCardsContainer.addChild(card.sprite);
         this.updateUI();
     }
-    boughtAsset(data){
-        const player = this.gameState.getPlayerById(data.player_id);
-        if (!player) return;
+    async boughtAsset(data){
+        const player = this.gameState.getCurrentPlayer();
+        if (player && player.playerID !== this.gameState.myId) {
+            const assetIndex = player.othersHand.indexOf('Asset');
 
-        const assetIndex = player.othersHand.indexOf('Asset');
-        if (assetIndex > -1) {
-            player.othersHand.splice(assetIndex, 1);
+            const cardData = data.asset;
+            const newCard = new Asset(
+                cardData.title,
+                cardData.color,
+                cardData.gold_value,
+                cardData.silver_value,
+                cardData.ability,
+                cardData.image_front_url
+            );
+            await newCard.initializeSprite();
+            player.assetList.push(newCard);
+            player.positionAssetsToPile();
+            player.othersHand.splice(assetIndex,1);
+            //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this into a function 
+            this.otherCards();
+            this.updateUI();
         }
-        this.updateUI();
     }
     youIssuedLiability(data){
         const player = this.gameState.getLocalPlayer();
@@ -458,18 +472,29 @@ class GameManager {
         player.playableLiabilities--;
 
         player.positionCardsInHand();
-        player.moveLiabilityToPile(card);
+        player.positionLiabilitiesToPile();
+        this.uiManager.playedCardsContainer.addChild(card.sprite);
         this.updateUI();
     }
-    issuedLiability(data){
-        const player = this.gameState.getPlayerById(data.player_id);
-        if (!player) return;
-
-        const liabilityIndex = player.othersHand.indexOf('Liability');
-        if (liabilityIndex > -1) {
-            player.othersHand.splice(liabilityIndex, 1);
+    async issuedLiability(data){
+        const player = this.gameState.getCurrentPlayer();
+        if (player && player.playerID !== this.gameState.myId) {
+            const liabilityIndex = player.othersHand.indexOf('Liability');
+            
+            const cardData = data.liability;
+            const newCard = new Liability(
+                cardData.rfr_type,
+                cardData.value,
+                cardData.image_front_url
+            );
+            await newCard.initializeSprite();
+            player.liabilityList.push(newCard);
+            player.positionLiabilitiesToPile();
+            player.othersHand.splice(liabilityIndex,1);
+            //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this a function like displayOtherPlayerHand
+            this.otherCards();
+            this.updateUI();
         }
-        this.updateUI();
     }
 
 }

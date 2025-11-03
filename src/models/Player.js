@@ -74,13 +74,27 @@ class Player {
         }
         return false;
     }
-    moveAssetToPile(card) {
-        card.sprite.x = window.innerWidth / 2 - 145;
-        card.sprite.y = window.innerHeight / 2 - 50;
+    positionAssetsToPile() {
+        const baseY = window.innerHeight / 2 - 50;
+        const spacing = -60; 
+
+        const assetsStartX = window.innerWidth / 2 - 145;
+
+        this.assetList.forEach((card, i) => {
+            card.setPosition(assetsStartX + i * spacing, baseY);
+        });
     }
-    moveLiabilityToPile(card) {
-        card.sprite.x = window.innerWidth / 2 + 145;
-        card.sprite.y = window.innerHeight / 2 - 50;
+    positionLiabilitiesToPile() {
+        
+
+        const baseY = window.innerHeight / 2 - 50;
+        const spacing = 60; 
+
+        const assetsStartX = window.innerWidth / 2 + 145;
+
+        this.liabilityList.forEach((card, i) => {
+            card.setPosition(assetsStartX + i * spacing, baseY);
+        });
     }
 
     positionTempCards() {

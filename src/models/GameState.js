@@ -1,4 +1,3 @@
-import Player from './Player.js';
 import { getAllCharacters } from './Characters.js';
 
 class GameState {
@@ -35,10 +34,12 @@ class GameState {
         this.players.forEach(p => {
             p.character = null;
             p.reveal = false;
+            p.isChaiman = false;
             p.playableAssets = 1;
             p.playableLiabilities = 1;
             p.maxTempCards = 3;
             p.maxKeepCards = 2;
+            
         });
         this.shuffledCharacters = [];
         this.faceUpCharacters = [];
