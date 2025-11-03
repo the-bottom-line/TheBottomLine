@@ -1,7 +1,18 @@
 import Player from './Player.js';
 import Asset from './Asset.js';
 import Liability from './Liability.js';
+import { Group } from 'tweedle.js';
 
+
+/*
+Dark Indigo (Walls)	#2a2d3a	A deep, desaturated blue. Great for large backgrounds.
+Rich Maroon (Chairs)	#6b3e4b	Warm, dark red/purple. Perfect for accents or UI elements.
+Dark Wood (Table)	#4a2c3a	A very dark, rich brown, similar to the chairs but with less red.
+Antique Gold (Trim)	#a68d5e	Your main accent color. Use this for borders, highlights, and buttons.
+Parchment (UI)	#f2e8d5	A warm, off-white for text and the "place card" backgrounds.
+Warm Light (Glow)	#f5e5a6	Use for light sources (like the chandelier) and hover effects.
+
+*/
 
 class GameManager {
 
@@ -10,6 +21,10 @@ class GameManager {
         this.gameState = gameState;
         this.uiManager = uiManager;
         this.networkManager = networkManager;
+
+        this.uiManager.app.ticker.add(() => {
+            Group.shared.update();
+        });
 
         this.gameState.currentPhase = 'lobby';
 
@@ -37,15 +52,23 @@ class GameManager {
         });
     }  
     initLobby() {
-        this.uiManager.showScreen('lobby');
-        this.uiManager.createInputBox(val => {
-            console.log(val);
-            this.networkManager.sendCommand("Connect", { "username": val, "channel": "test" });
-            this.gameState.username = val; 
-        });
-        this.uiManager.createStartGameBox(() => {
-            this.networkManager.sendCommand("StartGame");
-        });
+        this.uiManager.showScreen('login');
+        
+        this.uiManager.displayGameName(this.uiManager.loginContainer);
+        const nameBox = this.uiManager.createNametBox();
+        const channelBox = this.uiManager.createChannelBox();
+
+        const joinGame = () => {
+            const username = nameBox.value;
+            const channel = channelBox.value;
+            if (!username) return;
+            console.log(username);
+            this.networkManager.sendCommand("Connect", { "username": username, "channel": channel });
+            this.gameState.username = username;
+            this.uiManager.showScreen('lobby');
+        };
+
+        this.uiManager.createJoinButton(joinGame);
     }
     startTurnPlayerVisibilty() {
         let player = this.gameState.getCurrentPlayer();
@@ -63,6 +86,7 @@ class GameManager {
         this.uiManager.showScreen('picking');
         this.uiManager.displayTempCards(player);
         this.uiManager.statsText.text = `${player.name} is ${player.character.name} and is picking cards`;
+        this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         player.positionCardsInHand();
 
         this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
@@ -212,6 +236,12 @@ class GameManager {
                     // The server will send back a message to update the UI
                 }
             });
+        newCard.sprite.on('cardHover', (hoveredCard) => {
+            localPlayer.positionCardsInHand(hoveredCard);
+        });
+        newCard.sprite.on('cardOut', () => {
+            localPlayer.positionCardsInHand();
+        });
     }
     makeCardDiscardable(newCard){
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -317,12 +347,16 @@ class GameManager {
         }
     }
     newPlayer(data) {
-        this.uiManager.statsText.text = `${data.usernames.length} / 4 Players`;
-        this.gameState.players = [];
+        this.uiManager.showScreen('lobby');
+        //this.uiManager.statsText.text = `${data.usernames.length} / 4 Players`;
+        this.gameState.players = []; 
 
         data.usernames.forEach((username, index) => {
-            const player = new Player(username, index); // Assign a temporary ID for lobby display
+            const player = new Player(username, index);
             this.gameState.players.push(player);
+        });
+        this.uiManager.displayLobbyPlayers(this.gameState.players, () => {
+            this.networkManager.sendCommand("StartGame");
         });
     }
 

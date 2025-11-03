@@ -32,8 +32,14 @@ class GeneralCard {
     makePlayable() {
         this.sprite.interactive = true;
         this.sprite.cursor = 'pointer';
-        this.sprite.on('mousedown', () => {
+        this.sprite.on('pointerdown', () => {
             this.sprite.emit('cardPlayed', this);
+        });
+        this.sprite.on('mouseover', () => {
+            this.sprite.emit('cardHover', this);
+        });
+        this.sprite.on('mouseout', () => {
+            this.sprite.emit('cardOut', this);
         });
     }
 

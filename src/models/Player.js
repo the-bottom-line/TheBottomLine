@@ -1,5 +1,6 @@
 import Asset from './Asset.js';
 import Liability from './Liability.js';
+import { Tween } from 'tweedle.js';
 class Player {
     constructor(name, id) {
         this.hand = [];
@@ -30,26 +31,53 @@ class Player {
         this._nextZIndex = 0;
     }
 
-    positionCardsInHand() {
+    positionCardsInHand(hoveredCard = null) {
         const liabilities = this.hand.filter(c => c instanceof Liability).reverse();
         const assets = this.hand.filter(c => c instanceof Asset).reverse();
 
         const baseY = window.innerHeight - 100;
-        const spacing = 60; // This is the space between each card.
+        const spacing = 60; 
+        const hoverYOffset = -30; 
+        const hoverSpacing = 75; 
 
         const totalAssetsWidth = (assets.length - 1) * spacing;
         const assetsStartX = window.innerWidth / 2 - totalAssetsWidth - 100;
 
         assets.forEach((card, i) => {
-            card.setPosition(assetsStartX + i * spacing, baseY);
+            let x = assetsStartX + i * spacing;
+            let y = baseY;
+            if (hoveredCard instanceof Asset) {
+                const hoverIndex = assets.indexOf(hoveredCard);
+                if (hoverIndex !== -1) {
+                    if (i < hoverIndex) x -= hoverSpacing;
+                    if (card === hoveredCard) y += hoverYOffset;
+                }
+            }
+            new Tween(card.sprite.position).to({ x, y }, 150).start();
+            if (card.discardButton) {
+                const discardButtonY = y - card.sprite.height / 2 + 20;
+                new Tween(card.discardButton.position).to({ x, y: discardButtonY }, 150).start();
+            }
         });
 
         const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
         const liabilitiesStartX = window.innerWidth / 2 + 100 + totalLiabilitiesWidth;
 
         liabilities.forEach((card, i) => {
-            card.setPosition(liabilitiesStartX - i * spacing, baseY);
-
+            let x = liabilitiesStartX - i * spacing;
+            let y = baseY;
+            if (hoveredCard instanceof Liability) {
+                const hoverIndex = liabilities.indexOf(hoveredCard);
+                if (hoverIndex !== -1) {
+                    if (i < hoverIndex) x += hoverSpacing;
+                    if (card === hoveredCard) y += hoverYOffset;
+                }
+            }
+            new Tween(card.sprite.position).to({ x, y }, 150).start();
+            if (card.discardButton) {
+                const discardButtonY = y - card.sprite.height / 2 + 20;
+                new Tween(card.discardButton.position).to({ x, y: discardButtonY }, 150).start();
+            }
         });
     }
 

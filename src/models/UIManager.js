@@ -1,5 +1,6 @@
 import { Container, Graphics, Text, Sprite, Assets, FillGradient } from 'pixi.js';
-import { Input, Button } from '@pixi/ui';
+import { Input } from '@pixi/ui';
+import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
 import LiabilityCards from "./LiabilityCards.js";
 
@@ -7,6 +8,7 @@ class UIManager {
     constructor(app) {
         this.app = app;
 
+        this.loginContainer = new Container();
         this.lobbyContainer = new Container();
         this.mainContainer = new Container();
         this.pickingContainer = new Container();
@@ -50,6 +52,7 @@ class UIManager {
         this.elseTurnContainer.addChild(this.playedCardsContainer);
 
         sprites.addChild(
+            this.loginContainer,
             this.characterContainer,
             this.pickingContainer,
             this.mainContainer,
@@ -77,6 +80,7 @@ class UIManager {
     }
 
     showScreen(screenName) {
+        this.loginContainer.visible = screenName === 'login';
         this.lobbyContainer.visible = screenName === 'lobby';
         this.characterContainer.visible = screenName === 'character';
         this.mainContainer.visible = screenName === 'main';
@@ -86,44 +90,91 @@ class UIManager {
 
     }
 
-    createInputBox(onEnterCallback) {
+    createNametBox() {
         const inputBox = new Input({
-            bg: new Graphics().roundRect(0, 0, 200, 40, 5).fill(0x333333),
+            bg: new Graphics().roundRect(0, 0, 300, 80, 10).fill(0x333333),
             padding: [10, 10, 10, 10],
             textStyle: {
-                fontSize: 18,
+                fontSize: 32,
                 fontWeight: 'bold'
             },
-            placeholder: "Enter Name",
+            placeholder: "Enter Name:",
         });
-        inputBox.onEnter.connect(onEnterCallback);
-        inputBox.position.set(window.innerWidth / 2 - 100, window.innerHeight / 2 - 20);
-        this.lobbyContainer.addChild(inputBox);
+        inputBox.position.set(window.innerWidth / 2-150, window.innerHeight / 2 -100);
+        this.loginContainer.addChild(inputBox);
+        return inputBox;
+    }
+    createChannelBox(){
+        const inputBox = new Input({
+            bg: new Graphics().roundRect(0, 0, 300, 80, 10).fill(0x333333),
+            padding: [10, 10, 10, 10],
+            textStyle: {
+                fontSize: 32,
+                fontWeight: 'bold'
+            },
+            placeholder: "Lobby Code:",
+        });
+        inputBox.position.set(window.innerWidth / 2-150, window.innerHeight / 2 +30);
+        this.loginContainer.addChild(inputBox);
+        return inputBox;
+    }
+    createJoinButton(onPressCallback) {
+        const joinButton = new FancyButton({
+            text: "Join",
+            width: 200,
+            height: 60,
+            onPress: onPressCallback
+        });
+
+        joinButton.view.position.set(window.innerWidth / 2 - (joinButton.view.width / 2), window.innerHeight - 100);
+
+        this.loginContainer.addChild(joinButton.view);
+    }
+    displayGameName(container){
+        this.loginContainer.removeChildren();
+        const titleText = new Text({
+            text: 'The Bottom (on)Line',
+            style: { fill: '#ffffff', fontSize: 56, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5,0);
+        titleText.position.set(window.innerWidth / 2, 20);
+        container.addChild(titleText);
+    }
+    displayLobbyPlayers(players, onStartGameCallback) {
+        this.lobbyContainer.removeChildren();
+        this.displayGameName(this.lobbyContainer);
+
+        players.forEach((player, index) => {
+            const playerText = new Text({
+                text: player.name,
+                style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
+            });
+            playerText.anchor.set(0.5);
+            playerText.position.set(window.innerWidth / 2, 180 + index * 40);
+            this.lobbyContainer.addChild(playerText);
+        });
+        this.createStartGameBox(onStartGameCallback);
     }
 
     createStartGameBox(onPressCallback) {
-        const startGameButton = new Button(
-            new Graphics()
-                .rect(0, 0, 100, 50, 15)
-                .fill(0xFFFFFF)
-        );
-        startGameButton.onPress.connect(onPressCallback);
+        const startGameButton = new FancyButton({
+            text: "Start",
+            width: 200,
+            height: 60,
+            onPress: onPressCallback
+        });
+        startGameButton.view.position.set(window.innerWidth / 2 - (startGameButton.view.width / 2), window.innerHeight - 100);
         this.lobbyContainer.addChild(startGameButton.view);
     }
 
     createNextTurnButton(onPressCallback) {
-        const buttonWidth = 150;
-        const buttonHeight = 50;
-        const buttonContainer = new Container();
-        const background = new Graphics().roundRect(0, 0, buttonWidth, buttonHeight, 15).fill(0x473f33);
-        const buttonText = new Text({ text: "End Turn", style: { fill: '#000000ff', fontSize: 20, fontFamily: 'MyFont' } });
-        buttonText.anchor.set(0.5);
-        buttonText.position.set(buttonWidth / 2, buttonHeight / 2);
-        buttonContainer.addChild(background, buttonText);
-
-        const nextButton = new Button(buttonContainer);
-        nextButton.onPress.connect(onPressCallback);
-        nextButton.view.position.set(window.innerWidth - 100 - (buttonWidth / 2), window.innerHeight - 100 - (buttonHeight / 2));
+        const nextButton = new FancyButton({
+            text: "End Turn",
+            width: 200,
+            height: 60,
+            onPress: onPressCallback
+        });
+        nextButton.view.position.set(window.innerWidth - 150 - (nextButton.view.width / 2), window.innerHeight - 100);
         this.mainContainer.addChild(nextButton.view);
     }
 
