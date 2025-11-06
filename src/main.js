@@ -18,7 +18,7 @@ import NetworkManager from "./models/NetworkManager.js";
 
     const gameState = new GameState();
     const uiManager = new UIManager(app);
-    const networkManager = new NetworkManager('ws://localhost:3000/websocket');
+    const networkManager = new NetworkManager('ws://localhost:3000/websocket'); //192.168.67.151
     const gameManager = new GameManager(gameState, uiManager, networkManager);
 
     networkManager.setGameManager(gameManager);

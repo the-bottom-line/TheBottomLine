@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
@@ -13,6 +13,7 @@ class UIManager {
         this.mainContainer = new Container();
         this.pickingContainer = new Container();
         this.characterContainer = new Container();
+        this.characterOpenContainer = new Container();
         this.characterCardsContainer = new Container();
         this.decksContainer = new Container();
         this.playedCardsContainer = new Container();
@@ -194,22 +195,58 @@ class UIManager {
         this.decksContainer.addChild(liabilityDeckSprite);
     }
 
-    displayCharacterSelection(characters, onSelectCallback) {
+
+    displayCharacterSelection(faceUpCharacters,openCharacters, onSelectCallback,closedCharacter) {
         this.characterCardsContainer.removeChildren();
         const spacing = 200;
-        const startX = (window.innerWidth - ((characters.length - 1) * spacing)) / 2;
+        const startX = (window.innerWidth - ((faceUpCharacters.length - 1) * spacing)) / 2;
+        const grayscaleFilter = new ColorMatrixFilter();
+        grayscaleFilter.grayscale(0.2, true);
 
-        characters.forEach(async (character, index) => {
-            const texture = await Assets.load(character.texturePath);
-            const sprite = new Sprite(texture);
-            sprite.interactive = true;
-            sprite.scale.set(0.3);
-            sprite.anchor.set(0.5);
-            sprite.x = startX + index * spacing;
-            sprite.y = window.innerHeight / 2;
-            sprite.on('pointerdown', () => onSelectCallback(character));
-            this.characterCardsContainer.addChild(sprite);
+        if(closedCharacter != null){
+            closedCharacter.forEach(async character=>{
+                let texture = await Assets.load(character.texturePath);
+                let closedCard = new Sprite(texture);
+                closedCard.interactive = true;
+                closedCard.scale.set(0.3);
+                closedCard.anchor.set(0.5);
+                closedCard.x = window.innerWidth / 2;
+                closedCard.y = window.innerHeight / 2-300;
+
+                this.characterCardsContainer.addChild(closedCard);
+            });
+        }
+        
             
+            
+
+        faceUpCharacters.forEach(async (character, index) => {
+            const texture = await Assets.load(character.texturePath);
+            const faceUpCard = new Sprite(texture);
+            faceUpCard.interactive = true;
+            faceUpCard.scale.set(0.3);
+            faceUpCard.anchor.set(0.5);
+            
+            faceUpCard.x = startX + index * spacing;
+            faceUpCard.y = window.innerHeight / 2;
+            faceUpCard.on('mousedown', () => onSelectCallback(character)); // here
+            this.characterCardsContainer.addChild(faceUpCard);
+            
+        });
+
+       
+        const openX = (window.innerWidth - ((openCharacters.length - 1) * spacing)) / 2;
+        openCharacters.forEach(async (character, index) =>{
+            console.log(character.name);
+            const texture = await Assets.load(character.texturePath);
+            const openCard = new Sprite(texture);
+            openCard.interactive = true;
+            openCard.scale.set(0.3);
+            openCard.anchor.set(0.5);
+            openCard.filters = [grayscaleFilter];
+            openCard.x = openX + index * spacing;
+            openCard.y = window.innerHeight / 2 + 300;
+            this.characterCardsContainer.addChild(openCard);
         });
     }
 
@@ -225,43 +262,73 @@ class UIManager {
             characterIcon.anchor.set(0.5);
             container.addChild(characterIcon);
 
+            //289
+
             if (player === currentPlayer) {
                 const outline = new Graphics()
-                    .circle(0, 0, characterIcon.width / 2 + 4)
-                    .stroke({ width: 3, color: 0xCBC28E });
-                outline.position.copyFrom(characterIcon.position);
+                    .circle(0, 0, 27)
+                    .stroke({ width: 5, color: 0xCBC28E });
+                outline.position.set(x,32.5);
                 container.addChild(outline);
                 container.addChild(characterIcon); // ensure icon is on top of outline
             }
 
-            console.log(`player: ${player.name}`,player.assetList);
 
             player.assetList.forEach((card, cardIndex) => {
                 const rect = new Graphics()
                     .roundRect(x - 20, 60 + cardIndex * 30, 20, 20, 50)
                     .fill(card.color);
-                console.log(`card: ${card.title}`);
                 container.addChild(rect);
             });
         });
     }
 
-    displayRevealedCharacters(players, container) {
-        const revealedPlayers = players.filter(p => p.reveal && p.character).sort((a, b) => a.character.order - b.character.order);
+async displayRevealedCharacters(players, container) {
 
-        revealedPlayers.forEach(async (player, index) => {
-            if (!player.character) return;
+        const sortedPlayerList = [...players].sort((a, b) => {
+            const aIsRevealed = a.reveal && a.character;
+            const bIsRevealed = b.reveal && b.character;
 
-            const texture = await Assets.load(player.character.texturePath);
+            if (aIsRevealed && bIsRevealed) {
+               
+                return a.character.order - b.character.order;
+            } else if (aIsRevealed) {
+               
+                return -1;
+            } else if (bIsRevealed) {
+                
+                return 1;
+            } else {
+               
+                return 0; 
+            }
+        });
+       
+        let index = 0;
+        for (const player of sortedPlayerList) {
+            let texturePath;
+            
+            if (player.reveal && player.character) {
+               
+                texturePath = player.character.texturePath;
+            } else {
+                
+                texturePath = "./miscellaneous/character_back.webp";
+            }
+           
+            const texture = await Assets.load(texturePath);
             const characterCard = new Sprite(texture);
-            const y = 50 + index * 100;
+            
+            const y = 50 + index * 100; 
             characterCard.x = window.innerWidth - 100;
             characterCard.y = y;
             characterCard.scale.set(0.15);
             characterCard.anchor.set(0.5);
             characterCard.rotation = 90 * Math.PI / 180;
             container.addChild(characterCard);
-        });
+
+            index++;
+        }
     }
 
     displayTempCards(player) {
@@ -289,22 +356,6 @@ class UIManager {
             if (card.discardButton) this.tempCardsContainer.addChild(card.discardButton);
         });
         player.positionTempCards();
-    }
-
-    async displayOtherPlayerDrewCard(player, cardType) {
-        /*const spacing = 180;
-        const startX = (window.innerWidth - (player.maxTempCards * spacing)) / 2 + spacing / 2;
-        const y = window.innerHeight / 2;
-        const texturePath = cardType == 'Asset' ? "./assets/asset_back.webp" : "liabilities/liability_back.webp";
-        const cardBackTexture = await Assets.load(texturePath);
-        const cardBack = new Sprite(cardBackTexture);
-        cardBack.scale.set(0.25);
-        cardBack.anchor.set(0.5);
-
-        const cardIndex = player.tempHand.length;
-        cardBack.position.set(startX + (cardIndex * spacing), y);
-        player.tempHand.push(cardBack);
-        this.elseTurnContainer.addChild(cardBack);*/
     }
 
     async displayOtherPlayerHand(assets, liabilities) {        
@@ -375,6 +426,39 @@ class UIManager {
             this.playedCardsContainer.addChild(card.sprite);
         });
     }
+    async displayPlayerCharacter(player,container) {
+        if (!player?.character) return;
+
+        const tempContainer = new Container();
+        container.addChild(tempContainer);
+
+        const texture = await Assets.load(player.character.iconPath);
+        const characterIcon = new Sprite(texture);
+        characterIcon.scale.set(0.25);
+        characterIcon.anchor.set(0.5, 1);
+        tempContainer.addChild(characterIcon);
+
+        const nameText = new Text({
+            text: player.character.name,
+            style: {
+                fill: '#f2e8d5', // Parchment
+                fontSize: 20,
+                fontFamily: 'MyFont',
+            }
+        });
+        nameText.anchor.set(0.5, 0);
+        nameText.position.set(0, 10);
+
+        const nameBackground = new Graphics()
+            .roundRect(0, 0, nameText.width + 20, nameText.height + 15, 10)
+            .fill(0x60594C); 
+        nameBackground.pivot.set(nameBackground.width / 2, 0);
+        nameBackground.position.set(0, 5);
+
+        tempContainer.addChild(nameBackground, nameText);
+        tempContainer.position.set((tempContainer.width / 2) + 50, window.innerHeight - 80);
+    }
+    
 }
 
 export default UIManager;

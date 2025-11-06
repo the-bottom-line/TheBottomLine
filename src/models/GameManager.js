@@ -11,7 +11,6 @@ Dark Wood (Table)	#4a2c3a	A very dark, rich brown, similar to the chairs but wit
 Antique Gold (Trim)	#a68d5e	Your main accent color. Use this for borders, highlights, and buttons.
 Parchment (UI)	#f2e8d5	A warm, off-white for text and the "place card" backgrounds.
 Warm Light (Glow)	#f5e5a6	Use for light sources (like the chandelier) and hover effects.
-
 */
 
 class GameManager {
@@ -34,15 +33,13 @@ class GameManager {
     }
 
     async initRound() {
-        await this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "deck": "Asset" }));
-        await this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "deck": "Liability" }));
-
+        await this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
+        await this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
         
-        
-        this.uiManager.draftOverlay.clear().rect(0, 0, this.uiManager.app.screen.width, this.uiManager.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
+        /*this.uiManager.draftOverlay.clear().rect(0, 0, this.uiManager.app.screen.width, this.uiManager.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
 
         this.uiManager.characterContainer.addChildAt(this.uiManager.draftOverlay, 0);
-        this.uiManager.draftOverlay.visible = true;
+        this.uiManager.draftOverlay.visible = true;*/
 
         this.gameState.players.forEach(p => {
             p.character = null;
@@ -62,7 +59,6 @@ class GameManager {
             const username = nameBox.value;
             const channel = channelBox.value;
             if (!username) return;
-            console.log(username);
             this.networkManager.sendCommand("Connect", { "username": username, "channel": channel });
             this.gameState.username = username;
             this.uiManager.showScreen('lobby');
@@ -89,8 +85,8 @@ class GameManager {
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         player.positionCardsInHand();
 
-        this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
-        this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
+        //this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
+        //this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
     }
     otherPlayerScreenSetup(){
         this.uiManager.showScreen('elseTurn');
@@ -100,6 +96,7 @@ class GameManager {
         this.otherCards();
 
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
+        this.uiManager.displayPlayerCharacter(this.gameState.getCurrentPlayer(),this.uiManager.elseTurnContainer );
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     switchToMainPhase() {
@@ -111,6 +108,7 @@ class GameManager {
 
         this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
+        this.uiManager.displayPlayerCharacter(this.gameState.getCurrentPlayer(),this.uiManager.mainContainer);
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
 
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -126,6 +124,12 @@ class GameManager {
 
         this.uiManager.mainContainer.addChild(this.uiManager.handContainer, this.uiManager.playedCardsContainer);
         this.updateUI();
+    }
+    youEndedTurn(){
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        currentPlayer.hand.forEach(card => {
+            card.makeUnplayable();
+        });
     }
     updateUI() {
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -165,7 +169,7 @@ class GameManager {
     }
     async messageStartGame(data) {
         console.log("Received StartGame data from server:", data);
-
+        
         this.gameState.players = []; 
         this.gameState.myId = data.id;
         let localPlayer = new Player(this.gameState.username, data.id);
@@ -175,7 +179,7 @@ class GameManager {
         this.gameState.players.push(localPlayer);
 
         this.initPlayers(data.player_info);
-        //this.gameState.players.sort();
+
         if (!localPlayer) {
             console.error("Could not find the local player in server data!");
             return;
@@ -208,7 +212,7 @@ class GameManager {
             localPlayer.addCardToHand(newCard);
             this.uiManager.handContainer.addChild(newCard.sprite);
         }
-        this.players
+        
         localPlayer.positionCardsInHand();
         this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
         this.initRound();
@@ -225,10 +229,14 @@ class GameManager {
     }
     makeCardPlayable(newCard){
         const localPlayer = this.gameState.getLocalPlayer();
-        newCard.sprite.on('cardPlayed', () => { 
+        /*if (newCard.sprite.eventNames().includes('cardPlayed')) {
+            return; // Prevent adding duplicate listeners
+        }*/
+
+        newCard.sprite.on('mousedown', () => { 
                 const cardIndex = localPlayer.hand.indexOf(newCard); // Assuming localPlayer is accessible
                 if (cardIndex !== -1) {
-                    if (newCard instanceof Asset) {                        
+                    if (newCard instanceof Asset) {
                         this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
                     } else if (newCard instanceof Liability) {                        
                         this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
@@ -236,11 +244,14 @@ class GameManager {
                     // The server will send back a message to update the UI
                 }
             });
-        newCard.sprite.on('cardHover', (hoveredCard) => {
-            localPlayer.positionCardsInHand(hoveredCard);
+        this.makeCardHoverable(newCard,localPlayer);
+    }
+    makeCardHoverable(card,player){
+        card.sprite.on('cardHover', (hoveredCard) => {
+            player.positionCardsInHand(hoveredCard);
         });
-        newCard.sprite.on('cardOut', () => {
-            localPlayer.positionCardsInHand();
+        card.sprite.on('cardOut', () => {
+            player.positionCardsInHand();
         });
     }
     makeCardDiscardable(newCard){
@@ -369,16 +380,30 @@ class GameManager {
         currentPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
 
+        this.gameState.openCharacters = this.gameState.characters.filter(character =>
+            data.open_characters.includes(character.textureName)
+        );
+        
+
         if (currentPlayer.playerID === this.gameState.myId) {
             this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                data.pickable_characters.characters.includes(character.textureName)
+                data.selectable_characters.includes(character.textureName)
             );
-            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, (character) => {
+            let closedCharacter = this.gameState.characters.filter(character =>
+                data.closed_character.includes(character.textureName)
+            );
+            console.log(closedCharacter);
+
+            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters,this.gameState.openCharacters,
+                 (character) => {
                 this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
                 console.log(`Selected character: ${character.textureName}`);
                 this.uiManager.characterCardsContainer.removeChildren();
-            });
+            }, closedCharacter);
         }
+        
+        
+
     }
 
     receiveSelectableCharacters(data) {
@@ -392,9 +417,10 @@ class GameManager {
         this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
         if (currentPlayer.playerID === this.gameState.myId) {
             this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                data.pickable_characters.characters.includes(character.textureName)
+                data.selectable_characters.includes(character.textureName)
             );
-            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, (character) => {
+
+            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, this.gameState.openCharacters, (character) => {
                 this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
                 console.log(`Selected character: ${character.textureName}`);
                 this.uiManager.characterCardsContainer.removeChildren();
@@ -466,6 +492,7 @@ class GameManager {
         player.positionAssetsToPile();
         this.uiManager.playedCardsContainer.addChild(card.sprite);
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
+        this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         this.updateUI();
     }
     async boughtAsset(data){
@@ -510,6 +537,8 @@ class GameManager {
         player.positionCardsInHand();
         player.positionLiabilitiesToPile();
         this.uiManager.playedCardsContainer.addChild(card.sprite);
+        this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        
         this.updateUI();
     }
     async issuedLiability(data){

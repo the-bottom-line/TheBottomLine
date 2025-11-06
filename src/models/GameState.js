@@ -9,6 +9,7 @@ class GameState {
         this.characters = getAllCharacters();
         this.shuffledCharacters = [];
         this.faceUpCharacters = [];
+        this.openCharacters = [];
         this.currentPhase = 'lobby';
     }
 
