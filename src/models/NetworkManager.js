@@ -67,17 +67,15 @@ class NetworkManager {
         }
     }
 
-    sendCommand(command, data) {
-        this.packet = {
-            "action" : command,
-            "data" : data
-        }
-        this.jsonData = JSON.stringify(this.packet, null, 0);
-        console.log(this.jsonData);
-        this.sendMessage(this.jsonData);
-    }
-
-   
+    // sendCommand(command, data) {
+    //     this.packet = {
+    //         "action": command,
+    //         "data": data
+    //     }
+    //     this.jsonData = JSON.stringify(this.packet, null, 0);
+    //     console.log(this.jsonData);
+    //     this.sendMessage(this.jsonData);
+    // }
 }
 
 export default NetworkManager;

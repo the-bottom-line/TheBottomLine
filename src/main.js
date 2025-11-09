@@ -3,6 +3,9 @@ import GameManager from "./models/GameManager.js";
 import GameState from "./models/GameState.js";
 import UIManager from "./models/UIManager.js";
 import NetworkManager from "./models/NetworkManager.js";
+import initSync from "./responses/wasm_responses.js"
+
+await initSync();
 
 (async () => {
     const app = new Application();

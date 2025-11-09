@@ -2,6 +2,7 @@ import Player from './Player.js';
 import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Group } from 'tweedle.js';
+import { CreateRequest } from '../responses/wasm_responses.js';
 
 
 /*
@@ -33,8 +34,14 @@ class GameManager {
     }
 
     async initRound() {
-        await this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
-        await this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
+        await this.uiManager.createAssetDeck(() => {
+            const request = CreateRequest.drawCard("Asset");
+            this.networkManager.sendMessage(request);
+        });
+        await this.uiManager.createLiabilityDeck(() => {
+            const request = CreateRequest.drawCard("Liability");
+            this.networkManager.sendMessage(request);
+        });
         
         /*this.uiManager.draftOverlay.clear().rect(0, 0, this.uiManager.app.screen.width, this.uiManager.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
 
@@ -59,7 +66,8 @@ class GameManager {
             const username = nameBox.value;
             const channel = channelBox.value;
             if (!username) return;
-            this.networkManager.sendCommand("Connect", { "username": username, "channel": channel });
+            const request = CreateRequest.connect(username, channel);
+            this.networkManager.sendMessage(request);
             this.gameState.username = username;
             this.uiManager.showScreen('lobby');
         };
@@ -106,7 +114,10 @@ class GameManager {
         this.uiManager.handContainer.removeChildren();
         this.uiManager.playedCardsContainer.removeChildren();
 
-        this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
+        this.uiManager.createNextTurnButton(() => {
+            const request = CreateRequest.endTurn();
+            this.networkManager.sendMessage(request)
+        });
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
         this.uiManager.displayPlayerCharacter(this.gameState.getCurrentPlayer(),this.uiManager.mainContainer);
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
@@ -237,9 +248,11 @@ class GameManager {
                 const cardIndex = localPlayer.hand.indexOf(newCard); // Assuming localPlayer is accessible
                 if (cardIndex !== -1) {
                     if (newCard instanceof Asset) {
-                        this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
-                    } else if (newCard instanceof Liability) {                        
-                        this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
+                        const request = CreateRequest.buyAsset(cardIndex);
+                        this.networkManager.sendMessage(request);
+                    } else if (newCard instanceof Liability) {
+                        const request = CreateRequest.issueLiability(cardIndex);
+                        this.networkManager.sendMessage(request);
                     }
                     // The server will send back a message to update the UI
                 }
@@ -258,7 +271,8 @@ class GameManager {
         const currentPlayer = this.gameState.getCurrentPlayer();
         newCard.sprite.on('cardDiscarded', (discardCard) => {
             const cardIndex = currentPlayer.hand.indexOf(discardCard);
-            this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex });
+            const request = CreateRequest.putBackCard(cardIndex);
+            this.networkManager.sendMessage(request);
                 /*this.uiManager.tempCardsContainer.removeChild(discardedCard.sprite);
                 this.uiManager.tempCardsContainer.removeChild(discardedCard.discardButton);
                 currentPlayer.tempHand.splice(cardIndex, 1);
@@ -367,7 +381,8 @@ class GameManager {
             this.gameState.players.push(player);
         });
         this.uiManager.displayLobbyPlayers(this.gameState.players, () => {
-            this.networkManager.sendCommand("StartGame");
+            const request = CreateRequest.startGame();
+            this.networkManager.sendMessage(request);
         });
     }
 
@@ -394,12 +409,17 @@ class GameManager {
             );
             console.log(closedCharacter);
 
-            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters,this.gameState.openCharacters,
-                 (character) => {
-                this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
-                console.log(`Selected character: ${character.textureName}`);
-                this.uiManager.characterCardsContainer.removeChildren();
-            }, closedCharacter);
+            this.uiManager.displayCharacterSelection(
+                this.gameState.faceUpCharacters,
+                this.gameState.openCharacters,
+                (character) => {
+                    const request = CreateRequest.selectCharacter(character.textureName)
+                    this.networkManager.sendMessage(request);
+                    console.log(`Selected character: ${character.textureName}`);
+                    this.uiManager.characterCardsContainer.removeChildren();
+                },
+                closedCharacter
+            );
         }
         
         
@@ -420,11 +440,16 @@ class GameManager {
                 data.selectable_characters.includes(character.textureName)
             );
 
-            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, this.gameState.openCharacters, (character) => {
-                this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
-                console.log(`Selected character: ${character.textureName}`);
-                this.uiManager.characterCardsContainer.removeChildren();
-            });
+            this.uiManager.displayCharacterSelection(
+                this.gameState.faceUpCharacters,
+                this.gameState.openCharacters,
+                (character) => {
+                    const request = CreateRequest.selectCharacter(character.textureName);
+                    this.networkManager.sendMessage(request);
+                    console.log(`Selected character: ${character.textureName}`);
+                    this.uiManager.characterCardsContainer.removeChildren();
+                }
+            );
         } else {
             console.log("Not player's turn for character selection.");
         }
