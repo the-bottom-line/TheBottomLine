@@ -471,6 +471,7 @@ class GameManager {
             console.error(`Player with ID ${data.player_turn} not found.`);
         }
     }
+   
     youBoughtAsset(data){
         const player = this.gameState.getLocalPlayer();
         if (!player) return;

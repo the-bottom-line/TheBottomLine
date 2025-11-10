@@ -250,19 +250,18 @@ class UIManager {
         });
     }
 
-    displayAllPlayerStats(players, container, currentPlayer) {
+    displayAllPlayerStats(players, container, currentPlayer) { // here
         
         players.forEach(async (player, playerIndex) => {
             const texture = await Assets.load(player.reveal ? player.character.iconPath : "./miscellaneous/noneCharacter.png");
             const characterIcon = new Sprite(texture);
-            const x = 30 + playerIndex * 60;
+            const x = 30 + playerIndex * 70;
             characterIcon.position.set(x, 30);
             characterIcon.width = 50;
             characterIcon.height = 55.7;
             characterIcon.anchor.set(0.5);
             container.addChild(characterIcon);
 
-            //289
 
             if (player === currentPlayer) {
                 const outline = new Graphics()
@@ -272,14 +271,61 @@ class UIManager {
                 container.addChild(outline);
                 container.addChild(characterIcon); // ensure icon is on top of outline
             }
+            const playerName = new Text({
+                text: player.name,
+                style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+            });
+            playerName.anchor.set(0.5);
+            playerName.position.set(x, 70);
+            container.addChild(playerName);
 
 
-            player.assetList.forEach((card, cardIndex) => {
+            let colors = ["blue","green","purple","red","yellow"];
+
+            colors.forEach((color, index) =>{
+                 const type = new Graphics()
+                    .roundRect(x - 30, 80 + index * 30, 20, 20)
+                    .fill(color);
+                container.addChild(type);
+
+                const assetsOfColor = player.assetList.filter(asset => asset.color.toLowerCase() === color);
+                const totalGold = assetsOfColor.reduce((sum, asset) => sum + asset.gold, 0);
+                const totalSilver = assetsOfColor.reduce((sum, asset) => sum + asset.silver, 0);
+
+                const gold = new Graphics()
+                    .roundRect(x - 10, 80 + index * 30+2.5, 15, 15)
+                    .fill("gold");
+                container.addChild(gold);
+
+                const playerGold = new Text({
+                        text: totalGold.toString(),
+                        style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
+                    });
+                playerGold.anchor.set(0.5);
+                playerGold.position.set(x-10+7.5, 80 + index * 30+10);
+                container.addChild(playerGold);
+
+                const silver = new Graphics()
+                    .roundRect(x + 5, 80 + index * 30+2.5, 15, 15)
+                    .fill("silver")
+                container.addChild(silver);
+
+                const playersilver = new Text({
+                        text: totalSilver.toString(),
+                        style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
+                    });
+                playersilver.anchor.set(0.5);
+                playersilver.position.set(x + 5 + 7.5, 80 + index * 30+10);
+                container.addChild(playersilver);
+
+            });
+            
+            /*player.assetList.forEach((card, cardIndex) => {
                 const rect = new Graphics()
-                    .roundRect(x - 20, 60 + cardIndex * 30, 20, 20, 50)
+                    .roundRect(x - 20, 80 + cardIndex * 30, 20, 20, 50)
                     .fill(card.color);
                 container.addChild(rect);
-            });
+            });*/
         });
     }
 

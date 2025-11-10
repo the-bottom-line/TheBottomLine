@@ -32,8 +32,8 @@ class Player {
     }
 
     positionCardsInHand(hoveredCard = null) {
-        const liabilities = this.hand.filter(c => c instanceof Liability).reverse();
-        const assets = this.hand.filter(c => c instanceof Asset).reverse();
+        const liabilities = this.hand.filter(c => c instanceof Liability && !c.isTemporary).reverse();
+        const assets = this.hand.filter(c => c instanceof Asset && !c.isTemporary).reverse();
 
         const baseY = window.innerHeight - 100;
         const spacing = 60; 
