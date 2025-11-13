@@ -3,7 +3,6 @@ import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Group } from 'tweedle.js';
 
-
 /*
 Dark Indigo (Walls)	#2a2d3a	A deep, desaturated blue. Great for large backgrounds.
 Rich Maroon (Chairs)	#6b3e4b	Warm, dark red/purple. Perfect for accents or UI elements.
@@ -65,6 +64,7 @@ class GameManager {
         };
 
         this.uiManager.createJoinButton(joinGame);
+       
     }
     startTurnPlayerVisibilty() {
         let player = this.gameState.getCurrentPlayer();
@@ -72,9 +72,12 @@ class GameManager {
         this.gameState.currentPhase = 'picking';
 
         if (player.playerID == this.gameState.myId) { // Use player.playerID for comparison
+            this.uiManager.anounceCharacter(this.uiManager.pickingContainer,player);
             this.showLocalPlayerPicking(player);
+            
         } else {
-            this.otherPlayerScreenSetup();
+            this.otherPlayerScreenSetup(player);
+            this.uiManager.anounceCharacter(this.uiManager.elseTurnContainer,player);
         }
         this.updateUI();
     }
@@ -88,15 +91,15 @@ class GameManager {
         //this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
         //this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
     }
-    otherPlayerScreenSetup(){
+    otherPlayerScreenSetup(player){
         this.uiManager.showScreen('elseTurn');
         this.uiManager.elseTurnContainer.removeChildren();
         this.uiManager.playedCardsContainer.removeChildren();
 
         this.otherCards();
 
-        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
-        this.uiManager.displayPlayerCharacter(this.gameState.getCurrentPlayer(),this.uiManager.elseTurnContainer );
+        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
+        this.uiManager.displayPlayerCharacter(player,this.uiManager.elseTurnContainer );
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     switchToMainPhase() {
@@ -165,7 +168,6 @@ class GameManager {
         this.uiManager.displayOtherPlayerHand(assets, liabilities);
         this.uiManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList);
     
-       
     }
     async messageStartGame(data) {
         console.log("Received StartGame data from server:", data);
@@ -354,7 +356,7 @@ class GameManager {
             console.log("Other player put back a card:", data);
 
             currentPlayer.othersHand.splice(currentPlayer.othersHand.indexOf(data.card_type),1)
-            this.otherPlayerScreenSetup();
+            this.otherPlayerScreenSetup(currentPlayer);
         }
     }
     newPlayer(data) {
@@ -464,7 +466,7 @@ class GameManager {
 
             this.uiManager.statsText.text = `${currentPlayer.name}'s turn`; // `${player.name} is ${player.character.name} and is picking cards`;
             
-
+            
             this.startTurnPlayerVisibilty();
 
         } else {
@@ -537,6 +539,9 @@ class GameManager {
 
         player.positionCardsInHand();
         player.positionLiabilitiesToPile();
+        card.sprite.on('mousedown', () => {
+            this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
+        });
         this.uiManager.playedCardsContainer.addChild(card.sprite);
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         

@@ -20,6 +20,7 @@ class UIManager {
         this.tempCardsContainer = new Container();
         this.handContainer = new Container();
         this.elseTurnContainer = new Container();
+        this.popupContainer = new Container();
 
         this.statsText = new Text({
             text: '',
@@ -32,10 +33,7 @@ class UIManager {
         this.statsText.anchor.set(0.5);
         this.statsText.position.set(window.innerWidth / 2, 30);
 
-        this.draftOverlay = new Graphics()
-            .rect(0, 0, this.app.screen.width, this.app.screen.height)
-            .fill({ color: 0x000000, alpha: 0.7 });
-        this.draftOverlay.visible = false;
+       
 
         this._setupContainers();
     }
@@ -49,7 +47,7 @@ class UIManager {
         this.characterContainer.addChild(this.characterCardsContainer);
         this.mainContainer.addChild(this.handContainer, this.playedCardsContainer);
         this.pickingContainer.addChild(this.decksContainer, this.tempCardsContainer);
-        this.characterContainer.addChildAt(this.draftOverlay, 0);
+        
         this.elseTurnContainer.addChild(this.playedCardsContainer);
 
         sprites.addChild(
@@ -87,8 +85,6 @@ class UIManager {
         this.mainContainer.visible = screenName === 'main';
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
-        this.draftOverlay.visible = screenName === 'character';
-
     }
 
     createNametBox() {
@@ -504,7 +500,112 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(nameBackground, nameText);
         tempContainer.position.set((tempContainer.width / 2) + 50, window.innerHeight - 80);
     }
-    
+
+    async anounceCharacter(container, player){
+        const tempContainer = new Container();
+       
+        let gradient = new FillGradient({
+            type: 'radial',
+            center: { x: 0.5, y: 0.5 },
+            innerRadius: 0.2,
+            outerCenter: { x: 0.5, y: 0.5 },
+            outerRadius: .5,
+            colorStops: [
+                { offset: 0, color: 0x000000 },
+                { offset: 1, color: 0x1c1c1c },
+            ],
+        });
+
+        const darkenBackground = new Graphics()
+        .rect(0, 0, this.app.screen.width, this.app.screen.height)
+        .fill(gradient);
+        darkenBackground.alpha = 0.8;
+
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-120;
+
+        let texture = await Assets.load("./miscellaneous/ChairmanIcon.png");
+        const chairmanIcon = new Sprite(texture);
+        
+        chairmanIcon.position.set(x, y);
+        chairmanIcon.width = 200;
+        chairmanIcon.height = 240;
+        chairmanIcon.anchor.set(0.5);
+        y +=100;
+
+        const textChairmanBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        const chairmanText = new Text({
+            text: "The Chairman is calling..",
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        chairmanText.anchor.set(0.5);
+        chairmanText.position.set(x, y);      
+        x +=50
+        y += 100;
+
+        const textPlayerBackground = new Graphics()
+            .roundRect(x - 200, y-20, 350, 60, 5)
+            .fill(0x323232) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        const characterText = new Text({
+            text: player.character.name,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        characterText.anchor.set(0, 0.5);
+        characterText.position.set(x-140, y);
+        const playerText = new Text({
+            text: player.name,
+            style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        playerText.anchor.set(0, 0.5);
+        playerText.position.set(x-140, y+20);
+
+        texture = await Assets.load(player.character.iconPath);
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x-200, y);
+        characterIcon.width = 80;
+        characterIcon.height = 90;
+        characterIcon.anchor.set(0.5);
+
+        const countdownText = new Text({
+            text: '5',
+            style: {
+                fill: '#ffffff',
+                fontSize: 24,
+                fontFamily: 'MyFont',
+            }
+        });
+        countdownText.anchor.set(0.5);
+        countdownText.position.set(this.app.screen.width / 2, this.app.screen.height - 50);
+
+        const countdownInterval = setInterval(() => {
+            const current = parseInt(countdownText.text, 10);
+            if (current > 1) {
+                countdownText.text = (current - 1).toString();
+            }
+        }, 1000);
+
+        tempContainer.addChild(darkenBackground);   
+        tempContainer.addChild(chairmanIcon);
+        tempContainer.addChild(textChairmanBackground);   
+        tempContainer.addChild(chairmanText);
+        tempContainer.addChild(textPlayerBackground);  
+        tempContainer.addChild(characterText);
+        tempContainer.addChild(playerText);  
+        tempContainer.addChild(characterIcon);  
+        tempContainer.addChild(countdownText);
+
+        container.addChild(tempContainer);
+
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        container.removeChild(tempContainer);
+    }
 }
 
 export default UIManager;
