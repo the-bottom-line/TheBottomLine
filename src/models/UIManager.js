@@ -460,15 +460,15 @@ async displayRevealedCharacters(players, container) {
         cardBackdrop.position.set(window.innerWidth / 2, window.innerHeight / 2 - 10);
         
         this.playedCardsContainer.addChild(cardBackdrop);
-        
-        assets.forEach(card =>{
+
+        assets.forEach(card => {
             this.playedCardsContainer.addChild(card.sprite);
         });
-        liabilities.forEach(card =>{
+        liabilities.forEach(card => {
             this.playedCardsContainer.addChild(card.sprite);
         });
     }
-    async displayPlayerCharacter(player,container) {
+    async displayPlayerCharacter(player, container, onIconClick) { // here
         if (!player?.character) return;
 
         const tempContainer = new Container();
@@ -476,14 +476,21 @@ async displayRevealedCharacters(players, container) {
 
         const texture = await Assets.load(player.character.iconPath);
         const characterIcon = new Sprite(texture);
+        if (onIconClick) {
+            characterIcon.interactive = true;
+            characterIcon.cursor = 'pointer';
+            characterIcon.on('mousedown', () => onIconClick(player.character));
+        }
         characterIcon.scale.set(0.25);
         characterIcon.anchor.set(0.5, 1);
+        
+
         tempContainer.addChild(characterIcon);
 
         const nameText = new Text({
             text: player.character.name,
             style: {
-                fill: '#f2e8d5', // Parchment
+                fill: '#f2e8d5',
                 fontSize: 20,
                 fontFamily: 'MyFont',
             }
@@ -572,23 +579,186 @@ async displayRevealedCharacters(players, container) {
         characterIcon.height = 90;
         characterIcon.anchor.set(0.5);
 
-        const countdownText = new Text({
-            text: '5',
-            style: {
-                fill: '#ffffff',
-                fontSize: 24,
-                fontFamily: 'MyFont',
+        tempContainer.addChild(darkenBackground);   
+        tempContainer.addChild(chairmanIcon);
+        tempContainer.addChild(textChairmanBackground);   
+        tempContainer.addChild(chairmanText);
+        tempContainer.addChild(textPlayerBackground);  
+        tempContainer.addChild(characterText);
+        tempContainer.addChild(playerText);
+        tempContainer.addChild(characterIcon);
+
+        const okButton = new FancyButton({
+            text: "OK",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
             }
         });
-        countdownText.anchor.set(0.5);
-        countdownText.position.set(this.app.screen.width / 2, this.app.screen.height - 50);
+        okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
+        tempContainer.addChild(okButton.view);
+        
+        container.addChild(tempContainer);
+    }
+    async StakeholdersPerk(container,characters,onSelectCallback){
+        const tempContainer = new Container();
+       
+        let gradient = new FillGradient({
+            type: 'radial',
+            center: { x: 0.5, y: 0.5 },
+            innerRadius: 0.2,
+            outerCenter: { x: 0.5, y: 0.5 },
+            outerRadius: .5,
+            colorStops: [
+                { offset: 0, color: 0x000000 },
+                { offset: 1, color: 0x1c1c1c },
+            ],
+        });
 
-        const countdownInterval = setInterval(() => {
-            const current = parseInt(countdownText.text, 10);
-            if (current > 1) {
-                countdownText.text = (current - 1).toString();
-            }
-        }, 1000);
+        const darkenBackground = new Graphics()
+        .rect(0, 0, this.app.screen.width, this.app.screen.height)
+        .fill(gradient);
+        darkenBackground.alpha = 0.8;
+
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-300;
+
+        let texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x, y);
+        characterIcon.width = 160;
+        characterIcon.height = 180;
+        characterIcon.anchor.set(0.5);
+
+        y+=90;
+
+        const perkBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        
+        const perkText = new Text({
+            text: 'Shareholder’s perk', // here
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        perkText.anchor.set(0.5);
+        perkText.position.set(x, y);
+        y+= 70;
+
+        const descriptionBackground = new Graphics()
+        .roundRect(x - 200, y-30, 400, 60, 5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+
+        const descriptionText = new Text({
+            text: 'Please select a character you want to fire this round', // here
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+        y+=100
+
+        const charactersBackground = new Graphics()
+        .roundRect(x - 500, y-50, 1000, 300, 5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+        
+        
+        
+        tempContainer.addChild(darkenBackground);   
+        tempContainer.addChild(characterIcon);  
+        tempContainer.addChild(perkBackground);  
+        tempContainer.addChild(perkText);
+        tempContainer.addChild(descriptionBackground);  
+        tempContainer.addChild(descriptionText);
+        tempContainer.addChild(charactersBackground);  
+       
+        characters.forEach(async (character, index) => {
+            const texture = await Assets.load(character.texturePath);
+            const faceUpCard = new Sprite(texture);
+            faceUpCard.interactive = true;
+            faceUpCard.scale.set(0.3);
+            faceUpCard.anchor.set(0.5);
+            
+            faceUpCard.x = x-400 + index * 200;
+            faceUpCard.y = y+100;
+            faceUpCard.on('mousedown', () => onSelectCallback(character));
+            tempContainer.addChild(faceUpCard);
+            
+        });
+    
+
+        container.addChild(tempContainer);
+
+        return tempContainer;
+    }
+    async firedCharacter(character,localPlayerx){
+        const tempContainer = new Container();
+        let gradient = new FillGradient({
+            type: 'radial',
+            center: { x: 0.5, y: 0.5 },
+            innerRadius: 0.2,
+            outerCenter: { x: 0.5, y: 0.5 },
+            outerRadius: .5,
+            colorStops: [
+                { offset: 0, color: 0x000000 },
+                { offset: 1, color: 0x1c1c1c },
+            ],
+        });
+
+        const darkenBackground = new Graphics()
+        .rect(0, 0, this.app.screen.width, this.app.screen.height)
+        .fill(gradient);
+        darkenBackground.alpha = 0.8;
+
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-120;
+
+        let texture = await Assets.load("./miscellaneous/ShareholderIcon.png");
+        const chairmanIcon = new Sprite(texture);
+        
+        chairmanIcon.position.set(x, y);
+        chairmanIcon.width = 200;
+        chairmanIcon.height = 240;
+        chairmanIcon.anchor.set(0.5);
+        y +=100;
+
+        const textChairmanBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        const chairmanText = new Text({
+            text: "The Shareholder fired...",
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        chairmanText.anchor.set(0.5);
+        chairmanText.position.set(x, y);      
+        x +=50
+        y += 100;
+
+        const textPlayerBackground = new Graphics()
+            .roundRect(x - 200, y-20, 350, 60, 5)
+            .fill(0x323232) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        const characterText = new Text({
+            text: character.name,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        characterText.anchor.set(0, 0.5);
+        characterText.position.set(x-140, y);
+
+        texture = await Assets.load(character.iconPath);
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x-200, y);
+        characterIcon.width = 80;
+        characterIcon.height = 90;
+        characterIcon.anchor.set(0.5);
 
         tempContainer.addChild(darkenBackground);   
         tempContainer.addChild(chairmanIcon);
@@ -596,16 +766,25 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(chairmanText);
         tempContainer.addChild(textPlayerBackground);  
         tempContainer.addChild(characterText);
-        tempContainer.addChild(playerText);  
-        tempContainer.addChild(characterIcon);  
-        tempContainer.addChild(countdownText);
+        tempContainer.addChild(characterIcon);
 
-        container.addChild(tempContainer);
+        const okButton = new FancyButton({
+            text: "OK",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+            }
+        });
+        okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
+        tempContainer.addChild(okButton.view);
 
-        await new Promise(resolve => setTimeout(resolve, 5000));
-
-        container.removeChild(tempContainer);
+        this.elseTurnContainer.addChild(tempContainer);
     }
+    
+    
 }
 
 export default UIManager;

@@ -25,6 +25,9 @@ class NetworkManager {
             "YouIssuedLiability":this.gameManager.youIssuedLiability.bind(this.gameManager),
             "IssuedLiability":this.gameManager.issuedLiability.bind(this.gameManager),
             "YouEndedTurn": this.gameManager.youEndedTurn.bind(this.gameManager),
+            "YouAreFiringSomeone": this.gameManager.youAreFiringSomeone.bind(this.gameManager),
+            "YouFiredCharacter": this.gameManager.youFiredCharacter.bind(this.gameManager),
+            "FiredCharacter": this.gameManager.firedCharacter.bind(this.gameManager),
         };
     }
 

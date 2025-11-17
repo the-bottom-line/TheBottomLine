@@ -38,6 +38,8 @@ class GeneralCard {
         this.sprite.on('mouseout', () => {
             this.sprite.emit('cardOut', this);
         });
+
+        
     }
 
     makeUnplayable() {

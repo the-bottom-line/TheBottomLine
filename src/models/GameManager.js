@@ -20,6 +20,7 @@ class GameManager {
         this.uiManager = uiManager;
         this.networkManager = networkManager;
 
+        this.activePopup = null;
         this.uiManager.app.ticker.add(() => {
             Group.shared.update();
         });
@@ -64,6 +65,18 @@ class GameManager {
         };
 
         this.uiManager.createJoinButton(joinGame);
+
+
+        /*
+        let characters = this.gameState.characters.filter(character => character.order >= 4);
+        this.uiManager.StakeholdersPerk(
+            this.uiManager.loginContainer, 
+            characters,
+            (character) =>{
+                this.networkManager.sendCommand("FireCharacter", { "character": character.textureName })
+            }   
+           
+        );*/
        
     }
     startTurnPlayerVisibilty() {
@@ -99,7 +112,9 @@ class GameManager {
         this.otherCards();
 
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
-        this.uiManager.displayPlayerCharacter(player,this.uiManager.elseTurnContainer );
+        this.uiManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, (character) => {
+            this.networkManager.sendCommand("UseAbility", { "target_player_id": player.playerID });
+        });
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     switchToMainPhase() {
@@ -111,12 +126,21 @@ class GameManager {
 
         this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
-        this.uiManager.displayPlayerCharacter(this.gameState.getCurrentPlayer(),this.uiManager.mainContainer);
+
+        this.uiManager.displayPlayerCharacter(
+            this.gameState.getCurrentPlayer(),
+            this.uiManager.mainContainer,
+            () => {
+                this.networkManager.sendCommand("UseAbility");
+            }
+        );
+        
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
 
         const currentPlayer = this.gameState.getCurrentPlayer();
         currentPlayer.hand.forEach(card => {
             card.makePlayable();
+            this.makeCardPlayable(card);
             this.uiManager.handContainer.addChild(card.sprite);
         });
         currentPlayer.positionCardsInHand();
@@ -231,9 +255,6 @@ class GameManager {
     }
     makeCardPlayable(newCard){
         const localPlayer = this.gameState.getLocalPlayer();
-        /*if (newCard.sprite.eventNames().includes('cardPlayed')) {
-            return; // Prevent adding duplicate listeners
-        }*/
 
         newCard.sprite.on('mousedown', () => { 
                 const cardIndex = localPlayer.hand.indexOf(newCard); // Assuming localPlayer is accessible
@@ -333,10 +354,10 @@ class GameManager {
         const cardIndex = data.card_idx;
         const card = localPlayer.hand[cardIndex];
         console.log(localPlayer.hand, card);
-        this.uiManager.tempCardsContainer.removeChild(card.sprite);
+        this.uiManager.tempCardsContainer.removeChild(card.sprite, card.discardButton);
         localPlayer.hand.splice(cardIndex,1);
 
-
+        //this.uiManager.displayTempCards(localPlayer);
         if (data.can_draw_cards === false && data.can_give_back_cards === false) {
             localPlayer.hand.forEach(card => {
                 card.isTemporary = false;
@@ -345,8 +366,8 @@ class GameManager {
                     this.uiManager.tempCardsContainer.removeChild(card.discardButton);
                 }
             });
+            this.switchToMainPhase();
         }
-        this.switchToMainPhase();
     }
     putBackCard(data){
         const currentPlayer = this.gameState.getPlayerById(data.player_id);
@@ -396,12 +417,15 @@ class GameManager {
             );
             console.log(closedCharacter);
 
-            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters,this.gameState.openCharacters,
-                 (character) => {
-                this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
-                console.log(`Selected character: ${character.textureName}`);
-                this.uiManager.characterCardsContainer.removeChildren();
-            }, closedCharacter);
+            this.uiManager.displayCharacterSelection(
+                this.gameState.faceUpCharacters,
+                this.gameState.openCharacters,
+                (character) => {
+                    this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
+                    console.log(`Selected character: ${character.textureName}`);
+                    this.uiManager.characterCardsContainer.removeChildren();
+                }, 
+                closedCharacter);
         }
         
         
@@ -568,6 +592,27 @@ class GameManager {
         }
     }
 
+    async youAreFiringSomeone(data) {
+            let characters = this.gameState.characters.filter(character => data.characters.includes(character.textureName));
+
+            this.activePopup = await this.uiManager.StakeholdersPerk(
+                this.uiManager.mainContainer, // Or the active container
+                characters,
+                (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.textureName }));
+    }
+    youFiredCharacter(data){
+        if (this.activePopup) {
+            this.activePopup.destroy({ children: true });
+            this.activePopup = null;
+        }
+
+        this.switchToMainPhase();
+    }
+    firedCharacter(data){
+        const localPlayer = this.gameState.getLocalPlayer();
+        let character = this.gameState.characters.find(character => data.character.includes(character.textureName));
+        this.uiManager.firedCharacter(character,localPlayer)
+    }
 }
 
 export default GameManager;
