@@ -613,6 +613,14 @@ class GameManager {
         let character = this.gameState.characters.find(character => data.character.includes(character.textureName));
         this.uiManager.firedCharacter(character,localPlayer)
     }
+    youCharacterAbility(data){
+        let character = this.gameState.characters.find(character => data.character.includes(character.textureName));
+        let perk = data.perk;
+        this.uiManager.youCharacterAbility(character,perk)
+    }
+    youAreDivesting(data){
+        
+    }
 }
 
 export default GameManager;

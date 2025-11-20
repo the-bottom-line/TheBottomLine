@@ -508,26 +508,8 @@ async displayRevealedCharacters(players, container) {
         tempContainer.position.set((tempContainer.width / 2) + 50, window.innerHeight - 80);
     }
 
-    async anounceCharacter(container, player){
-        const tempContainer = new Container();
-       
-        let gradient = new FillGradient({
-            type: 'radial',
-            center: { x: 0.5, y: 0.5 },
-            innerRadius: 0.2,
-            outerCenter: { x: 0.5, y: 0.5 },
-            outerRadius: .5,
-            colorStops: [
-                { offset: 0, color: 0x000000 },
-                { offset: 1, color: 0x1c1c1c },
-            ],
-        });
-
-        const darkenBackground = new Graphics()
-        .rect(0, 0, this.app.screen.width, this.app.screen.height)
-        .fill(gradient);
-        darkenBackground.alpha = 0.8;
-
+    async anounceCharacter(container, player) {
+        const tempContainer = this._createPopupBase();
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2-120;
 
@@ -579,7 +561,6 @@ async displayRevealedCharacters(players, container) {
         characterIcon.height = 90;
         characterIcon.anchor.set(0.5);
 
-        tempContainer.addChild(darkenBackground);   
         tempContainer.addChild(chairmanIcon);
         tempContainer.addChild(textChairmanBackground);   
         tempContainer.addChild(chairmanText);
@@ -588,41 +569,13 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(playerText);
         tempContainer.addChild(characterIcon);
 
-        const okButton = new FancyButton({
-            text: "OK",
-            width: 200,
-            height: 60,
-            onPress: () => {
-                if (tempContainer.parent) {
-                    tempContainer.parent.removeChild(tempContainer);
-                }
-            }
-        });
-        okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
-        tempContainer.addChild(okButton.view);
+        this._addPopupCloseButton(tempContainer);
         
         container.addChild(tempContainer);
     }
-    async StakeholdersPerk(container,characters,onSelectCallback){
-        const tempContainer = new Container();
-       
-        let gradient = new FillGradient({
-            type: 'radial',
-            center: { x: 0.5, y: 0.5 },
-            innerRadius: 0.2,
-            outerCenter: { x: 0.5, y: 0.5 },
-            outerRadius: .5,
-            colorStops: [
-                { offset: 0, color: 0x000000 },
-                { offset: 1, color: 0x1c1c1c },
-            ],
-        });
 
-        const darkenBackground = new Graphics()
-        .rect(0, 0, this.app.screen.width, this.app.screen.height)
-        .fill(gradient);
-        darkenBackground.alpha = 0.8;
-
+    async StakeholdersPerk(container, characters, onSelectCallback) {
+        const tempContainer = this._createPopupBase();
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2-300;
 
@@ -662,14 +615,23 @@ async displayRevealedCharacters(players, container) {
         descriptionText.position.set(x, y);
         y+=100
 
+        const cardScale = 0.3;
+        const cardWidth = 590 * cardScale; // Assuming original card width
+        const spacing = 20;
+        const totalWidth = (characters.length * cardWidth) + ((characters.length - 1) * spacing);
+        const startX = x - totalWidth / 2 + cardWidth / 2;
+
+        const backgroundPadding = 50;
         const charactersBackground = new Graphics()
-        .roundRect(x - 500, y-50, 1000, 300, 5)
+        .roundRect(
+            startX - (cardWidth / 2) - backgroundPadding, 
+            y - backgroundPadding, 
+            totalWidth + (backgroundPadding * 2), 
+            (940 * cardScale) + (backgroundPadding * 2), // Assuming original card height
+            5)
         .fill(0x323232) 
         .stroke({ width: 2, color: 0x000000 });
         
-        
-        
-        tempContainer.addChild(darkenBackground);   
         tempContainer.addChild(characterIcon);  
         tempContainer.addChild(perkBackground);  
         tempContainer.addChild(perkText);
@@ -681,11 +643,11 @@ async displayRevealedCharacters(players, container) {
             const texture = await Assets.load(character.texturePath);
             const faceUpCard = new Sprite(texture);
             faceUpCard.interactive = true;
-            faceUpCard.scale.set(0.3);
+            faceUpCard.scale.set(cardScale);
             faceUpCard.anchor.set(0.5);
             
-            faceUpCard.x = x-400 + index * 200;
-            faceUpCard.y = y+100;
+            faceUpCard.x = startX + index * (cardWidth + spacing);
+            faceUpCard.y = y + (940 * cardScale) / 2;
             faceUpCard.on('mousedown', () => onSelectCallback(character));
             tempContainer.addChild(faceUpCard);
             
@@ -696,25 +658,9 @@ async displayRevealedCharacters(players, container) {
 
         return tempContainer;
     }
-    async firedCharacter(character,localPlayerx){
-        const tempContainer = new Container();
-        let gradient = new FillGradient({
-            type: 'radial',
-            center: { x: 0.5, y: 0.5 },
-            innerRadius: 0.2,
-            outerCenter: { x: 0.5, y: 0.5 },
-            outerRadius: .5,
-            colorStops: [
-                { offset: 0, color: 0x000000 },
-                { offset: 1, color: 0x1c1c1c },
-            ],
-        });
 
-        const darkenBackground = new Graphics()
-        .rect(0, 0, this.app.screen.width, this.app.screen.height)
-        .fill(gradient);
-        darkenBackground.alpha = 0.8;
-
+    async firedCharacter(character, localPlayer) {
+        const tempContainer = this._createPopupBase();
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2-120;
 
@@ -753,6 +699,8 @@ async displayRevealedCharacters(players, container) {
         characterText.anchor.set(0, 0.5);
         characterText.position.set(x-140, y);
 
+        
+
         texture = await Assets.load(character.iconPath);
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x-200, y);
@@ -760,7 +708,6 @@ async displayRevealedCharacters(players, container) {
         characterIcon.height = 90;
         characterIcon.anchor.set(0.5);
 
-        tempContainer.addChild(darkenBackground);   
         tempContainer.addChild(chairmanIcon);
         tempContainer.addChild(textChairmanBackground);   
         tempContainer.addChild(chairmanText);
@@ -768,23 +715,99 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(characterText);
         tempContainer.addChild(characterIcon);
 
+        console.log(localPlayer);
+        if(localPlayer.character = character){
+            const playerText = new Text({
+                text: "You have been fired",
+                style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
+            });
+            playerText.anchor.set(0, 0.5);
+            playerText.position.set(x-140, y+20);
+            tempContainer.addChild(playerText);
+        }
+        
+        this._addPopupCloseButton(tempContainer);
+
+        this.elseTurnContainer.addChild(tempContainer);
+    }
+
+    async youCharacterAbility(character, perk) {
+        const tempContainer = this._createPopupBase();
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-50;
+
+        let texture = await Assets.load(character.iconPath);
+        const characterIcon = new Sprite(texture);
+        
+        characterIcon.position.set(x, y);
+        characterIcon.width = 200;
+        characterIcon.height = 240;
+        characterIcon.anchor.set(0.5);
+        y +=100;
+
+       
+
+        const chairmanText = new Text({
+            text: perk,
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        chairmanText.anchor.set(0.5);
+        chairmanText.position.set(x, y);
+
+        const padding = 20;
+        const textChairmanBackground = new Graphics()
+            .roundRect(0, 0 , chairmanText.width + padding, chairmanText.height + padding, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+        textChairmanBackground.pivot.set(textChairmanBackground.width / 2, textChairmanBackground.height / 2);
+        textChairmanBackground.position.set(x, y);
+
+        this._addPopupCloseButton(tempContainer);
+        
+        tempContainer.addChild(characterIcon); 
+        tempContainer.addChild(textChairmanBackground);   
+        tempContainer.addChild(chairmanText);        
+
+        this.mainContainer.addChild(tempContainer);
+    }
+    
+    _createPopupBase() {
+        const tempContainer = new Container();
+        const gradient = new FillGradient({
+            type: 'radial',
+            center: { x: 0.5, y: 0.5 },
+            innerRadius: 0.2,
+            outerCenter: { x: 0.5, y: 0.5 },
+            outerRadius: .5,
+            colorStops: [
+                { offset: 0, color: 0x000000 },
+                { offset: 1, color: 0x1c1c1c },
+            ],
+        });
+
+        const darkenBackground = new Graphics()
+            .rect(0, 0, this.app.screen.width, this.app.screen.height)
+            .fill(gradient);
+        darkenBackground.alpha = 0.8;
+
+        tempContainer.addChild(darkenBackground);
+        return tempContainer;
+    }
+
+    _addPopupCloseButton(popupContainer) {
         const okButton = new FancyButton({
             text: "OK",
             width: 200,
             height: 60,
             onPress: () => {
-                if (tempContainer.parent) {
-                    tempContainer.parent.removeChild(tempContainer);
+                if (popupContainer.parent) {
+                    popupContainer.parent.removeChild(popupContainer);
                 }
             }
         });
         okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
-        tempContainer.addChild(okButton.view);
-
-        this.elseTurnContainer.addChild(tempContainer);
+        popupContainer.addChild(okButton.view);
     }
-    
-    
 }
 
 export default UIManager;

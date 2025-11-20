@@ -28,6 +28,8 @@ class NetworkManager {
             "YouAreFiringSomeone": this.gameManager.youAreFiringSomeone.bind(this.gameManager),
             "YouFiredCharacter": this.gameManager.youFiredCharacter.bind(this.gameManager),
             "FiredCharacter": this.gameManager.firedCharacter.bind(this.gameManager),
+            "YouCharacterAbility": this.gameManager.youCharacterAbility.bind(this.gameManager),
+            "YouAreDivesting":this.gameManager.youAreDivesting.bind(this.gameManager)
         };
     }
 
