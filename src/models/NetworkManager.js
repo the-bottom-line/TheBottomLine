@@ -29,7 +29,8 @@ class NetworkManager {
             "YouFiredCharacter": this.gameManager.youFiredCharacter.bind(this.gameManager),
             "FiredCharacter": this.gameManager.firedCharacter.bind(this.gameManager),
             "YouCharacterAbility": this.gameManager.youCharacterAbility.bind(this.gameManager),
-            "YouAreDivesting":this.gameManager.youAreDivesting.bind(this.gameManager)
+            "YouAreDivesting":this.gameManager.youAreDivesting.bind(this.gameManager),
+            "GameEnded": this.gameManager.gameEnded.bind(this.gameManager)
         };
     }
 
