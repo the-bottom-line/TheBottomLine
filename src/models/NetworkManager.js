@@ -35,6 +35,7 @@ class NetworkManager {
             "YouRegulatorOptions":this.gameManager.youRegulatorOptions.bind(this.gameManager)
             // separete into files
             // design patters 
+            "GameEnded": this.gameManager.gameEnded.bind(this.gameManager)
         };
     }
 

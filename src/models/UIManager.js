@@ -21,6 +21,7 @@ class UIManager {
         this.handContainer = new Container();
         this.elseTurnContainer = new Container();
         this.popupContainer = new Container();
+        this.resultsContainer = new Container();
 
         this.statsText = new Text({
             text: '',
@@ -57,7 +58,8 @@ class UIManager {
             this.mainContainer,
             this.elseTurnContainer,
             this.lobbyContainer,
-            this.statsText
+            this.statsText,
+            this.resultsContainer,
         );
 
         this.handContainer.sortableChildren = true;
@@ -85,6 +87,7 @@ class UIManager {
         this.mainContainer.visible = screenName === 'main';
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
+        this.resultsContainer.visible = screenName === 'results';
     }
 
     createNametBox() {
@@ -869,6 +872,36 @@ async displayRevealedCharacters(players, container) {
         container.addChild(tempContainer);
 
         return tempContainer;
+    }
+    /**
+    * @param {Object.<string, number>} scores - Map of player names (string) to scores (numbers).
+    */
+    async gameEnded(scores) {
+        const container = this.resultsContainer;
+        // Convert scores object to an array of [id, score] pairs
+        const entries = Object.entries(scores);
+    
+        // Vertical spacing between lines
+        const lineHeight = 30;
+    
+        entries.forEach(([name, score], index) => {
+            const playerName = new Text({
+                text: `${name}: ${score}`,
+                style: {
+                    fill: '#ffffff',
+                    fontSize: 18,
+                    fontFamily: 'MyFont'
+                }
+            });
+    
+            playerName.y = index * lineHeight;
+            playerName.anchor.set(0.5, 0.5);
+    
+            container.addChild(playerName);
+        });
+    
+        container.x = this.app.screen.width / 2;
+        container.y = this.app.screen.height / 2;
     }
     
     async youRegulatorOptions(container,options,perk,gameState){

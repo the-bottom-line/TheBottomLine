@@ -686,6 +686,30 @@ class GameManager {
         this.uiManager.youRegulatorOptions(this.uiManager.mainContainer,options,perk,this.gameState);
         
     }
+
+    /**
+    * @param {Object} data - The data received from the server.
+    * @param {Object.<number, number>} data.scores - Map of playerid (integers) to scores (numbers).
+    */
+    gameEnded(data) {
+        const names = this.gameState.players.map(p => p.name);
+        
+        // const scores = data.scores;
+        console.log("Game ended!");
+        
+        const scores = Object.entries(data.scores).map(([id, score]) => {
+            const player = this.gameState.getPlayerById(id);
+            console.log(`${player.name}: ${scores[id]}`);
+            return {
+                name: player.name,
+                score
+            }
+        });
+        
+        this.uiManager.showScreen('results');
+        
+        this.uiManager.gameEnded(scores, names);
+    }
 }
 
 export default GameManager;
