@@ -716,7 +716,7 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(characterIcon);
 
         console.log(localPlayer);
-        if(localPlayer.character = character){
+        if(localPlayer.character === character){
             const playerText = new Text({
                 text: "You have been fired",
                 style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
@@ -769,6 +769,99 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(chairmanText);        
 
         this.mainContainer.addChild(tempContainer);
+    }
+    async youAreDivesting(container, divestmentTargets){
+        
+        const tempContainer = this._createPopupBase();
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-50;
+
+
+
+        let texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x, y);
+        characterIcon.width = 160;
+        characterIcon.height = 180;
+        characterIcon.anchor.set(0.5);
+
+        y+=90;
+
+        const perkBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        
+        const perkText = new Text({
+            text: 'Stakeholder’s perk', // here
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        perkText.anchor.set(0.5);
+        perkText.position.set(x, y);
+        y+= 70;
+        const descriptionBackground = new Graphics()
+        .roundRect(x - 200, y-30, 400, 60, 5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+
+        const descriptionText = new Text({
+            text: 'Please select a player you want to force to divest', // here
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+        y+=100
+        
+
+        tempContainer.addChild(characterIcon);  
+        tempContainer.addChild(perkBackground);  
+        tempContainer.addChild(perkText);
+        tempContainer.addChild(descriptionBackground);  
+        tempContainer.addChild(descriptionText);
+
+        const cardScale = 0.2;
+        const cardWidth = 590 * cardScale;
+        const cardSpacing = 10;
+        const playerSpacing = 40;
+        let currentY = y;
+
+        for (const player of divestmentTargets) {
+            const playerName = new Text({
+                text: player.name,
+                style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+            });
+            playerName.anchor.set(0.5, 0);
+            playerName.position.set(x, currentY);
+            tempContainer.addChild(playerName);
+
+            currentY += playerName.height + 10;
+
+            const totalCardsWidth = player.assets.length * cardWidth + (player.assets.length - 1) * cardSpacing;
+            let startX = x - totalCardsWidth / 2;
+
+            for (const card of player.assets) {
+                //console.log();
+                let cardToDivest = await Assets.load(card.asset.texturePath);
+                const assetCard = new Sprite(cardToDivest);
+                assetCard.interactive = true;
+                assetCard.cursor = 'pointer';
+                assetCard.scale.set(cardScale);
+                assetCard.anchor.set(0.5);
+                assetCard.position.set(startX + cardWidth / 2, currentY + (940 * cardScale) / 2);
+                // assetCard.on('mousedown', () => onSelectCallback(player, card)); // TODO: Define onSelectCallback
+                tempContainer.addChild(assetCard);
+                startX += cardWidth + cardSpacing;
+            }
+
+            currentY += (940 * cardScale) + playerSpacing;
+        }
+
+        this._addPopupCloseButton(tempContainer);
+
+        container.addChild(tempContainer);
+
+        return tempContainer;
     }
     
     _createPopupBase() {

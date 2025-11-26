@@ -66,18 +66,17 @@ class GameManager {
 
         this.uiManager.createJoinButton(joinGame);
 
+        // Dummy players for testing
+        if (!this.gameState.getPlayerById(0)) this.gameState.players.push(new Player("TestPlayer0", 0));
+        if (!this.gameState.getPlayerById(1)) {
+            const player1 = new Player("TestPlayer1", 1);
+            player1.assetList.push(new Asset("Joint Venture", "Purple", 2, 2, null, "./assets/jointVenture_2-2.webp"));
+            this.gameState.players.push(player1);
+        }
 
-        /*
-        let characters = this.gameState.characters.filter(character => character.order >= 4);
-        this.uiManager.StakeholdersPerk(
-            this.uiManager.loginContainer, 
-            characters,
-            (character) =>{
-                this.networkManager.sendCommand("FireCharacter", { "character": character.textureName })
-            }   
-           
-        );*/
-       
+        // Dummy data for testing the divestment screen
+        const testDivestData = {"options":[{"player_id":0,"assets":[]},{"player_id":1,"assets":[{"asset":{"title":"Joint Venture","gold_value":2,"silver_value":2,"color":"Purple"},"divest_cost":0,"is_divestable":true}]}],"character":"Stakeholder","perk":"you can force a player to divest from an asset by spending the assets market value -1"};
+        //this.youAreDivesting(testDivestData);
     }
     startTurnPlayerVisibilty() {
         let player = this.gameState.getCurrentPlayer();
@@ -619,7 +618,32 @@ class GameManager {
         this.uiManager.youCharacterAbility(character,perk)
     }
     youAreDivesting(data){
-        
+        console.log("You are divesting:", data.options);
+
+        console.log(data.options)
+        const divestmentTargets = data.options.map(option => {
+            const player = this.gameState.getPlayerById(option.player_id);
+            if (!player) return null;
+            console.log(option)
+            const divestibleAssets = [];
+            option.assets.forEach(divestOption => {
+                
+                if (divestOption.is_divestable) {
+                    const playerAsset = player.assetList.find(pa =>
+                        pa.title === divestOption.asset.title &&
+                        pa.gold === divestOption.asset.gold_value &&
+                        pa.silver === divestOption.asset.silver_value
+                    );
+                    if (playerAsset) {
+                        divestibleAssets.push({ asset: playerAsset, cost: divestOption.divest_cost });
+                    }
+                }
+            });
+
+            return { player, assets: divestibleAssets };
+        }).filter(target => target && target.assets.length > 0);
+        console.log("handled data:",divestmentTargets );
+        this.uiManager.youAreDivesting(this.uiManager.loginContainer,divestmentTargets);
     }
 }
 
