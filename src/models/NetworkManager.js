@@ -29,7 +29,12 @@ class NetworkManager {
             "YouFiredCharacter": this.gameManager.youFiredCharacter.bind(this.gameManager),
             "FiredCharacter": this.gameManager.firedCharacter.bind(this.gameManager),
             "YouCharacterAbility": this.gameManager.youCharacterAbility.bind(this.gameManager),
-            "YouAreDivesting":this.gameManager.youAreDivesting.bind(this.gameManager)
+            "YouAreDivesting":this.gameManager.youAreDivesting.bind(this.gameManager),
+            "YouDivestedAnAsset": this.gameManager.youDivestedAnAsset.bind(this.gameManager),
+            "YouAreTerminatingSomeone": this.gameManager.youAreTerminatingSomeone.bind(this.gameManager),
+            "YouRegulatorOptions":this.gameManager.youRegulatorOptions.bind(this.gameManager)
+            // separete into files
+            // design patters 
         };
     }
 
