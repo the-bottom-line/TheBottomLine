@@ -19,6 +19,7 @@
     "pixi.js": "^8.13.2"
   },
   "devDependencies": {
+    "prettier": "^3.6.2",
     "vite": "^7.1.6"
   }
 }

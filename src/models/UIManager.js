@@ -21,6 +21,7 @@ class UIManager {
         this.handContainer = new Container();
         this.elseTurnContainer = new Container();
         this.popupContainer = new Container();
+        this.resultsContainer = new Container();
 
         this.statsText = new Text({
             text: '',
@@ -57,7 +58,8 @@ class UIManager {
             this.mainContainer,
             this.elseTurnContainer,
             this.lobbyContainer,
-            this.statsText
+            this.statsText,
+            this.resultsContainer,
         );
 
         this.handContainer.sortableChildren = true;
@@ -85,6 +87,7 @@ class UIManager {
         this.mainContainer.visible = screenName === 'main';
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
+        this.resultsContainer.visible = screenName === 'results';
     }
 
     createNametBox() {
@@ -233,7 +236,7 @@ class UIManager {
        
         const openX = (window.innerWidth - ((openCharacters.length - 1) * spacing)) / 2;
         openCharacters.forEach(async (character, index) =>{
-            console.log(character.name);
+           
             const texture = await Assets.load(character.texturePath);
             const openCard = new Sprite(texture);
             openCard.interactive = true;
@@ -715,8 +718,8 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(characterText);
         tempContainer.addChild(characterIcon);
 
-        console.log(localPlayer);
-        if(localPlayer.character = character){
+       
+        if(localPlayer.character === character){
             const playerText = new Text({
                 text: "You have been fired",
                 style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
@@ -770,6 +773,273 @@ async displayRevealedCharacters(players, container) {
 
         this.mainContainer.addChild(tempContainer);
     }
+    async youAreDivesting(container, divestmentTargets,onSelectCallback){
+        
+        const tempContainer = this._createPopupBase();
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-250;
+
+
+
+        let texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x, y);
+        characterIcon.width = 160;
+        characterIcon.height = 180;
+        characterIcon.anchor.set(0.5);
+
+        y+=90;
+
+        const perkBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        
+        const perkText = new Text({
+            text: 'Stakeholder’s perk', // here
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        perkText.anchor.set(0.5);
+        perkText.position.set(x, y);
+        y+= 70;
+        const descriptionBackground = new Graphics()
+        .roundRect(x - 200, y-30, 400, 60, 5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+
+        const descriptionText = new Text({
+            text: 'Please select a player you want to force to divest', // here
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+        y+=100;        
+
+        tempContainer.addChild(characterIcon);  
+        tempContainer.addChild(perkBackground);  
+        tempContainer.addChild(perkText);
+        tempContainer.addChild(descriptionBackground);  
+        tempContainer.addChild(descriptionText);
+
+        const cardScale = 0.2;
+        const cardWidth = 590 * cardScale;
+        const cardHeight = 940 * cardScale;
+        const cardSpacing = 10;
+
+        const playerCount = divestmentTargets.length;
+        const columnWidth = cardWidth * 4; 
+        let startX = window.innerWidth / 2 - (columnWidth * playerCount) / 2;
+        
+        for (const target of divestmentTargets) {
+
+            let playerX = startX + columnWidth / 2;
+            let playerY = 450; 
+
+            let name = new Text({
+                text: target.player.name,
+                style:{fill:"#fff",fontSize:18,fontFamily:"MyFont"}
+            });
+            name.anchor.set(0.5);
+            name.position.set(playerX, playerY);
+            tempContainer.addChild(name);
+
+            playerY += 30;
+
+            let totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
+            let cardStartX = playerX - totalWidth / 2;
+
+            for(const card of target.assets){
+                let tex = await Assets.load(card.asset.texturePath);
+                let sprite = new Sprite(tex);
+                sprite.scale.set(cardScale);
+                sprite.anchor.set(0.5);
+                sprite.interactive = true;
+                sprite.position.set(cardStartX + cardWidth / 2, playerY + cardHeight/2);
+                sprite.on('mousedown', () => onSelectCallback(target.player.playerID, target.player.assetList.indexOf(card.asset)));
+                tempContainer.addChild(sprite);
+                cardStartX += cardWidth + cardSpacing;
+            }
+
+            startX += columnWidth; // move to next player column
+        }
+
+
+       
+
+        this._addPopupCloseButton(tempContainer);
+
+        container.addChild(tempContainer);
+
+        return tempContainer;
+    }
+    /**
+    * @param {Object.<string, number>} scores - Map of player names (string) to scores (numbers).
+    */
+    async gameEnded(scores) {
+        const container = this.resultsContainer;
+        // Convert scores object to an array of [id, score] pairs
+        const entries = Object.entries(scores);
+    
+        // Vertical spacing between lines
+        const lineHeight = 30;
+    
+        entries.forEach(([name, score], index) => {
+            const playerName = new Text({
+                text: `${name}: ${score}`,
+                style: {
+                    fill: '#ffffff',
+                    fontSize: 18,
+                    fontFamily: 'MyFont'
+                }
+            });
+    
+            playerName.y = index * lineHeight;
+            playerName.anchor.set(0.5, 0.5);
+    
+            container.addChild(playerName);
+        });
+    
+        container.x = this.app.screen.width / 2;
+        container.y = this.app.screen.height / 2;
+    }
+    
+    async youRegulatorOptions(container,options,perk,gameState){
+        const tempContainer = this._createPopupBase();
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2-250;
+
+        let texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x, y);
+        characterIcon.width = 160;
+        characterIcon.height = 180;
+        characterIcon.anchor.set(0.5);
+
+        y+=90;
+
+        const perkBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        
+        const perkText = new Text({
+            text: 'Regulators’s perk', // here
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        perkText.anchor.set(0.5);
+        perkText.position.set(x, y);
+        y+= 70;
+      
+
+        const descriptionText = new Text({
+            text: perk, // here
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+
+        const descriptionBackground = new Graphics()
+        .roundRect(x - (descriptionText.width+20)/2, y-(descriptionText.height+20)/2, descriptionText.width+20, descriptionText.height+20, 5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+
+        tempContainer.addChild(characterIcon);
+        tempContainer.addChild(perkBackground);
+        tempContainer.addChild(perkText);
+        tempContainer.addChild(descriptionBackground);
+        tempContainer.addChild(descriptionText);
+       
+
+        const cardScale = 0.1;
+        const cardWidth = 590 * cardScale;
+        const cardHeight = 940 * cardScale;
+        const cardSpacing = 10;
+        const assetBackTexture = await Assets.load("./assets/asset_back.webp");
+        const liabilityBackTexture = await Assets.load("liabilities/liability_back.webp");
+
+        const playerCount = options.length;
+        const columnWidth = (cardWidth * 2) + 80;
+        let startX = window.innerWidth / 2 - (columnWidth * playerCount) / 2;
+
+        for (const option of options) {
+            const player = gameState.getPlayerById(option.player_id);
+            if (!player) continue;
+
+            let playerX = startX + columnWidth / 2;
+            let playerY = y + 50;
+
+            const name = new Text({
+                text: player.name,
+                style: { fill: "#fff", fontSize: 18, fontFamily: "MyFont" }
+            });
+            name.anchor.set(0.5);
+            name.position.set(playerX, playerY);
+            tempContainer.addChild(name);
+            
+            playerY += 30;
+
+            let assetStartX = playerX - (cardWidth / 2) - (cardSpacing / 2);
+            let cardBack = new Sprite(assetBackTexture);
+            cardBack.scale.set(cardScale);
+            cardBack.anchor.set(0.5);
+            cardBack.position.set(assetStartX, playerY + cardHeight / 2);
+            tempContainer.addChild(cardBack);
+            const assetCount = new Text({
+                text: `${option.asset_count} X`,
+                style: { fill: "#fff", fontSize: 18, fontFamily: "MyFont" }
+            });
+            assetCount.anchor.set(0.5);
+            assetCount.position.set(assetStartX, playerY + cardHeight+20);
+            tempContainer.addChild(assetCount);
+
+            
+            let liabilityStartX = playerX + (cardWidth / 2) + (cardSpacing / 2);
+           
+            cardBack = new Sprite(liabilityBackTexture);
+            cardBack.scale.set(cardScale);
+            cardBack.anchor.set(0.5);
+            cardBack.position.set(liabilityStartX, playerY + cardHeight / 2);
+            tempContainer.addChild(cardBack);
+            const liabilityCount = new Text({
+                text: `${option.liability_count} X`,
+                style: { fill: "#fff", fontSize: 18, fontFamily: "MyFont" }
+            });
+            liabilityCount.anchor.set(0.5);
+            liabilityCount.position.set(liabilityStartX, playerY + cardHeight+20);
+            tempContainer.addChild(liabilityCount);
+        
+
+            startX += columnWidth; // move to next player column
+        }
+        const orText = new Text({
+                text: `OR`,
+                style: { fill: "#fff", fontSize: 32, fontFamily: "MyFont" }
+            });
+        orText.anchor.set(0.5);
+        orText.position.set(window.innerWidth/2, 600);
+        tempContainer.addChild(orText);
+
+        const deckButton = new FancyButton({
+            text: "TRADE WITH DECK",
+            width: 250,
+            height: 60,
+            
+        });
+        deckButton.view.position.set((window.innerWidth-deckButton.view.width)/2, 650);
+        tempContainer.addChild(deckButton.view);
+
+
+
+        this._addPopupCloseButton(tempContainer, () => {
+            // Example of how to trigger an action. Here, just closing.
+            // onSelectCallback(null); // Or some default action
+        });
+
+        container.addChild(tempContainer);
+    }
+
     
     _createPopupBase() {
         const tempContainer = new Container();
@@ -794,13 +1064,15 @@ async displayRevealedCharacters(players, container) {
         return tempContainer;
     }
 
-    _addPopupCloseButton(popupContainer) {
+    _addPopupCloseButton(popupContainer, onOkCallback) {
         const okButton = new FancyButton({
             text: "OK",
             width: 200,
             height: 60,
             onPress: () => {
-                if (popupContainer.parent) {
+                if (onOkCallback) {
+                    onOkCallback();
+                } else if (popupContainer.parent) {
                     popupContainer.parent.removeChild(popupContainer);
                 }
             }
