@@ -904,7 +904,7 @@ async displayRevealedCharacters(players, container) {
         container.y = this.app.screen.height / 2;
     }
     
-    async youRegulatorOptions(container,options,perk,gameState){
+    async youRegulatorOptions(container,options,perk,gameState,onSelectCallback){
         const tempContainer = this._createPopupBase();
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2-250;
@@ -985,6 +985,9 @@ async displayRevealedCharacters(players, container) {
             cardBack.scale.set(cardScale);
             cardBack.anchor.set(0.5);
             cardBack.position.set(assetStartX, playerY + cardHeight / 2);
+            cardBack.interactive = true;
+            cardBack.on('mousedown', () => onSelectCallback(player.playerID));
+               
             tempContainer.addChild(cardBack);
             const assetCount = new Text({
                 text: `${option.asset_count} X`,
@@ -1001,6 +1004,8 @@ async displayRevealedCharacters(players, container) {
             cardBack.scale.set(cardScale);
             cardBack.anchor.set(0.5);
             cardBack.position.set(liabilityStartX, playerY + cardHeight / 2);
+            cardBack.interactive = true;
+            cardBack.on('mousedown', () => onSelectCallback(player.playerID));
             tempContainer.addChild(cardBack);
             const liabilityCount = new Text({
                 text: `${option.liability_count} X`,

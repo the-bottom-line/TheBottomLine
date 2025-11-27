@@ -2,6 +2,7 @@ import Player from './Player.js';
 import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Group } from 'tweedle.js';
+import platform from 'pixi/platform.js';
 
 /*
 Dark Indigo (Walls)	#2a2d3a	A deep, desaturated blue. Great for large backgrounds.
@@ -669,7 +670,7 @@ class GameManager {
         );
     }
     youDivestedAnAsset(data){
-         if (this.activePopup) {
+        if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
         }
@@ -683,8 +684,22 @@ class GameManager {
         console.log(data);
         let options = data.options;
         let perk = data.perk;
-        this.uiManager.youRegulatorOptions(this.uiManager.mainContainer,options,perk,this.gameState);
+        this.uiManager.youRegulatorOptions(
+            this.uiManager.mainContainer,
+            options,perk,
+            this.gameState,
+            (playerID)=>{
+                this.networkManager.sendCommand("SwapWithPlayer", { "target_player_id": playerID});
+            }
+        );
         
+    }
+    youSwapPlayer(data){
+        if (this.activePopup) {
+            this.activePopup.destroy({ children: true });
+            this.activePopup = null;
+        }
+        this.switchToMainPhase();
     }
 
     /**
@@ -698,8 +713,10 @@ class GameManager {
         console.log("Game ended!");
         
         const scores = Object.entries(data.scores).map(([id, score]) => {
-            const player = this.gameState.getPlayerById(id);
+            
+            const player = this.gameState.getPlayerById(parseInt(id));
             console.log(`${player.name}: ${scores[id]}`);
+          
             return {
                 name: player.name,
                 score

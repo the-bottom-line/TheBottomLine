@@ -32,9 +32,8 @@ class NetworkManager {
             "YouAreDivesting":this.gameManager.youAreDivesting.bind(this.gameManager),
             "YouDivestedAnAsset": this.gameManager.youDivestedAnAsset.bind(this.gameManager),
             "YouAreTerminatingSomeone": this.gameManager.youAreTerminatingSomeone.bind(this.gameManager),
-            "YouRegulatorOptions":this.gameManager.youRegulatorOptions.bind(this.gameManager)
-            // separete into files
-            // design patters 
+            "YouRegulatorOptions":this.gameManager.youRegulatorOptions.bind(this.gameManager),
+            "YouSwapPlayer":this.gameManager.youSwapPlayer.bind(this.gameManager),
             "GameEnded": this.gameManager.gameEnded.bind(this.gameManager)
         };
     }
