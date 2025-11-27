@@ -670,7 +670,7 @@ class GameManager {
         );
     }
     youDivestedAnAsset(data){
-         if (this.activePopup) {
+        if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
         }
@@ -685,7 +685,7 @@ class GameManager {
         let options = data.options;
         let perk = data.perk;
         this.uiManager.youRegulatorOptions(
-            this.uiManager.loginContainer,
+            this.uiManager.mainContainer,
             options,perk,
             this.gameState,
             (playerID)=>{
@@ -693,6 +693,13 @@ class GameManager {
             }
         );
         
+    }
+    youSwapPlayer(data){
+        if (this.activePopup) {
+            this.activePopup.destroy({ children: true });
+            this.activePopup = null;
+        }
+        this.switchToMainPhase();
     }
 
     /**
@@ -706,8 +713,10 @@ class GameManager {
         console.log("Game ended!");
         
         const scores = Object.entries(data.scores).map(([id, score]) => {
-            const player = this.gameState.getPlayerById(id);
+            
+            const player = this.gameState.getPlayerById(parseInt(id));
             console.log(`${player.name}: ${scores[id]}`);
+          
             return {
                 name: player.name,
                 score
