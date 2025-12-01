@@ -23,6 +23,7 @@ class UIManager {
         this.popupContainer = new Container();
         this.resultsContainer = new Container();
 
+
         this.statsText = new Text({
             text: '',
             style: {
@@ -32,7 +33,7 @@ class UIManager {
             }
         });
         this.statsText.anchor.set(0.5);
-        this.statsText.position.set(window.innerWidth / 2, 30);
+        this.statsText.position.set(this.app.screen.width / 2, 30);
 
        
 
@@ -41,7 +42,7 @@ class UIManager {
 
     _setupContainers() {
         const sprites = new Container();
-        const backGroundGradient = new Graphics().rect(0, 0, window.innerWidth, window.innerHeight).fill(this.getGradient());
+        const backGroundGradient = new Graphics().rect(0, 0, this.app.screen.width , this.app.screen.height).fill(this.getGradient());
 
         this.app.stage.addChild(backGroundGradient, sprites);
 
@@ -100,7 +101,7 @@ class UIManager {
             },
             placeholder: "Enter Name:",
         });
-        inputBox.position.set(window.innerWidth / 2-150, window.innerHeight / 2 -100);
+        inputBox.position.set(this.app.screen.width  / 2-150, this.app.screen.height / 2 -100);
         this.loginContainer.addChild(inputBox);
         return inputBox;
     }
@@ -114,7 +115,7 @@ class UIManager {
             },
             placeholder: "Lobby Code:",
         });
-        inputBox.position.set(window.innerWidth / 2-150, window.innerHeight / 2 +30);
+        inputBox.position.set(this.app.screen.width / 2-150, this.app.screen.height / 2 +30);
         this.loginContainer.addChild(inputBox);
         return inputBox;
     }
@@ -126,7 +127,7 @@ class UIManager {
             onPress: onPressCallback
         });
 
-        joinButton.view.position.set(window.innerWidth / 2 - (joinButton.view.width / 2), window.innerHeight - 100);
+        joinButton.view.position.set(this.app.screen.width  / 2 - (joinButton.view.width / 2), this.app.screen.height - 100);
 
         this.loginContainer.addChild(joinButton.view);
     }
@@ -137,7 +138,7 @@ class UIManager {
             style: { fill: '#ffffff', fontSize: 56, fontFamily: 'MyFont' }
         });
         titleText.anchor.set(0.5,0);
-        titleText.position.set(window.innerWidth / 2, 20);
+        titleText.position.set(this.app.screen.width  / 2, 20);
         container.addChild(titleText);
     }
     displayLobbyPlayers(players, onStartGameCallback) {
@@ -150,7 +151,7 @@ class UIManager {
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             });
             playerText.anchor.set(0.5);
-            playerText.position.set(window.innerWidth / 2, 180 + index * 40);
+            playerText.position.set(this.app.screen.width  / 2, 180 + index * 40);
             this.lobbyContainer.addChild(playerText);
         });
         this.createStartGameBox(onStartGameCallback);
@@ -163,7 +164,7 @@ class UIManager {
             height: 60,
             onPress: onPressCallback
         });
-        startGameButton.view.position.set(window.innerWidth / 2 - (startGameButton.view.width / 2), window.innerHeight - 100);
+        startGameButton.view.position.set(this.app.screen.width / 2 - (startGameButton.view.width / 2), this.app.screen.height - 100);
         this.lobbyContainer.addChild(startGameButton.view);
     }
 
@@ -174,14 +175,14 @@ class UIManager {
             height: 60,
             onPress: onPressCallback
         });
-        nextButton.view.position.set(window.innerWidth - 150 - (nextButton.view.width / 2), window.innerHeight - 100);
+        nextButton.view.position.set(this.app.screen.width - 150 - (nextButton.view.width / 2), this.app.screen.height - 100);
         this.mainContainer.addChild(nextButton.view);
     }
 
     async createAssetDeck(onPressCallback) {
         const assetDeck = new AssetCards();
         const assetDeckSprite = await assetDeck.initializeDeckSprite();
-        assetDeck.setDeckPosition(window.innerWidth / 2 - 150, 70);
+        assetDeck.setDeckPosition(this.app.screen.width / 2 - 150, 70);
         assetDeckSprite.on('mousedown', onPressCallback);
         this.decksContainer.addChild(assetDeckSprite);
     }
@@ -189,7 +190,7 @@ class UIManager {
     async createLiabilityDeck(onPressCallback) {
         const liabilityDeck = new LiabilityCards();
         const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
-        liabilityDeck.setDeckPosition(window.innerWidth / 2 + 150, 70);
+        liabilityDeck.setDeckPosition(this.app.screen.width / 2 + 150, 70);
         liabilityDeckSprite.on('mousedown', onPressCallback);
         this.decksContainer.addChild(liabilityDeckSprite);
     }
@@ -198,7 +199,7 @@ class UIManager {
     displayCharacterSelection(faceUpCharacters,openCharacters, onSelectCallback,closedCharacter) {
         this.characterCardsContainer.removeChildren();
         const spacing = 200;
-        const startX = (window.innerWidth - ((faceUpCharacters.length - 1) * spacing)) / 2;
+        const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
         const grayscaleFilter = new ColorMatrixFilter();
         grayscaleFilter.grayscale(0.2, true);
 
@@ -209,8 +210,8 @@ class UIManager {
                 closedCard.interactive = true;
                 closedCard.scale.set(0.3);
                 closedCard.anchor.set(0.5);
-                closedCard.x = window.innerWidth / 2;
-                closedCard.y = window.innerHeight / 2-300;
+                closedCard.x = this.app.screen.width / 2;
+                closedCard.y = this.app.screen.height / 2-300;
 
                 this.characterCardsContainer.addChild(closedCard);
             });
@@ -227,14 +228,14 @@ class UIManager {
             faceUpCard.anchor.set(0.5);
             
             faceUpCard.x = startX + index * spacing;
-            faceUpCard.y = window.innerHeight / 2;
+            faceUpCard.y = this.app.screen.height / 2;
             faceUpCard.on('mousedown', () => onSelectCallback(character)); // here
             this.characterCardsContainer.addChild(faceUpCard);
             
         });
 
        
-        const openX = (window.innerWidth - ((openCharacters.length - 1) * spacing)) / 2;
+        const openX = (this.app.screen.width - ((openCharacters.length - 1) * spacing)) / 2;
         openCharacters.forEach(async (character, index) =>{
            
             const texture = await Assets.load(character.texturePath);
@@ -244,7 +245,7 @@ class UIManager {
             openCard.anchor.set(0.5);
             openCard.filters = [grayscaleFilter];
             openCard.x = openX + index * spacing;
-            openCard.y = window.innerHeight / 2 + 300;
+            openCard.y = this.app.screen.height / 2 + 300;
             this.characterCardsContainer.addChild(openCard);
         });
     }
@@ -365,7 +366,7 @@ async displayRevealedCharacters(players, container) {
             const characterCard = new Sprite(texture);
             
             const y = 50 + index * 100; 
-            characterCard.x = window.innerWidth - 100;
+            characterCard.x = this.app.screen.width - 100;
             characterCard.y = y;
             characterCard.scale.set(0.15);
             characterCard.anchor.set(0.5);
@@ -383,8 +384,8 @@ async displayRevealedCharacters(players, container) {
         const cardWidth = 590 * 0.25;
         const cardHeight = 940 * 0.25;
         const spacing = 180;
-        const startX = (window.innerWidth - (player.drawableCards * spacing)) / 2 + spacing / 2;
-        const y = window.innerHeight / 2;
+        const startX = (this.app.screen.width - (player.drawableCards * spacing)) / 2 + spacing / 2;
+        const y = this.app.screen.height / 2;
 
         for (let i = 0; i < player.drawableCards; i++) {
             const backdrop = new Graphics()
@@ -404,7 +405,7 @@ async displayRevealedCharacters(players, container) {
     }
 
     async displayOtherPlayerHand(assets, liabilities) {        
-        const baseY = window.innerHeight - 100;
+        const baseY = this.app.screen.height - 100;
         const spacing = 60;
     
         // Hide all cards first
@@ -413,7 +414,7 @@ async displayRevealedCharacters(players, container) {
         });
     
         const totalAssetsWidth = (assets.length - 1) * spacing;
-        const assetsStartX = window.innerWidth / 2 - totalAssetsWidth - 100;
+        const assetsStartX = this.app.screen.width / 2 - totalAssetsWidth - 100;
         const assetBackTexture = await Assets.load("./assets/asset_back.webp");
     
         for (let i = 0; i < assets.length; i++) {
@@ -432,7 +433,7 @@ async displayRevealedCharacters(players, container) {
         }
     
         const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
-        const liabilitiesStartX = window.innerWidth / 2 + 100 + totalLiabilitiesWidth;
+        const liabilitiesStartX = this.app.screen.width / 2 + 100 + totalLiabilitiesWidth;
         const liabilityBackTexture = await Assets.load("liabilities/liability_back.webp");
     
         for (let i = 0; i < liabilities.length; i++) {
@@ -460,7 +461,7 @@ async displayRevealedCharacters(players, container) {
         cardBackdrop.width = 250;
         cardBackdrop.height = 250;
         cardBackdrop.anchor.set(0.5);
-        cardBackdrop.position.set(window.innerWidth / 2, window.innerHeight / 2 - 10);
+        cardBackdrop.position.set(this.app.screen.width / 2, this.app.screen.height / 2 - 10);
         
         this.playedCardsContainer.addChild(cardBackdrop);
 
@@ -508,13 +509,13 @@ async displayRevealedCharacters(players, container) {
         nameBackground.position.set(0, 5);
 
         tempContainer.addChild(nameBackground, nameText);
-        tempContainer.position.set((tempContainer.width / 2) + 50, window.innerHeight - 80);
+        tempContainer.position.set((tempContainer.width / 2) + 50, this.app.screen.height - 80);
     }
 
     async anounceCharacter(container, player) {
         const tempContainer = this._createPopupBase();
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2-120;
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-120;
 
         let texture = await Assets.load("./miscellaneous/ChairmanIcon.png");
         const chairmanIcon = new Sprite(texture);
@@ -579,8 +580,8 @@ async displayRevealedCharacters(players, container) {
 
     async StakeholdersPerk(container, characters, onSelectCallback) {
         const tempContainer = this._createPopupBase();
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2-300;
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-300;
 
         let texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
         const characterIcon = new Sprite(texture);
@@ -664,8 +665,8 @@ async displayRevealedCharacters(players, container) {
 
     async firedCharacter(character, localPlayer) {
         const tempContainer = this._createPopupBase();
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2-120;
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-120;
 
         let texture = await Assets.load("./miscellaneous/ShareholderIcon.png");
         const chairmanIcon = new Sprite(texture);
@@ -736,8 +737,8 @@ async displayRevealedCharacters(players, container) {
 
     async youCharacterAbility(character, perk) {
         const tempContainer = this._createPopupBase();
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2-50;
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-50;
 
         let texture = await Assets.load(character.iconPath);
         const characterIcon = new Sprite(texture);
@@ -776,8 +777,8 @@ async displayRevealedCharacters(players, container) {
     async youAreDivesting(container, divestmentTargets,onSelectCallback){
         
         const tempContainer = this._createPopupBase();
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2-250;
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-250;
 
 
 
@@ -829,7 +830,7 @@ async displayRevealedCharacters(players, container) {
 
         const playerCount = divestmentTargets.length;
         const columnWidth = cardWidth * 4; 
-        let startX = window.innerWidth / 2 - (columnWidth * playerCount) / 2;
+        let startX = this.app.screen.width / 2 - (columnWidth * playerCount) / 2;
         
         for (const target of divestmentTargets) {
 
@@ -906,8 +907,8 @@ async displayRevealedCharacters(players, container) {
     
     async youRegulatorOptions(container,options,perk,gameState,onSelectCallback){
         const tempContainer = this._createPopupBase();
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2-250;
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-250;
 
         let texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
         const characterIcon = new Sprite(texture);
@@ -961,7 +962,7 @@ async displayRevealedCharacters(players, container) {
 
         const playerCount = options.length;
         const columnWidth = (cardWidth * 2) + 80;
-        let startX = window.innerWidth / 2 - (columnWidth * playerCount) / 2;
+        let startX = this.app.screen.width / 2 - (columnWidth * playerCount) / 2;
 
         for (const option of options) {
             const player = gameState.getPlayerById(option.player_id);
@@ -1023,7 +1024,7 @@ async displayRevealedCharacters(players, container) {
                 style: { fill: "#fff", fontSize: 32, fontFamily: "MyFont" }
             });
         orText.anchor.set(0.5);
-        orText.position.set(window.innerWidth/2, 600);
+        orText.position.set(this.app.screen.width/2, 600);
         tempContainer.addChild(orText);
 
         const deckButton = new FancyButton({
@@ -1032,7 +1033,7 @@ async displayRevealedCharacters(players, container) {
             height: 60,
             
         });
-        deckButton.view.position.set((window.innerWidth-deckButton.view.width)/2, 650);
+        deckButton.view.position.set((this.app.screen.width-deckButton.view.width)/2, 650);
         tempContainer.addChild(deckButton.view);
 
 
