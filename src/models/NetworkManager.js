@@ -2,6 +2,7 @@ class NetworkManager {
     constructor(url) {
         this.url = url;
         this.queue = [];
+        this.isProcessing = false;
         this.gameManager = null;
         this.commandList = {};
         this.connect();
@@ -87,7 +88,6 @@ class NetworkManager {
         this.sendMessage(this.jsonData);
     }
 
-   
 }
 
 export default NetworkManager;

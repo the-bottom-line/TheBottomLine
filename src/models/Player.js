@@ -2,7 +2,8 @@ import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Tween } from 'tweedle.js';
 class Player {
-    constructor(name, id) {
+    constructor(name, id,app) {
+        this.app = app;
         this.hand = [];
         this.playableAssets = 1;
         this.playableLiabilities = 1;
@@ -35,13 +36,13 @@ class Player {
         const liabilities = this.hand.filter(c => c instanceof Liability && !c.isTemporary).reverse();
         const assets = this.hand.filter(c => c instanceof Asset && !c.isTemporary).reverse();
 
-        const baseY = window.innerHeight - 100;
+        const baseY = this.app.screen.height - 100;
         const spacing = 60; 
         const hoverYOffset = -30; 
         const hoverSpacing = 75; 
 
         const totalAssetsWidth = (assets.length - 1) * spacing;
-        const assetsStartX = window.innerWidth / 2 - totalAssetsWidth - 100;
+        const assetsStartX = this.app.screen.width / 2 - totalAssetsWidth - 100;
 
         assets.forEach((card, i) => {
             let x = assetsStartX + i * spacing;
@@ -61,7 +62,7 @@ class Player {
         });
 
         const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
-        const liabilitiesStartX = window.innerWidth / 2 + 100 + totalLiabilitiesWidth;
+        const liabilitiesStartX = this.app.screen.width / 2 + 100 + totalLiabilitiesWidth;
 
         liabilities.forEach((card, i) => {
             let x = liabilitiesStartX - i * spacing;
@@ -103,10 +104,10 @@ class Player {
         return false;
     }
     positionAssetsToPile() {
-        const baseY = window.innerHeight / 2 - 50;
+        const baseY = this.app.screen.height / 2 - 50;
         const spacing = -60; 
 
-        const assetsStartX = window.innerWidth / 2 - 145;
+        const assetsStartX = this.app.screen.width / 2 - 145;
 
         this.assetList.forEach((card, i) => {
             card.setPosition(assetsStartX + i * spacing, baseY);
@@ -115,10 +116,10 @@ class Player {
     positionLiabilitiesToPile() {
         
 
-        const baseY = window.innerHeight / 2 - 50;
+        const baseY = this.app.screen.height / 2 - 50;
         const spacing = 60; 
 
-        const assetsStartX = window.innerWidth / 2 + 145;
+        const assetsStartX = this.app.screen.width / 2 + 145;
 
         this.liabilityList.forEach((card, i) => {
             card.setPosition(assetsStartX + i * spacing, baseY);
@@ -128,8 +129,8 @@ class Player {
     positionTempCards() {
         const tempCards = this.hand.filter(c => c.isTemporary);
 
-        const startX = (window.innerWidth - (this.drawableCards * this.cardSpacing)) / 2 + this.cardSpacing / 2;
-        const y = window.innerHeight/2; 
+        const startX = (this.app.screen.width - (this.drawableCards * this.cardSpacing)) / 2 + this.cardSpacing / 2;
+        const y = this.app.screen.height/2; 
 
         tempCards.forEach((card, index) => {
             card.setPosition(startX + (index * this.cardSpacing), y);

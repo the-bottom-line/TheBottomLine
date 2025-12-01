@@ -2,7 +2,6 @@ import Player from './Player.js';
 import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Group } from 'tweedle.js';
-import platform from 'pixi/platform.js';
 
 /*
 Dark Indigo (Walls)	#2a2d3a	A deep, desaturated blue. Great for large backgrounds.
@@ -20,6 +19,7 @@ class GameManager {
         this.gameState = gameState;
         this.uiManager = uiManager;
         this.networkManager = networkManager;
+        this.app = uiManager.app;
 
         this.activePopup = null;
         this.uiManager.app.ticker.add(() => {
@@ -67,33 +67,6 @@ class GameManager {
 
         this.uiManager.createJoinButton(joinGame);
 
-        /*if (!this.gameState.getPlayerById(0)) {
-            const player0 = new Player("TestPlayer0", 0);
-            this.gameState.players.push(player0);
-        }
-        if (!this.gameState.getPlayerById(1)) {
-            const player1 = new Player("TestPlayer1", 1);
-            this.gameState.players.push(player1);
-        }
-        if (!this.gameState.getPlayerById(2)) {
-            const player2 = new Player("TestPlayer2", 2);
-            this.gameState.players.push(player2);
-        }
-        if (!this.gameState.getPlayerById(3)) {
-            const player2 = new Player("TestPlayer2", 2);
-            this.gameState.players.push(player2);
-        }
-
-        this.youRegulatorOptions({
-            "options": [
-                { "player_id": 0, "asset_count": 3, "liability_count": 3 },
-                { "player_id": 1, "asset_count": 2, "liability_count": 2 },
-                { "player_id": 2, "asset_count": 3, "liability_count": 3 },
-                { "player_id": 3, "asset_count": 2, "liability_count": 1 }
-            ],
-            "character": "Regulator",
-            "perk": "You can swap your hand with another player or swap any number of cards with the deck"
-        });*/
     }
 
     
@@ -216,7 +189,7 @@ class GameManager {
         
         this.gameState.players = []; 
         this.gameState.myId = data.id;
-        let localPlayer = new Player(this.gameState.username, data.id);
+        let localPlayer = new Player(this.gameState.username, data.id,this.app);
         localPlayer.reveal = true;
         localPlayer.cash = data.cash;
 
@@ -265,7 +238,7 @@ class GameManager {
     initPlayers(player_info){
         // Initialize all players from player_info
         for (const player_data of player_info) {
-            const player = new Player(player_data.name, player_data.id);
+            const player = new Player(player_data.name, player_data.id,this.app);
             player.cash = player_data.cash;
             player.othersHand = player_data.hand;
             this.gameState.players.push(player);
@@ -273,18 +246,24 @@ class GameManager {
     }
     makeCardPlayable(newCard){
         const localPlayer = this.gameState.getLocalPlayer();
-
+    
         newCard.sprite.on('mousedown', () => { 
-                const cardIndex = localPlayer.hand.indexOf(newCard); // Assuming localPlayer is accessible
-                if (cardIndex !== -1) {
-                    if (newCard instanceof Asset) {
-                        this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
-                    } else if (newCard instanceof Liability) {                        
-                        this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
-                    }
-                    // The server will send back a message to update the UI
+            const cardIndex = localPlayer.hand.indexOf(newCard);
+            if (cardIndex !== -1) {
+                // Disable all cards in hand immediately to prevent double clicks
+                localPlayer.hand.forEach(card => card.makeUnplayable());
+    
+                if (newCard instanceof Asset) {
+                    this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
+                } else if (newCard instanceof Liability) {                        
+                    this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
                 }
-            });
+            }
+        });
+    
+        // Ensure card is playable based on current game rules
+        const canPlay = (newCard instanceof Asset && localPlayer.playableAssets > 0) || (newCard instanceof Liability && localPlayer.playableLiabilities > 0);
+        if (canPlay) newCard.makePlayable();
         this.makeCardHoverable(newCard,localPlayer);
     }
     makeCardHoverable(card,player){
@@ -357,6 +336,7 @@ class GameManager {
             });
             //this.youPutBackCard({ kept_cards: [] }); // Passing empty array to avoid errors, as cards are already moved.
         }
+        
     }
     async drewCard(data){
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -386,6 +366,7 @@ class GameManager {
             });
             this.switchToMainPhase();
         }
+      
     }
     putBackCard(data){
         const currentPlayer = this.gameState.getPlayerById(data.player_id);
@@ -404,12 +385,13 @@ class GameManager {
         this.gameState.players = []; 
 
         data.usernames.forEach((username, index) => {
-            const player = new Player(username, index);
+            const player = new Player(username, index,this.app);
             this.gameState.players.push(player);
         });
         this.uiManager.displayLobbyPlayers(this.gameState.players, () => {
             this.networkManager.sendCommand("StartGame");
         });
+        
     }
 
     chairmanSelectCharacter(data){ 
@@ -471,6 +453,7 @@ class GameManager {
             });
         } else {
             console.log("Not player's turn for character selection.");
+           
         }
     }
     youSelectedCharacter(data) {
@@ -514,6 +497,7 @@ class GameManager {
         } else {
             console.error(`Player with ID ${data.player_turn} not found.`);
         }
+      
     }
    
     youBoughtAsset(data){
@@ -537,8 +521,14 @@ class GameManager {
         player.positionAssetsToPile();
         this.uiManager.playedCardsContainer.addChild(card.sprite);
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
+
+        // Re-enable playable cards
+        player.hand.forEach(c => {
+            this.makeCardPlayable(c);
+        });
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         this.updateUI();
+      
     }
     async boughtAsset(data){
         const player = this.gameState.getCurrentPlayer();
@@ -562,6 +552,7 @@ class GameManager {
             this.otherCards();
             this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
             this.updateUI();
+            this.networkManager.notifyComman
         }
     }
     youIssuedLiability(data){
@@ -585,9 +576,14 @@ class GameManager {
             this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
         });
         this.uiManager.playedCardsContainer.addChild(card.sprite);
+        // Re-enable playable cards
+        player.hand.forEach(c => {
+            this.makeCardPlayable(c);
+        });
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         this.updateUI();
+       
     }
     async issuedLiability(data){
         const player = this.gameState.getCurrentPlayer();
@@ -607,6 +603,7 @@ class GameManager {
             //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this a function like displayOtherPlayerHand
             this.otherCards();
             this.updateUI();
+            
         }
     }
 
