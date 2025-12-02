@@ -35,6 +35,9 @@ class NetworkManager {
             "YouAreTerminatingSomeone": this.gameManager.youAreTerminatingSomeone.bind(this.gameManager),
             "YouRegulatorOptions":this.gameManager.youRegulatorOptions.bind(this.gameManager),
             "YouSwapPlayer":this.gameManager.youSwapPlayer.bind(this.gameManager),
+            "RegulatorSwapedYourCards":this.gameManager.regulatorSwapedYourCards.bind(this.gameManager),
+            "YouSwapDeck": this.gameManager.youSwapDeck.bind(this.gameManager),
+            "SwapedWithDeck": this.gameManager.swapedWithDeck.bind(this.gameManager),
             "GameEnded": this.gameManager.gameEnded.bind(this.gameManager)
         };
     }

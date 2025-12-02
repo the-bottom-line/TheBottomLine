@@ -905,7 +905,7 @@ async displayRevealedCharacters(players, container) {
         container.y = this.app.screen.height / 2;
     }
     
-    async youRegulatorOptions(container,options,perk,gameState,onSelectCallback){
+    async youRegulatorOptions(container,options,perk,gameState,onSelectCallback1,onSelectCallback2){
         const tempContainer = this._createPopupBase();
         let x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-250;
@@ -987,7 +987,7 @@ async displayRevealedCharacters(players, container) {
             cardBack.anchor.set(0.5);
             cardBack.position.set(assetStartX, playerY + cardHeight / 2);
             cardBack.interactive = true;
-            cardBack.on('mousedown', () => onSelectCallback(player.playerID));
+            cardBack.on('mousedown', () => onSelectCallback1(player.playerID));
                
             tempContainer.addChild(cardBack);
             const assetCount = new Text({
@@ -1006,7 +1006,7 @@ async displayRevealedCharacters(players, container) {
             cardBack.anchor.set(0.5);
             cardBack.position.set(liabilityStartX, playerY + cardHeight / 2);
             cardBack.interactive = true;
-            cardBack.on('mousedown', () => onSelectCallback(player.playerID));
+            cardBack.on('mousedown', () => onSelectCallback1(player.playerID));
             tempContainer.addChild(cardBack);
             const liabilityCount = new Text({
                 text: `${option.liability_count} X`,
@@ -1028,11 +1028,17 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(orText);
 
         const deckButton = new FancyButton({
-            text: "TRADE WITH DECK",
+            text: "SWAP WITH DECK",
             width: 250,
             height: 60,
-            
-        });
+            onPress: () => {
+                // Close the current popup and open the deck swap one
+                container.removeChild(tempContainer);   
+                this.displaySwapWithDeckPopup(container, gameState.getLocalPlayer(), (card_idxs) => {
+                    onSelectCallback2(card_idxs); 
+                });
+            }
+        }); 
         deckButton.view.position.set((this.app.screen.width-deckButton.view.width)/2, 650);
         tempContainer.addChild(deckButton.view);
 
@@ -1040,9 +1046,127 @@ async displayRevealedCharacters(players, container) {
 
         this._addPopupCloseButton(tempContainer, () => {
             // Example of how to trigger an action. Here, just closing.
-            // onSelectCallback(null); // Or some default action
+            onSelectCallback1(null); // Cancel action
         });
 
+        container.addChild(tempContainer);
+    }
+
+    async displaySwapWithDeckPopup(container, player, onConfirmCallback) {
+        const tempContainer = this._createPopupBase();
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 250;
+
+        const titleText = new Text({
+            text: 'Select cards to swap with the deck',
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        tempContainer.addChild(titleText);
+
+        y += 150;
+
+        const selectedIndices = [];
+
+        const cardScale = 0.25;
+        const cardWidth = 590 * cardScale;
+        const cardHeight = 940 * cardScale;
+        const spacing = 20;
+        const totalWidth = (player.hand.length * cardWidth) + ((player.hand.length - 1) * spacing);
+        let startX = x - totalWidth / 2 + cardWidth / 2;
+
+        player.hand.forEach((card, index) => {
+            const cardSprite = new Sprite(card.sprite.texture);
+            cardSprite.scale.set(cardScale);
+            cardSprite.anchor.set(0.5);
+            cardSprite.position.set(startX + index * (cardWidth + spacing), y);
+            cardSprite.interactive = true;
+            cardSprite.cursor = 'pointer';
+            
+            const outline = new Graphics()
+                .roundRect(0, 0, cardWidth + 5, cardHeight + 5, 15)
+                .stroke({ width: 4, color: 0xCBC28E }) // 0xCBC28E -> gold color
+            outline.position.set(startX + index * (cardWidth + spacing), y);
+            outline.pivot.set((cardWidth + 10) / 2, (cardHeight + 10) / 2);
+            outline.alpha = 0;
+            tempContainer.addChild(outline);
+
+            cardSprite.on('mousedown', () => {
+                const selectionIndex = selectedIndices.indexOf(index);
+                if (selectionIndex > -1) {
+                   
+                    selectedIndices.splice(selectionIndex, 1);
+                    outline.alpha = 0; // Hide outline
+                } else {
+                   
+                    selectedIndices.push(index);
+                    outline.alpha = 1; // Show outline
+                }
+            });
+
+            tempContainer.addChild(cardSprite);
+        });
+
+        const okButton = new FancyButton({
+            text: "Confirm",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+                onConfirmCallback(selectedIndices);
+            }
+        });
+        okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
+        tempContainer.addChild(okButton.view);
+
+        container.addChild(tempContainer);
+        return tempContainer;
+    }
+
+    async displayRegulatorSwapNotification(container, regulatorPlayer) {
+        const tempContainer = this._createPopupBase();
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 150;
+
+        // Regulator Icon
+        let texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
+        const regulatorIcon = new Sprite(texture);
+        regulatorIcon.position.set(x, y);
+        regulatorIcon.width = 200;
+        regulatorIcon.height = 220;
+        regulatorIcon.anchor.set(0.5);
+        y += 130;
+
+        // "The Regulator..." text
+        const titleText = new Text({
+            text: `The Regulator (${regulatorPlayer.name})`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        y += 40;
+
+        // "...swapped cards with you" text
+        const infoText = new Text({
+            text: "has swapped cards with you.",
+            style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        infoText.anchor.set(0.5);
+        infoText.position.set(x, y);
+
+        const padding = 20;
+        const background = new Graphics()
+            .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        background.pivot.set(background.width / 2, 0);
+        background.position.set(x, y - 50);
+
+        tempContainer.addChild(regulatorIcon, background, titleText, infoText);
+        this._addPopupCloseButton(tempContainer);
         container.addChild(tempContainer);
     }
 
@@ -1076,10 +1200,12 @@ async displayRevealedCharacters(players, container) {
             width: 200,
             height: 60,
             onPress: () => {
+                // Always remove the popup from its parent container
+                if (popupContainer.parent) {
+                    popupContainer.parent.removeChild(popupContainer);
+                }
                 if (onOkCallback) {
                     onOkCallback();
-                } else if (popupContainer.parent) {
-                    popupContainer.parent.removeChild(popupContainer);
                 }
             }
         });
