@@ -636,6 +636,19 @@ class GameManager {
         
         this.updateUI();
     }
+    redeemedLiability(data){
+        const player = this.gameState.getCurrentPlayer();
+        if (player && player.playerID !== this.gameState.myId) {
+            const liability = player.liabilityList[data.liability_idx];
+            player.liabilityList.splice(data.liability_idx, 1); // remove liability from player
+            player.cash -= liability.gold;
+            
+            player.positionLiabilitiesToPile();
+            this.otherCards();
+            this.updateUI();
+            
+        }
+    }
     async issuedLiability(data){
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
