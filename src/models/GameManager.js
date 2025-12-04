@@ -618,6 +618,37 @@ class GameManager {
         this.updateUI();
        
     }
+    youRedeemedLiability(data){
+        const player = this.gameState.getLocalPlayer();
+        if (!player) return;
+        
+        const card = player.liabilityList[data.liability_idx];
+        if (!card) return;
+
+        player.cash -= card.gold;
+        player.liabilityList.splice(data.liability_idx, 1);
+        player.playableLiabilities--;
+
+        player.positionLiabilitiesToPile();
+        
+        this.updateHandPlayability();
+        this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        
+        this.updateUI();
+    }
+    redeemedLiability(data){
+        const player = this.gameState.getCurrentPlayer();
+        if (player && player.playerID !== this.gameState.myId) {
+            const liability = player.liabilityList[data.liability_idx];
+            player.liabilityList.splice(data.liability_idx, 1); // remove liability from player
+            player.cash -= liability.gold;
+            
+            player.positionLiabilitiesToPile();
+            this.otherCards();
+            this.updateUI();
+            
+        }
+    }
     async issuedLiability(data){
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
