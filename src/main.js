@@ -11,22 +11,18 @@ import NetworkManager from "./models/NetworkManager.js";
         autoDensity: true,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
-        autoStart: false, // Do not start the ticker automatically
     });
 
     app.canvas.style.position = "absolute";
-    console.log(app.ticker.FPS);
     document.body.appendChild(app.canvas);
 
     const gameState = new GameState();
     const uiManager = new UIManager(app);
-    const networkManager = new NetworkManager('ws://localhost:3000/websocket'); //192.168.67.151
+    const networkManager = new NetworkManager('ws://145.93.76.220:3000/websocket'); //192.168.67.151
     const gameManager = new GameManager(gameState, uiManager, networkManager);
 
     networkManager.setGameManager(gameManager);
 
     gameManager.initLobby();
-
-    // Start the ticker now that everything is set up
-    app.start();
 })();
+    

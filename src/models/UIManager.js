@@ -1038,10 +1038,7 @@ async displayRevealedCharacters(players, container) {
 
 
 
-        this._addPopupCloseButton(tempContainer, () => {
-            // Example of how to trigger an action. Here, just closing.
-            onSelectCallback1(null); // Cancel action
-        });
+        this._addPopupCloseButton(tempContainer);
 
         this.popupContainer.addChild(tempContainer);
     }

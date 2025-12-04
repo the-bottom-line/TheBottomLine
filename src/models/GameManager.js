@@ -773,6 +773,22 @@ class GameManager {
         );
         
     }
+    async swapedWithPlayer(data){
+        console.log("swapedWithPlayer:", data);
+        if (this.activePopup) {
+            this.activePopup.destroy({ children: true });
+            this.activePopup = null;
+        }
+
+        reg = this.gameState.players.find(p, p.playerID === data.regulator_id);
+        tar = this.gameState.players.find(p, p.playerID === data.target_id);
+        let temphand = reg.hand;
+        reg.hand = tar.hand;
+        tar.hand = temphand;
+        
+        this.switchToMainPhase();
+    }
+
     async youSwapPlayer(data){
         console.log("youSwapPlayer:", data);
         if (this.activePopup) {
