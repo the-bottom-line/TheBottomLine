@@ -22,6 +22,7 @@ class GameManager {
         this.app = uiManager.app;
 
         this.activePopup = null;
+
         this.uiManager.app.ticker.add(() => {
             Group.shared.update();
         });
@@ -67,6 +68,17 @@ class GameManager {
 
         this.uiManager.createJoinButton(joinGame);
 
+        this.uiManager.showMarket({
+            "title": "Stable Market",
+            "rfr": 0,
+            "mrp": 0,
+            "Yellow": "Zero",
+            "Blue": "Zero",
+            "Green": "Zero",
+            "Purple": "Zero",
+            "Red": "Zero",
+        });
+        
     }
 
     
@@ -130,11 +142,10 @@ class GameManager {
 
         const currentPlayer = this.gameState.getCurrentPlayer();
         currentPlayer.hand.forEach(card => {
-            card.makePlayable();
-            this.makeCardPlayable(card);
             this.uiManager.handContainer.addChild(card.sprite);
         });
-        currentPlayer.positionCardsInHand();
+
+        this.updateHandPlayability();
         
         this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         this.uiManager.handContainer.sortChildren();
@@ -223,7 +234,7 @@ class GameManager {
             await newCard.initializeSprite();
 
             // Attach event listeners for playing/discarding cards
-            this.makeCardPlayable(newCard);
+            this.setupCardInteractions(newCard);
                     
 
             localPlayer.addCardToHand(newCard);
@@ -244,35 +255,51 @@ class GameManager {
             this.gameState.players.push(player);
         }
     }
-    makeCardPlayable(newCard){
+
+    updateHandPlayability() {
         const localPlayer = this.gameState.getLocalPlayer();
-    
-        newCard.sprite.on('mousedown', () => { 
-            const cardIndex = localPlayer.hand.indexOf(newCard);
+        if (!localPlayer) return;
+
+        localPlayer.hand.forEach(card => {
+            this.setupCardInteractions(card); // Re-attach listeners
+            // Determine if the card should be playable
+            const canPlayAsset = card instanceof Asset && localPlayer.playableAssets > 0;
+            const canPlayLiability = card instanceof Liability && localPlayer.playableLiabilities > 0;
+            const canPlay = canPlayAsset || canPlayLiability;
+
+            if (canPlay) {
+               
+                card.makePlayable();
+            } else {
+                card.makeUnplayable();
+            }
+        });
+        localPlayer.positionCardsInHand();
+    }
+
+    setupCardInteractions(card) {
+        const localPlayer = this.gameState.getLocalPlayer();
+
+        // Setup click-to-play listener
+        card.sprite.removeAllListeners('mousedown'); // Clear old listeners to be safe
+        card.sprite.on('mousedown', () => {
+            const cardIndex = localPlayer.hand.indexOf(card);
             if (cardIndex !== -1) {
-                // Disable all cards in hand immediately to prevent double clicks
-                localPlayer.hand.forEach(card => card.makeUnplayable());
-    
-                if (newCard instanceof Asset) {
-                    this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
-                } else if (newCard instanceof Liability) {                        
-                    this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
+                // Check if the card is actually playable before sending command
+                const canPlayAsset = card instanceof Asset && localPlayer.playableAssets > 0 && localPlayer.cash >= card.gold;
+                const canPlayLiability = card instanceof Liability && localPlayer.playableLiabilities > 0;
+
+                if (card instanceof Asset) {
+                    if (canPlayAsset) this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
+                } else if (card instanceof Liability) {                        
+                    if (canPlayLiability) this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
                 }
             }
         });
-    
-        // Ensure card is playable based on current game rules
-        const canPlay = (newCard instanceof Asset && localPlayer.playableAssets > 0) || (newCard instanceof Liability && localPlayer.playableLiabilities > 0);
-        if (canPlay) newCard.makePlayable();
-        this.makeCardHoverable(newCard,localPlayer);
-    }
-    makeCardHoverable(card,player){
-        card.sprite.on('cardHover', (hoveredCard) => {
-            player.positionCardsInHand(hoveredCard);
-        });
-        card.sprite.on('cardOut', () => {
-            player.positionCardsInHand();
-        });
+
+        // Setup hover listeners
+        card.sprite.on('cardHover', (hoveredCard) => localPlayer.positionCardsInHand(hoveredCard));
+        card.sprite.on('cardOut', () => localPlayer.positionCardsInHand());
     }
     makeCardDiscardable(newCard){
         const currentPlayer = this.gameState.getCurrentPlayer();
@@ -320,7 +347,7 @@ class GameManager {
         await newCard.initializeSprite();
 
         newCard.isTemporary = true;
-        this.makeCardPlayable(newCard);
+        this.setupCardInteractions(newCard); // Sets up the click and hover events
         this.makeCardDiscardable(newCard);
 
         currentPlayer.addCardToHand(newCard);
@@ -330,19 +357,24 @@ class GameManager {
             currentPlayer.hand.forEach(card => {
                 card.isTemporary = false;
                 this.uiManager.handContainer.addChild(card.sprite);
+                this.switchToMainPhase();
                 if (card.discardButton) {
                     this.uiManager.tempCardsContainer.removeChild(card.discardButton);
                 }
             });
+            // After moving cards, if there are no more to draw, switch to the main phase.
+            if (currentPlayer.drawableCards === 0) {
+                this.switchToMainPhase();
+            }
             //this.youPutBackCard({ kept_cards: [] }); // Passing empty array to avoid errors, as cards are already moved.
         }
-        
     }
     async drewCard(data){
         const currentPlayer = this.gameState.getCurrentPlayer();
         if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
             console.log("Drew Card:", data);
             currentPlayer.othersHand.push(data.card_type);
+            this.otherCards();
         }
     }
     youPutBackCard(data) {
@@ -469,7 +501,8 @@ class GameManager {
 
         const drawableCards = data.draws_n_cards;
         const recieveCash = data.player_turn_cash;
-
+        const playableAssets = data.playable_assets.total;
+        const playableLiabilities = data.playable_liabilities;
        
         const nextPlayerIndex = this.gameState.players.findIndex(p => p.playerID == data.player_turn);
 
@@ -483,8 +516,8 @@ class GameManager {
                 console.error(`Character with name ${data.player_character} not found.`);
             }
 
-            currentPlayer.playableAssets = 1;
-            currentPlayer.playableLiabilities = 1;
+            currentPlayer.playableAssets = playableAssets;
+            currentPlayer.playableLiabilities = playableLiabilities;
             currentPlayer.cash += recieveCash;
             currentPlayer.reveal = true;
             currentPlayer.drawableCards = drawableCards;
@@ -509,6 +542,9 @@ class GameManager {
 
         const cardIndex = player.hand.indexOf(card);
         if (cardIndex === -1) return;
+        if (data.market_change) {
+            this.uiManager.showMarket(data.market_change.new_market);
+        }
 
         player.cash -= card.gold;
         player.gold += card.gold;
@@ -519,18 +555,17 @@ class GameManager {
 
         player.positionCardsInHand();
         player.positionAssetsToPile();
-        this.uiManager.playedCardsContainer.addChild(card.sprite);
-        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
-
-        // Re-enable playable cards
-        player.hand.forEach(c => {
-            this.makeCardPlayable(c);
-        });
+        this.uiManager.addCardToPlayedContainer(card);
+        
+        this.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         this.updateUI();
       
     }
     async boughtAsset(data){
+        if (data.market_change) {
+            this.uiManager.showMarket(data.market_change.new_market);
+        }
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
             const assetIndex = player.othersHand.indexOf('Asset');
@@ -575,11 +610,9 @@ class GameManager {
         card.sprite.on('mousedown', () => {
             this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
         });
-        this.uiManager.playedCardsContainer.addChild(card.sprite);
-        // Re-enable playable cards
-        player.hand.forEach(c => {
-            this.makeCardPlayable(c);
-        });
+        this.uiManager.addCardToPlayedContainer(card);
+        
+        this.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         this.updateUI();
@@ -686,17 +719,131 @@ class GameManager {
             options,perk,
             this.gameState,
             (playerID)=>{
-                this.networkManager.sendCommand("SwapWithPlayer", { "target_player_id": playerID});
+                this.networkManager.sendCommand("SwapWithPlayer", { "target_player_id": playerID });
+                    //this.activePopup.destroy({ children: true });
+                    this.activePopup = null;
+                    this.switchToMainPhase();
+            },
+            (card_idxs) => {
+                const localPlayer = this.gameState.getLocalPlayer();
+                // Sort indices in descending order to avoid messing up indices as we splice
+                card_idxs.sort((a, b) => b - a); 
+                
+                card_idxs.forEach(idx => {
+                    const card = localPlayer.hand[idx];
+                    if (card && card.sprite) {
+                        card.sprite.destroy();
+                        localPlayer.hand.splice(idx, 1);
+                    }
+                });
+                this.networkManager.sendCommand("SwapWithDeck", { "card_idxs": card_idxs });
             }
+            
         );
         
     }
-    youSwapPlayer(data){
+    async youSwapPlayer(data){
+        console.log("youSwapPlayer:", data);
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
         }
+
+        await this._updateHandFromServer(data.new_cards);
         this.switchToMainPhase();
+    }
+    async regulatorSwapedYourCards(data){
+        console.log("regulatorSwapedYourCards:", data);
+        // This function is called on the player whose cards were taken.
+        // We'll update their hand with the new cards they received.
+        await this._updateHandFromServer(data.new_cards);
+
+        const regulatorPlayer = this.gameState.getCurrentPlayer();
+
+        // Show a notification that the swap happened.
+        // The popup will appear on the main screen if it's your turn,
+        // or the 'else turn' screen if it's not.
+        const container = this.gameState.myId === regulatorPlayer.playerID
+            ? this.uiManager.mainContainer
+            : this.uiManager.elseTurnContainer;
+        if (this.gameState.myId !== regulatorPlayer.playerID) {
+            this.uiManager.displayRegulatorSwapNotification(container, regulatorPlayer);
+        }
+    }
+    youSwapDeck(data) {
+        console.log("youSwapDeck:", data);
+        if (this.activePopup) {
+            this.activePopup.destroy({ children: true });
+            this.activePopup = null;
+        }
+    
+        const localPlayer = this.gameState.getLocalPlayer();
+        if (!localPlayer) return;
+    
+        // Set how many cards the player needs to draw and switch to the picking screen.
+        localPlayer.drawableCards = data.cards_to_draw;
+        this.uiManager.showScreen('picking');
+        this.uiManager.statsText.text = `Your turn: Draw ${localPlayer.drawableCards} cards.`;
+        this.uiManager.displayTempCards(localPlayer);
+        this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
+        localPlayer.positionCardsInHand();
+    }
+    swapedWithDeck(data){
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
+            console.log("Regulator swapped with deck:", data);
+
+            for (let i = 0; i < data.asset_count; i++) {
+                const assetIndex = currentPlayer.othersHand.indexOf('Asset');
+                if (assetIndex > -1) {
+                    currentPlayer.othersHand.splice(assetIndex, 1);
+                }
+            }
+
+            for (let i = 0; i < data.liability_count; i++) {
+                const liabilityIndex = currentPlayer.othersHand.indexOf('Liability');
+                if (liabilityIndex > -1) {
+                    currentPlayer.othersHand.splice(liabilityIndex, 1);
+                }
+            }
+            this.otherCards();
+        }
+    }
+
+    async _updateHandFromServer(newCardsData) {
+        const localPlayer = this.gameState.getLocalPlayer();
+        if (!localPlayer) return;
+
+        // Clear current hand
+        localPlayer.hand.forEach(card => card.sprite.destroy());
+        localPlayer.hand = [];
+
+        // The hand container should be cleared before adding new cards.
+        this.uiManager.handContainer.removeChildren();
+
+        for (const cardData of newCardsData) {
+            let newCard;
+            if (cardData.card_type === "asset") {
+                newCard = new Asset(
+                    cardData.title,
+                    cardData.color,
+                    cardData.gold_value,
+                    cardData.silver_value,
+                    cardData.ability,
+                    cardData.image_front_url
+                );
+            } else { // liability
+                newCard = new Liability(
+                    cardData.rfr_type,
+                    cardData.value,
+                    cardData.image_front_url
+                );
+            }
+            await newCard.initializeSprite();
+            this.setupCardInteractions(newCard);
+            localPlayer.addCardToHand(newCard);
+            this.uiManager.handContainer.addChild(newCard.sprite);
+        }
     }
 
     /**

@@ -12,7 +12,6 @@ class Player {
         this.playerID = id;
         this.othersHand = []; 
         this.isChaiman = false;
-        this.drawableCards;
 
         this.assetList = [];
         this.cash = 0;
