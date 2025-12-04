@@ -27,6 +27,7 @@ class NetworkManager {
             "YouBoughtAsset": this.gameManager.youBoughtAsset.bind(this.gameManager),
             "BoughtAsset":this.gameManager.boughtAsset.bind(this.gameManager),
             "YouIssuedLiability":this.gameManager.youIssuedLiability.bind(this.gameManager),
+            "YouRedeemedLiability":this.gameManager.youRedeemedLiability.bind(this.gameManager),
             "IssuedLiability":this.gameManager.issuedLiability.bind(this.gameManager),
             "YouEndedTurn": this.gameManager.youEndedTurn.bind(this.gameManager),
             "YouAreFiringSomeone": this.gameManager.youAreFiringSomeone.bind(this.gameManager),
