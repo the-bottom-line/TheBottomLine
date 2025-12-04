@@ -68,6 +68,17 @@ class GameManager {
 
         this.uiManager.createJoinButton(joinGame);
 
+        this.uiManager.showMarket({
+            "title": "Stable Market",
+            "rfr": 0,
+            "mrp": 0,
+            "Yellow": "Zero",
+            "Blue": "Zero",
+            "Green": "Zero",
+            "Purple": "Zero",
+            "Red": "Zero",
+        });
+        
     }
 
     
@@ -250,6 +261,7 @@ class GameManager {
         if (!localPlayer) return;
 
         localPlayer.hand.forEach(card => {
+            this.setupCardInteractions(card); // Re-attach listeners
             // Determine if the card should be playable
             const canPlayAsset = card instanceof Asset && localPlayer.playableAssets > 0;
             const canPlayLiability = card instanceof Liability && localPlayer.playableLiabilities > 0;
@@ -530,8 +542,9 @@ class GameManager {
 
         const cardIndex = player.hand.indexOf(card);
         if (cardIndex === -1) return;
-        //{\"action\":\"YouBoughtAsset\",\"data\":{\"asset\":{\"title\":\"Diversity & Inclusion\",\"gold_value\":2,\"silver_value\":2,\"color\":\"Red\",\"ability\":null,\"image_front_url\":\"assets/diversityninclusion_2-2.webp\",\"image_back_url\":\"asset_back.webp\"},\"market_change\":{\"events\":[{\"title\":\"Bookkeeping Scandal\",\"description\":\"A major bookkeeping scandal is uncovered and all firms face stringent scrutiny of their books.\",\"plus_gold\":[],\"minus_gold\":[],\"skip_turn\":null}],\"new_market\":{\"title\":\"Bear Market\",\"rfr\":2,\"mrp\":4,\"Yellow\":\"down\",\"Blue\":\"down\",\"Green\":\"down\",\"Purple\":\"down\",\"Red\":\"down\",\"image_front_url\":\"events/bear_05.webp\",\"image_back_url\":\"market_back.webp\"}}}}"
-
+        if (data.market_change) {
+            this.uiManager.showMarket(data.market_change.new_market);
+        }
 
         player.cash -= card.gold;
         player.gold += card.gold;
@@ -542,7 +555,7 @@ class GameManager {
 
         player.positionCardsInHand();
         player.positionAssetsToPile();
-        this.uiManager.playedCardsContainer.addChild(card.sprite);
+        this.uiManager.addCardToPlayedContainer(card);
         
         this.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
@@ -550,6 +563,9 @@ class GameManager {
       
     }
     async boughtAsset(data){
+        if (data.market_change) {
+            this.uiManager.showMarket(data.market_change.new_market);
+        }
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
             const assetIndex = player.othersHand.indexOf('Asset');
@@ -594,7 +610,7 @@ class GameManager {
         card.sprite.on('mousedown', () => {
             this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
         });
-        this.uiManager.playedCardsContainer.addChild(card.sprite);
+        this.uiManager.addCardToPlayedContainer(card);
         
         this.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;

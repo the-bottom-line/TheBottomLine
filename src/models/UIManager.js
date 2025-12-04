@@ -22,7 +22,9 @@ class UIManager {
         this.elseTurnContainer = new Container();
         this.popupContainer = new Container();
         this.resultsContainer = new Container();
+        this.marketContainer = new Container();
 
+        this._nextPlayedCardZIndex = 1;
 
         this.statsText = new Text({
             text: '',
@@ -61,10 +63,13 @@ class UIManager {
             this.lobbyContainer,
             this.statsText,
             this.resultsContainer,
+            this.marketContainer,
+            this.popupContainer
         );
 
         this.handContainer.sortableChildren = true;
         this.tempCardsContainer.sortableChildren = true;
+        this.playedCardsContainer.sortableChildren = true;
     }
 
     getGradient() {
@@ -89,6 +94,7 @@ class UIManager {
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
         this.resultsContainer.visible = screenName === 'results';
+        this.marketContainer.visible = screenName === 'main' || screenName === 'elseTurn';
     }
 
     createNametBox() {
@@ -452,12 +458,14 @@ async displayRevealedCharacters(players, container) {
         this.playedCardsContainer.addChild(cardBackdrop);
 
         assets.forEach(card => {
-            this.playedCardsContainer.addChild(card.sprite);
+            this.addCardToPlayedContainer(card);
         });
         liabilities.forEach(card => {
-            this.playedCardsContainer.addChild(card.sprite);
+            this.addCardToPlayedContainer(card);
         });
     }
+
+
     async displayPlayerCharacter(player, container, onIconClick) { // here
         if (!player?.character) return;
 
@@ -561,7 +569,7 @@ async displayRevealedCharacters(players, container) {
 
         this._addPopupCloseButton(tempContainer);
         
-        container.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
     }
 
     async StakeholdersPerk(container, characters, onSelectCallback) {
@@ -645,7 +653,7 @@ async displayRevealedCharacters(players, container) {
     
 
         container.addChild(tempContainer);
-
+        this.popupContainer.addChild(tempContainer);
         return tempContainer;
     }
 
@@ -718,7 +726,7 @@ async displayRevealedCharacters(players, container) {
         
         this._addPopupCloseButton(tempContainer);
 
-        this.elseTurnContainer.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
     }
 
     async youCharacterAbility(character, perk) {
@@ -758,7 +766,7 @@ async displayRevealedCharacters(players, container) {
         tempContainer.addChild(textChairmanBackground);   
         tempContainer.addChild(chairmanText);        
 
-        this.mainContainer.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
     }
     async youAreDivesting(container, divestmentTargets,onSelectCallback){
         
@@ -856,7 +864,7 @@ async displayRevealedCharacters(players, container) {
 
         this._addPopupCloseButton(tempContainer);
 
-        container.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
 
         return tempContainer;
     }
@@ -1035,7 +1043,7 @@ async displayRevealedCharacters(players, container) {
             onSelectCallback1(null); // Cancel action
         });
 
-        container.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
     }
 
     async displaySwapWithDeckPopup(container, player, onConfirmCallback) {
@@ -1108,7 +1116,7 @@ async displayRevealedCharacters(players, container) {
         okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
         tempContainer.addChild(okButton.view);
 
-        container.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
         return tempContainer;
     }
 
@@ -1153,11 +1161,13 @@ async displayRevealedCharacters(players, container) {
 
         tempContainer.addChild(regulatorIcon, background, titleText, infoText);
         this._addPopupCloseButton(tempContainer);
-        container.addChild(tempContainer);
+        this.popupContainer.addChild(tempContainer);
     }
 
     
     _createPopupBase() {
+        this.popupContainer.removeChildren();
+
         const tempContainer = new Container();
         const gradient = new FillGradient({
             type: 'radial',
@@ -1197,6 +1207,105 @@ async displayRevealedCharacters(players, container) {
         });
         okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
         popupContainer.addChild(okButton.view);
+    }
+    showMarket(marketData){
+        if (!marketData) {
+            return;
+        }
+        
+        this.marketContainer.removeChildren();
+        
+        const width = 320;
+        const height = 120;
+        const x = (this.app.screen.width - width) / 2;
+        const y = 10; // A little padding from the top
+
+        const background = new Graphics()
+            .roundRect(0, 0, width, height, 15)
+            .fill(0x61594C); // Dark Indigo
+        this.marketContainer.position.set(x, y);
+        this.marketContainer.addChild(background);
+
+        // Top half: 5 colored circles with status
+        const colors = [
+            { name: 'Yellow', value: marketData.Yellow },
+            { name: 'Blue', value: marketData.Blue },
+            { name: 'Green', value: marketData.Green },
+            { name: 'Purple', value: marketData.Purple },
+            { name: 'Red', value: marketData.Red }
+        ];
+
+        const circleRadius = 20;
+        const circleY = height / 3-10;
+        const spacing = 60;
+        const totalCircleWidth = (colors.length - 1) * spacing;
+        let startX = (width - totalCircleWidth) / 2;
+
+        colors.forEach((colorInfo, index) => {
+            const circleX = startX + index * spacing;
+            const circle = new Graphics()
+                .circle(0, 0, circleRadius)
+                .fill(colorInfo.name.toLowerCase())
+                .stroke({ width: 2, color: 0x000000 });
+            circle.position.set(circleX, circleY); // here
+            this.marketContainer.addChild(circle);
+
+            const statusIndicator = new Text({
+                text: '',
+                style: { 
+                    fill: '#000000ff', 
+                    fontSize: 30, 
+                }
+            });
+            statusIndicator.anchor.set(0.5);
+            statusIndicator.position.set(circleX, circleY); // here
+
+            if (colorInfo.value === 'down') {
+                statusIndicator.text = '-';
+             
+            } else if (colorInfo.value === 'up') {
+                statusIndicator.text = '+';
+              
+            } else if (colorInfo.value === 'Zero') {
+                statusIndicator.text = '0';
+            }
+            this.marketContainer.addChild(statusIndicator);
+        });
+
+        // Separator lines
+        const horizontalLine = new Graphics()
+            .moveTo(10, height / 2)
+            .lineTo(width - 10, height / 2)
+            .stroke({ width: 2, color: 0x000000 });
+        this.marketContainer.addChild(horizontalLine);
+
+        const verticalLine = new Graphics()
+            .moveTo(width / 2, height / 2 + 5)
+            .lineTo(width / 2, height - 5)
+            .stroke({ width: 2, color: 0x000000 });
+        this.marketContainer.addChild(verticalLine);
+
+        // Bottom half: RFR and MRP values
+        const textStyle = { 
+            fill: '#ffffffff', 
+            fontSize: 30, 
+            fontFamily: 'MyFont',
+            stroke: { color: '#000000', width: 4, join: 'round' }
+        };
+        const rfrText = new Text({ text: `RFR + ${marketData.rfr}%`, style: textStyle });
+        rfrText.anchor.set(0.5);
+        rfrText.position.set(width / 3 - 20, height * 0.75);
+        this.marketContainer.addChild(rfrText);
+
+        const mrpText = new Text({ text: `MRP + ${marketData.mrp}%`, style: textStyle });
+        mrpText.anchor.set(0.5);
+        mrpText.position.set(width * (2 / 3) + 20, height * 0.75);
+        this.marketContainer.addChild(mrpText);
+    }
+
+    addCardToPlayedContainer(card) {
+        card.sprite.zIndex = this._nextPlayedCardZIndex++;
+        this.playedCardsContainer.addChild(card.sprite);
     }
 }
 
