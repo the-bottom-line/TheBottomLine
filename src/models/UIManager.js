@@ -405,31 +405,25 @@ async displayRevealedCharacters(players, container) {
     }
 
     async displayOtherPlayerHand(assets, liabilities) {        
+        // Remove all previous card backs to prevent ghost cards
+        const oldCardBacks = this.elseTurnContainer.children.filter(child => child.isCardBack);
+        oldCardBacks.forEach(child => this.elseTurnContainer.removeChild(child));
+
         const baseY = this.app.screen.height - 100;
         const spacing = 60;
-    
-        // Hide all cards first
-        this.elseTurnContainer.children.forEach(child => {
-            if (child.isCardBack) child.visible = false;
-        });
-    
+        
         const totalAssetsWidth = (assets.length - 1) * spacing;
         const assetsStartX = this.app.screen.width / 2 - totalAssetsWidth - 100;
         const assetBackTexture = await Assets.load("./assets/asset_back.webp");
     
         for (let i = 0; i < assets.length; i++) {
-            let cardBack = this.elseTurnContainer.children.find(c => c.isCardBack && c.cardType === 'Asset' && !c.visible);
-            if (!cardBack) {
-                cardBack = new Sprite(assetBackTexture);
-                cardBack.scale.set(0.25);
-                cardBack.anchor.set(0.5);
-                cardBack.isCardBack = true;
-                cardBack.cardType = 'Asset';
-                this.elseTurnContainer.addChild(cardBack);
-            }
-            cardBack.visible = true;
+            const cardBack = new Sprite(assetBackTexture);
+            cardBack.scale.set(0.25);
+            cardBack.anchor.set(0.5);
+            cardBack.isCardBack = true; // Custom property to identify these sprites
             cardBack.x = assetsStartX + i * spacing;
             cardBack.y = baseY;
+            this.elseTurnContainer.addChild(cardBack);
         }
     
         const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
@@ -437,22 +431,14 @@ async displayRevealedCharacters(players, container) {
         const liabilityBackTexture = await Assets.load("liabilities/liability_back.webp");
     
         for (let i = 0; i < liabilities.length; i++) {
-            let cardBack = this.elseTurnContainer.children.find(c => c.isCardBack && c.cardType === 'Liability' && !c.visible);
-            if (!cardBack) {
-                cardBack = new Sprite(liabilityBackTexture);
-                cardBack.scale.set(0.25);
-                cardBack.anchor.set(0.5);
-                cardBack.isCardBack = true;
-                cardBack.cardType = 'Liability';
-                this.elseTurnContainer.addChild(cardBack);
-            }
-            cardBack.visible = true;
+            const cardBack = new Sprite(liabilityBackTexture);
+            cardBack.scale.set(0.25);
+            cardBack.anchor.set(0.5);
+            cardBack.isCardBack = true; // Custom property to identify these sprites
             cardBack.x = liabilitiesStartX - i * spacing;
             cardBack.y = baseY;
+            this.elseTurnContainer.addChild(cardBack);
         }
-        
-        
-        
     }
     async displayPlayerPlayedCards(assets, liabilities){
         this.playedCardsContainer.removeChildren();

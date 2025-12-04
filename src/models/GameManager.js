@@ -362,6 +362,7 @@ class GameManager {
         if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
             console.log("Drew Card:", data);
             currentPlayer.othersHand.push(data.card_type);
+            this.otherCards();
         }
     }
     youPutBackCard(data) {
@@ -529,6 +530,8 @@ class GameManager {
 
         const cardIndex = player.hand.indexOf(card);
         if (cardIndex === -1) return;
+        //{\"action\":\"YouBoughtAsset\",\"data\":{\"asset\":{\"title\":\"Diversity & Inclusion\",\"gold_value\":2,\"silver_value\":2,\"color\":\"Red\",\"ability\":null,\"image_front_url\":\"assets/diversityninclusion_2-2.webp\",\"image_back_url\":\"asset_back.webp\"},\"market_change\":{\"events\":[{\"title\":\"Bookkeeping Scandal\",\"description\":\"A major bookkeeping scandal is uncovered and all firms face stringent scrutiny of their books.\",\"plus_gold\":[],\"minus_gold\":[],\"skip_turn\":null}],\"new_market\":{\"title\":\"Bear Market\",\"rfr\":2,\"mrp\":4,\"Yellow\":\"down\",\"Blue\":\"down\",\"Green\":\"down\",\"Purple\":\"down\",\"Red\":\"down\",\"image_front_url\":\"events/bear_05.webp\",\"image_back_url\":\"market_back.webp\"}}}}"
+
 
         player.cash -= card.gold;
         player.gold += card.gold;
@@ -770,7 +773,25 @@ class GameManager {
         localPlayer.positionCardsInHand();
     }
     swapedWithDeck(data){
-        
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
+            console.log("Regulator swapped with deck:", data);
+
+            for (let i = 0; i < data.asset_count; i++) {
+                const assetIndex = currentPlayer.othersHand.indexOf('Asset');
+                if (assetIndex > -1) {
+                    currentPlayer.othersHand.splice(assetIndex, 1);
+                }
+            }
+
+            for (let i = 0; i < data.liability_count; i++) {
+                const liabilityIndex = currentPlayer.othersHand.indexOf('Liability');
+                if (liabilityIndex > -1) {
+                    currentPlayer.othersHand.splice(liabilityIndex, 1);
+                }
+            }
+            this.otherCards();
+        }
     }
 
     async _updateHandFromServer(newCardsData) {
