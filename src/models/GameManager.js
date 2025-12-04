@@ -235,6 +235,107 @@ class GameManager {
         this.initRound();
     }
 
+    async createCard(cardData) {
+        let newCard;
+        if (cardData.card_type === "asset") {
+            newCard = new Asset(
+                cardData.title,
+                cardData.color,
+                cardData.gold_value,
+                cardData.silver_value,
+                cardData.ability,
+                cardData.image_front_url
+            );
+        } else  if (cardData.card_type === "liability") {
+            newCard = new Liability(
+                cardData.rfr_type,
+                cardData.value,
+                cardData.image_front_url
+            );
+        }
+        await newCard.initializeSprite();
+        return newCard
+    }
+
+    // Plays an assets and updates corresponding values
+    playAsset(player, card) {
+        player.gold += card.gold_value;
+        player.silver += card.silver_value;
+        player.assetList.push(card);
+        player.positionAssetsToPile();
+    }
+
+    // Plays a liability and updates corresponding values
+    playLiability(player, card) {
+        player.liabilityList.push(card);
+        player.positionLiabilitiesToPile();
+    }
+
+    // Plays the given card by cardData as the given player
+    async playCard(player, cardData) {
+        let card = await this.createCard(cardData);
+        // Push card to the correct pile
+        if (cardData.card_type === "Asset") {
+            this.playAsset(player, card);
+        } else if (cardData.cardType === "Liability") {
+            this.playLiability(player, card);
+        }
+    }
+
+    // Handles a full rejoin from any situation
+    async rejoinGame(data) {
+        console.log("Received Resync data from server:", data);
+
+        // Setup local player
+        this.gameState.players = [];
+        this.gameState.myId = data.id;
+        let localPlayer = new Player(this.gameState.username, data.id, this.app);
+        localPlayer.reveal = true;
+        localPlayer.cash = data.cash;
+
+        this.gameState.players.push(localPlayer);
+
+        // Handle played cards
+        for (const cardData of data.played_cards) {
+            await this.playCard(localPlayer, cardData);
+        }
+
+        // Handle cards in hand
+        for (const cardData of data.hand) {
+            let card = await this.createCard(cardData);
+            localPlayer.addCardToHand(card);
+
+            // Attach event listeners for playing/discarding cards
+            this.setupCardInteractions(card);
+
+            // Sync UI
+            this.uiManager.handContainer.addChild(card.sprite);
+        }
+
+        localPlayer.positionCardsInHand();
+        this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
+        this.initRound();
+        // Add the other players
+        this.initPlayers(data.player_info);
+        for (const player of data.player_info) {
+            let otherPlayer = this.gameState.getPlayerById(player.id);
+
+            // Handle already played cards
+            for (const cardData in data.played_cards) {
+                await this.playCard(otherPlayer, cardData);
+            }
+
+            // Handle cards in hand
+            otherPlayer.othersHand.push(data.hand_cards);
+
+            // Set up their graphics
+            otherPlayer.positionAssetsToPile();
+            otherPlayer.positionLiabilitiesToPile();
+        };
+
+        // TODO: Add correct turn phase syncing
+    }
+
     initPlayers(player_info){
         // Initialize all players from player_info
         for (const player_data of player_info) {

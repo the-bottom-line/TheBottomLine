@@ -15,6 +15,7 @@ class NetworkManager {
         this.gameManager = gameManager;
         this.commandList = {
             "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),
+            "RejoinGame" : this.gameManager.rejoinGame.bind(this.gameManager),
             "PlayersInLobby" : this.gameManager.newPlayer.bind(this.gameManager),
             "SelectingCharacters": this.gameManager.chairmanSelectCharacter.bind(this.gameManager),
             "YouDrewCard": this.gameManager.youDrewCard.bind(this.gameManager),
