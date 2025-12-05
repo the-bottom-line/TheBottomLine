@@ -5,6 +5,11 @@
     "rootDir": "./src",
     "outDir": "./dist",
 
+    // Shared types from the backend.
+    "paths": {
+      "@shared-types": [ "./src/backend-types/index.ts" ]
+    },
+
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
