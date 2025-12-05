@@ -1,21 +1,19 @@
-import { getAllCharacters } from './Characters.js';
+import Character, { getAllCharacters } from './Characters.js';
+import type Player from './Player.ts';
 
 
 
 class GameState {
-    constructor() {
-        this.players = [];
-        this.myId = null;
-        this.username = '';
-        this.currentPlayerIndex = 0;
-        this.characters = getAllCharacters();
-        this.shuffledCharacters = [];
-        this.faceUpCharacters = [];
-        this.openCharacters = [];
-        this.currentPhase = 'lobby';
-    }
+    players: Player[] = [];
+    myId?: number;
+    username?: string;
+    currentPlayerIndex = 0;
+    characters = getAllCharacters();
+    faceUpCharacters: Character[] = [];
+    openCharacters: Character[] = [];
+    currentPhase = 'lobby';
 
-    setCurrentPlayerIndex(index) {
+    setCurrentPlayerIndex(index: number) {
         if (index >= 0 && index < this.players.length) {
             this.currentPlayerIndex = index;
         }
@@ -25,15 +23,16 @@ class GameState {
         return this.players[this.currentPlayerIndex];
     }
 
-    getPlayerById(id) {
+    getPlayerById(id: number) {
         return this.players.find(p => p.playerID === id);
     }
 
     getLocalPlayer() {
-        return this.getPlayerById(this.myId);
+        return this.getPlayerById(this.myId!);
     }
 
     resetForNewRound() {
+        // TODO: move to Player.reset()
         this.players.forEach(p => {
             p.character = null;
             p.reveal = false;
@@ -44,7 +43,6 @@ class GameState {
             p.maxKeepCards = 2;
             
         });
-        this.shuffledCharacters = [];
         this.faceUpCharacters = [];
     }
 }
