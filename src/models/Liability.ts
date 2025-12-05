@@ -4,6 +4,8 @@ class Liability extends GeneralCard {
     title: string;
     gold: number;
     
+    isTemporary = false;
+    
     constructor(title: string, gold: number, texturePath: string) {
         super(texturePath);
         this.title = title;
