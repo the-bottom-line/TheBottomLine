@@ -210,7 +210,7 @@ class UIManager {
 
 
     // TODO: make closedCharacter not list
-    displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter: Character[]) {
+    displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter?: Character[]) {
         this.characterCardsContainer.removeChildren();
         const spacing = 200;
         const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
