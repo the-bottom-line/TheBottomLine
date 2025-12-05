@@ -1,34 +1,31 @@
 import { Assets, Sprite } from 'pixi.js';
-import Liability from './Liability.js';
-import boardgameData from '../../boardgame.json' assert { type: 'json' };
+import boardgameData from '../../boardgame.json' with { type: 'json' };
 
 class LiabilityCards {
-    constructor() {
-        this.cardTemplates = [];
-        this.deckSprite = null;
-        this.initializeDeck();
-    }
+    deckSprite?: Sprite;
+    
+    // TODO: probably get rid of this entirely (unused)
 
-    initializeDeck() {
-        const LiabilityCards = boardgameData.deck_list.liability_deck.card_list;        
-        LiabilityCards.forEach(card=>{
-            this.cardTemplates.push({
-                title: card.title,
-                gold: card.gold_value,
-                texturePath: card.card_image_url
-            });
-        })  
-    }
+    // initializeDeck() {
+    //     const LiabilityCards = boardgameData.deck_list.liability_deck.card_list;        
+    //     LiabilityCards.forEach(card=>{
+    //         this.cardTemplates.push({
+    //             title: card.title,
+    //             gold: card.gold_value,
+    //             texturePath: card.card_image_url
+    //         });
+    //     })  
+    // }
 
-    async initializeAllSprites() {
-        return Promise.resolve();
-    }
+    // async initializeAllSprites() {
+    //     return Promise.resolve();
+    // }
 
-    getRandomCard() {
-        const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
-        const template = this.cardTemplates[randomIndex];
-        return new Liability(template.title, template.gold, template.texturePath);
-    }
+    // getRandomCard() {
+    //     const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
+    //     const template = this.cardTemplates[randomIndex];
+    //     return new Liability(template.title, template.gold, template.texturePath);
+    // }
 
     async initializeDeckSprite() {
         const texture = await Assets.load(boardgameData.deck_list.liability_deck.card_image_back_url);
@@ -41,7 +38,7 @@ class LiabilityCards {
         return this.deckSprite;
     }
 
-    setDeckPosition(x, y) {
+    setDeckPosition(x: number, y: number) {
         if (this.deckSprite) {
             this.deckSprite.x = x;
             this.deckSprite.y = y;
