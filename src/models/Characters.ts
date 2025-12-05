@@ -1,5 +1,18 @@
+import type Asset from "./Asset.ts";
+import type Player from "./Player.ts";
+
 class Character {
-    constructor(name, ability, description, textureName,order) {
+    name: string;
+    ability: string;
+    description: string;
+    textureName: string;
+    texturePath: string;
+    iconPath: string;
+    order: number;
+    
+    used = false; 
+    
+    constructor(name: string, ability: string, description: string, textureName: string ,order: number) {
         this.name = name;
         this.ability = ability;
         this.description = description;
@@ -10,12 +23,12 @@ class Character {
         this.order = order;
     }
 
-    useActive(player, targetPlayer = null) {
+    useActive(_player: Player, _targetPlayer?: Player, _cardIndex?: number, _targetCardIndex?: number) {
         if (this.used) return false;
         this.used = true;
         return true;
     }
-    usePassive(player) {
+    usePassive(player: Player) {
         player.cash += 1;
     }
 }
@@ -31,7 +44,7 @@ export class Shareholder extends Character {
         );
     }
 
-    useActive(player, targetPlayer) {
+    useActive(player: Player, targetPlayer: Player) {
         if (super.useActive(player)) {
             targetPlayer.skipNextTurn = true;
             return true;
@@ -52,9 +65,9 @@ export class Banker extends Character {
         );
     }
 
-    useActive(player, targetPlayer) {
+    useActive(player: Player, targetPlayer: Player) {
         if (super.useActive(player)) {
-            const uniqueColors = new Set(targetPlayer.assetList.map(asset => asset.color));
+            const uniqueColors = new Set(targetPlayer.assetList.map((asset: Asset) => asset.color));
             const goldToTake = uniqueColors.size;
             targetPlayer.gold -= goldToTake;
             player.gold += goldToTake;
@@ -76,10 +89,10 @@ export class Regulator extends Character {
         );
     }
 
-    useActive(player, targetPlayer, cardIndex, targetCardIndex) {
+    useActive(player: Player, targetPlayer: Player, cardIndex: number, targetCardIndex: number): boolean {
         if (super.useActive(player)) {
-            const tempCard = player.hand[cardIndex];
-            player.hand[cardIndex] = targetPlayer.hand[targetCardIndex];
+            const tempCard = player.hand[cardIndex]!;
+            player.hand[cardIndex] = targetPlayer.hand[targetCardIndex]!;
             targetPlayer.hand[targetCardIndex] = tempCard;
             player.positionCardsInHand();
             targetPlayer.positionCardsInHand();
@@ -102,7 +115,8 @@ export class CEO extends Character {
     }
 
     // Applied at start, no active ability needed
-    useActive(player) {
+    useActive(player: Player) {
+        // TODO: return super.useActive
         if (super.useActive(player)) {
             return true; // Keep ability used tracking but do nothing
         }
@@ -110,7 +124,7 @@ export class CEO extends Character {
     }
 
     // New method to apply passive effect
-    usePassive(player) {
+    usePassive(player: Player) {
         super.usePassive(player);
         player.playableAssets = 3;
             
@@ -131,14 +145,14 @@ export class CFO extends Character {
         );
     }
 
-    useActive(player) {
+    useActive(player: Player) {
         if (super.useActive(player)) {
             return true;
         }
         return false;
     }
 
-    usePassive(player) {
+    usePassive(player: Player) {
         super.usePassive(player);
         player.playableLiabilities = 3;
         
@@ -156,14 +170,14 @@ export class CSO extends Character {
         );
     }   
 
-    useActive(player) {
+    useActive(player: Player) {
         if (super.useActive(player)) {
             return true;
         }
         return false;
     }
 
-    usePassive(player) {
+    usePassive(player: Player) {
         super.usePassive(player);
             player.playableAssets = 2;
     }
@@ -180,14 +194,14 @@ export class HeadOfRD extends Character {
         );
     }
 
-    useActive(player) {
+    useActive(player: Player) {
         if (super.useActive(player)) {
             return true;
         }
         return false;
     }
 
-    usePassive(player) {
+    usePassive(player: Player) {
         super.usePassive(player);
         player.maxTempCards = 6;
         player.maxKeepCards = 4;
@@ -206,7 +220,7 @@ export class Stakeholder extends Character {
         );
     }
 
-    useActive(player, targetPlayer, assetIndex) {
+    useActive(player: Player, targetPlayer: Player, assetIndex: number) {
         if (super.useActive(player)) {
             const asset = targetPlayer.assetList[assetIndex];
             if (asset) {
@@ -218,11 +232,8 @@ export class Stakeholder extends Character {
         }
         return false;
     }
-    usePassive(player) {
-        if (super.usePassive(player)) {
-            return true; // Keep ability used tracking but do nothing
-        }
-        return false;
+    usePassive(player: Player) {
+        super.usePassive(player);
     }
 }
 
