@@ -3,11 +3,7 @@ import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Tween } from 'tweedle.js';
 import type Character from "./Characters.js";
-
-enum CardType {
-    Asset = 'Asset',
-    Liability = 'Liability',
-}
+import type { CardType } from "@shared-types";
 
 type HoveredCard = Asset | Liability | null;
 
@@ -20,7 +16,7 @@ class Player {
     playableAssets = 1;
     playableLiabilities = 1;
     character: Character | null = null;
-    othersHand: CardType[] = []; 
+    othersHand: CardType[] = [];
     isChaiman = false;
 
     assetList: Asset[] = [];
