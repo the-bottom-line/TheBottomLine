@@ -20,7 +20,7 @@ class GameState {
     }
 
     getCurrentPlayer() {
-        return this.players[this.currentPlayerIndex];
+        return this.players[this.currentPlayerIndex]!;
     }
 
     getPlayerById(id: number) {
@@ -28,7 +28,8 @@ class GameState {
     }
 
     getLocalPlayer() {
-        return this.getPlayerById(this.myId!);
+        // TODO: think about whether this should throw upon failure
+        return this.getPlayerById(this.myId!)!;
     }
 
     resetForNewRound() {
