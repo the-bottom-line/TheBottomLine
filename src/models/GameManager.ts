@@ -8,6 +8,7 @@ import type NetworkManager from './NetworkManager.js';
 import type { Application, Container } from 'pixi.js';
 import type { DirectResponse, EitherAssetLiability, PlayerInfo, UniqueResponse } from '@shared-types';
 import type Character from './Characters.js';
+import type { Response } from './NetworkManager.js';
 
 /*
 Dark Indigo (Walls)	#2a2d3a	A deep, desaturated blue. Great for large backgrounds.
@@ -18,11 +19,19 @@ Parchment (UI)	#f2e8d5	A warm, off-white for text and the "place card" backgroun
 Warm Light (Glow)	#f5e5a6	Use for light sources (like the chandelier) and hover effects.
 */
 
+type Action = Response["action"];
+
+// Build a handler map that MUST contain all actions
+type HandlerMap = {
+    [A in Action]: (resp: Extract<Response, { action: A }>) => void;
+};
+
 class GameManager {
     app: Application;
     gameState: GameState;
     uiManager: UIManager;
     networkManager: NetworkManager;
+    commandList: HandlerMap;
     
     activePopup: Container | null = null;
 
@@ -42,6 +51,45 @@ class GameManager {
         window.addEventListener('beforeunload', (event) => {
             console.log("call a function before reloading");
         });
+        
+        this.commandList = {
+            Error: _ => { },
+            PlayersInLobby: r => this.newPlayer(r.data),
+            StartGame: r => this.messageStartGame(r.data),
+            SelectingCharacters: r => this.chairmanSelectCharacter(r.data),
+            SelectedCharacter: r => this.receiveSelectableCharacters(r.data),
+            TurnStarts: r => this.turnStarts(r.data),
+            DrewCard: r => this.drewCard(r.data),
+            PutBackCard: r => this.putBackCard(r.data),
+            BoughtAsset: r => this.boughtAsset(r.data),
+            IssuedLiability: r => this.issuedLiability(r.data),
+            RedeemedLiability: r => this.redeemedLiability(r.data),
+            ShareholderIsFiring: r => { }, // TODO: implement
+            FiredCharacter: r => this.firedCharacter(r.data),
+            RegulatorSwapedYourCards: r => this.regulatorSwapedYourCards(r.data),
+            SwapedWithPlayer: r => this.swapedWithPlayer(r.data),
+            SwapedWithDeck: r => this.swapedWithDeck(r.data),
+            AssetDivested: r => { }, // TODO: handle
+            TurnEnded: r => { }, // TODO: handle
+            GameEnded: r => this.gameEnded(r.data),
+            YouStartedGame: r => { }, // TODO: handle
+            YouSelectedCharacter: r => this.youSelectedCharacter(r.data),
+            YouFiredCharacter: r => this.youFiredCharacter(r.data),
+            YouRegulatorOptions: r => this.youRegulatorOptions(r.data),
+            YouSwapDeck: r => this.youSwapDeck(r.data),
+            YouSwapPlayer: r => this.youSwapPlayer(r.data),
+            YouAreDivesting: r => this.youAreDivesting(r.data),
+            YouDrewCard: r => this.youDrewCard(r.data),
+            YouPutBackCard: r => this.youPutBackCard(r.data),
+            YouCharacterAbility: r => this.youCharacterAbility(r.data),
+            YouBoughtAsset: r => this.youBoughtAsset(r.data),
+            YouIssuedLiability: r => this.youIssuedLiability(r.data),
+            YouAreFiringSomeone: r => this.youAreFiringSomeone(r.data),
+            YouDivestedAnAsset: r => this.youDivestedAnAsset(r.data),
+            YouAreTerminatingSomeone: r => this.youAreTerminatingSomeone(r.data),
+            YouRedeemedLiability: r => this.youRedeemedLiability(r.data),
+            YouEndedTurn: r => this.youEndedTurn(),
+        };
     }
 
     async initRound() {
