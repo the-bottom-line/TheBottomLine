@@ -6,6 +6,7 @@ pkgs.mkShell {
     bun
     prettier
     typescript
+    eslint
   ];
 
   shellHook = ''
