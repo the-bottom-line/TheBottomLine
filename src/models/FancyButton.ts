@@ -1,8 +1,17 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { Button } from '@pixi/ui';
 
+export interface FancyButtonOptions {
+    text: string;
+    width?: number;
+    height?: number;
+    onPress?: () => void;
+}
+
 export class FancyButton extends Button {
-    constructor({ text, width = 200, height = 60, onPress }) {
+    constructor(options: FancyButtonOptions) {
+        const width = options.width || 200;
+        const height = options.height || 60;
         const cornerRadius = 15;
 
         const background = new Graphics()
@@ -11,7 +20,7 @@ export class FancyButton extends Button {
             .stroke({ width: 2, color: 0x000000 }); // Slight black outline
 
         const buttonText = new Text({
-            text,
+            text: options.text,
             style: { fill: '#f2e8d5', fontSize: 24, fontFamily: 'MyFont' }
         });
         buttonText.anchor.set(0.5);
@@ -19,6 +28,8 @@ export class FancyButton extends Button {
 
         super(new Container({ children: [background, buttonText] }));
 
-        this.onPress.connect(onPress);
+        if (options.onPress) {
+            this.onPress.connect(options.onPress);
+        }
     }
 }
