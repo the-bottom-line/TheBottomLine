@@ -4,7 +4,7 @@
  * Representation of an asset card. Each asset has a gold and a silver value, as well as an
  * associated color. Some cards alse have an [`AssetPowerup`].
  */
-export type Asset = { 
+export type AssetCard = { 
 /**
  * Title of the asset card.
  */
@@ -49,7 +49,7 @@ export type CardType = "Asset" | "Liability";
 /**
  * An enum containing all characters currently in the game in the order in which they are called.
  */
-export type Character = "Shareholder" | "Banker" | "Regulator" | "CEO" | "CFO" | "CSO" | "HeadRnD" | "Stakeholder";
+export type CharacterType = "Shareholder" | "Banker" | "Regulator" | "CEO" | "CFO" | "CSO" | "HeadRnD" | "Stakeholder";
 
 /**
  * Represtation of the colors associated with all assets as well as some selectable characters.
@@ -78,11 +78,11 @@ export type DirectResponse = { "action": "Error", "data": ResponseError } | { "a
 /**
  * The character this player selected.
  */
-character: Character, } } | { "action": "YouFiredCharacter", "data": { 
+character: CharacterType, } } | { "action": "YouFiredCharacter", "data": { 
 /**
  * The character that was fired.
  */
-character: Character, } } | { "action": "YouRegulatorOptions", "data": { 
+character: CharacterType, } } | { "action": "YouRegulatorOptions", "data": { 
 /**
  * The options this player has to swap with other players.
  */
@@ -90,7 +90,7 @@ options: Array<RegulatorSwapPlayer>,
 /**
  * Always [`Character::Regulator`]
  */
-character: Character, 
+character: CharacterType, 
 /**
  * A string containing information about what this character is allowed to do.
  */
@@ -110,7 +110,7 @@ options: Array<DivestPlayer>,
 /**
  * Always [`Character::Stakeholder`]
  */
-character: Character, 
+character: CharacterType, 
 /**
  * A string containing information about what this character is allowed to do.
  */
@@ -118,7 +118,7 @@ perk: string, } } | { "action": "YouDrewCard", "data": {
 /**
  * The card that was drawn
  */
-card: Array<EitherAssetLiability>, 
+card: EitherAssetLiability, 
 /**
  * Whether this player can draw another card.
  */
@@ -142,7 +142,7 @@ can_give_back_cards: boolean, } } | { "action": "YouCharacterAbility", "data": {
 /**
  * The character of the player.
  */
-character: Character, 
+character: CharacterType, 
 /**
  * A string containing information about what this player is allowed to do.
  */
@@ -150,7 +150,7 @@ perk: string, } } | { "action": "YouBoughtAsset", "data": {
 /**
  * The asset this player bought.
  */
-asset: Asset, 
+asset: AssetCard, 
 /**
  * If the market changed, a list of events and a new market is returned.
  */
@@ -158,15 +158,15 @@ market_change: MarketChange | null, } } | { "action": "YouIssuedLiability", "dat
 /**
  * The liability the player issued.
  */
-liability: Liability, } } | { "action": "YouAreFiringSomeone", "data": { 
+liability: LiabilityCard, } } | { "action": "YouAreFiringSomeone", "data": { 
 /**
  * The list of available characters to fire.
  */
-characters: Array<Character>, 
+characters: Array<CharacterType>, 
 /**
  * Always [`Character::Shareholder`]
  */
-character: Character, 
+character: CharacterType, 
 /**
  * A string containing information on what this character is allowed to do.
  */
@@ -178,11 +178,11 @@ gold_cost: number, } } | { "action": "YouAreTerminatingSomeone", "data": {
 /**
  * A list of characters whose credit can be terminated.
  */
-characters: Array<Character>, 
+characters: Array<CharacterType>, 
 /**
  * Always [`Character::Banker`]
  */
-character: Character, 
+character: CharacterType, 
 /**
  * A string containing information on what this character is allowed to do.
  */
@@ -199,7 +199,7 @@ export type DivestAsset = {
 /**
  * The asset in question.
  */
-asset: Asset, 
+asset: AssetCard, 
 /**
  * The cost of divisting this asset based.
  */
@@ -238,12 +238,12 @@ export type DrawCardError = { "MaximumCardsDrawn": number };
  * A nicer tagged representation of `Either<Asset, Liability>` which looks much better when
  * serialized.
  */
-export type EitherAssetLiability = { "card_type": "asset" } & Asset | { "card_type": "liability" } & Liability;
+export type EitherAssetLiability = { "card_type": "asset" } & AssetCard | { "card_type": "liability" } & LiabilityCard;
 
 /**
  * The event card type
  */
-export type Event = { 
+export type EventCard = { 
 /**
  * The title of the event
  */
@@ -263,7 +263,7 @@ minus_gold: Array<Color>,
 /**
  * A character that skips their turn because of this event
  */
-skip_turn: Character | null, };
+skip_turn: CharacterType | null, };
 
 /**
  * Errors related to firing a character.
@@ -277,7 +277,7 @@ export type FrontendRequest = { "action": "StartGame" } | { "action": "SelectCha
 /**
  * The character the player wants to select.
  */
-character: Character, } } | { "action": "DrawCard", "data": { 
+character: CharacterType, } } | { "action": "DrawCard", "data": { 
 /**
  * The [`CardType`] the player wants to draw.
  */
@@ -301,7 +301,7 @@ liability_idx: number, } } | { "action": "UseAbility" } | { "action": "FireChara
 /**
  * The character that is to be fired.
  */
-character: Character, } } | { "action": "SwapWithDeck", "data": { 
+character: CharacterType, } } | { "action": "SwapWithDeck", "data": { 
 /**
  * The list of card indices to be swapped with the deck.
  */
@@ -333,7 +333,7 @@ export type GiveBackCardError = { "InvalidCardIndex": number } | "Unnecessary";
  * Representation of a liability card. Each liability has an associated gold value as well as a
  * [`LiabilityType`], which determines how expensive it is to issue this liability.
  */
-export type Liability = { 
+export type LiabilityCard = { 
 /**
  * Gold value of this liability
  */
@@ -364,7 +364,7 @@ export type LobbyError = { "UsernameAlreadyTaken": string } | "InvalidUsername";
 /**
  * The market card type
  */
-export type Market = { 
+export type MarketCard = { 
 /**
  * The title of the market
  */
@@ -413,11 +413,11 @@ export type MarketChange = {
 /**
  * A list of events encountered in search for a market card
  */
-events: Array<Event>, 
+events: Array<EventCard>, 
 /**
  * The new market card
  */
-new_market: Market, };
+new_market: MarketCard, };
 
 /**
  * A representation of the market condition for a specific color. It can either be
@@ -473,11 +473,11 @@ hand: Array<CardType>,
 /**
  * The assets this player has bought.
  */
-assets: Array<Asset>, 
+assets: Array<AssetCard>, 
 /**
  * The liabilities this player has issued.
  */
-liabilities: Array<Liability>, 
+liabilities: Array<LiabilityCard>, 
 /**
  * The amount of cash this player has.
  */
@@ -485,7 +485,7 @@ cash: number,
 /**
  * The character this player has chosen, if applicable.
  */
-character: Character | null, };
+character: CharacterType | null, };
 
 /**
  * Representation of a player's final score, which contains their id as well as their score.
@@ -505,7 +505,7 @@ export type PlayerScore = { id: PlayerId, name: string, score: number, };
 /**
  * Errors that can happen when redeeming a liability.
  */
-export type RedeemLiabilityError = { "NotAllowedToRedeemLiability": Character } | "ExceedsMaximumLiabilities" | { "InvalidLiabilityIndex": number } | { "NotEnoughCash": { 
+export type RedeemLiabilityError = { "NotAllowedToRedeemLiability": CharacterType } | "ExceedsMaximumLiabilities" | { "InvalidLiabilityIndex": number } | { "NotEnoughCash": { 
 /**
  * The amount of cash a player has
  */
@@ -541,7 +541,7 @@ export type ResponseError = { "Game": GameError } | "GameNotYetStarted" | "GameA
 /**
  * Errors that can happen while selecting characters.
  */
-export type SelectingCharactersError = "NotPickingCharacters" | { "AlreadySelectedCharacter": Character } | "UnavailableCharacter" | "NotChairman";
+export type SelectingCharactersError = "NotPickingCharacters" | { "AlreadySelectedCharacter": CharacterType } | "UnavailableCharacter" | "NotChairman";
 
 /**
  * Errors related to swapping hands/cards.
@@ -579,7 +579,7 @@ player_info: Array<PlayerInfo>,
 /**
  * The market at the start of the game.
  */
-initial_market: Market, } } | { "action": "SelectingCharacters", "data": { 
+initial_market: MarketCard, } } | { "action": "SelectingCharacters", "data": { 
 /**
  * The id of the chairman, or the person who selects a character first.
  */
@@ -587,15 +587,15 @@ chairman_id: PlayerId,
 /**
  * If it's this player's turn, a list of characters that can be selected.
  */
-selectable_characters: Array<Character> | null, 
+selectable_characters: Array<CharacterType> | null, 
 /**
  * A list of characters that cannot be selected by anyone.
  */
-open_characters: Array<Character>, 
+open_characters: Array<CharacterType>, 
 /**
  * A character that only the chairman can see, but not select.
  */
-closed_character: Character | null, 
+closed_character: CharacterType | null, 
 /**
  * The order each player selects a character in.
  */
@@ -607,11 +607,11 @@ currently_picking_id: PlayerId | null,
 /**
  * If it's this player's turn, a list of characters that can be selected.
  */
-selectable_characters: Array<Character> | null, 
+selectable_characters: Array<CharacterType> | null, 
 /**
  * A character that only the chairman can see, but not select.
  */
-closed_character: Character | null, } } | { "action": "TurnStarts", "data": { 
+closed_character: CharacterType | null, } } | { "action": "TurnStarts", "data": { 
 /**
  * Id of the player whose turn it is
  */
@@ -640,11 +640,11 @@ playable_liabilities: number,
 /**
  * The character of this player.
  */
-player_character: Character, 
+player_character: CharacterType, 
 /**
  * A list of characters which were called but were not available.
  */
-skipped_characters: Array<Character>, } } | { "action": "DrewCard", "data": { 
+skipped_characters: Array<CharacterType>, } } | { "action": "DrewCard", "data": { 
 /**
  * The id of the player who drew a card.
  */
@@ -668,7 +668,7 @@ player_id: PlayerId,
 /**
  * The asset this player bought.
  */
-asset: Asset, 
+asset: AssetCard, 
 /**
  * If buying the asset changed the market, sends a list of events as well as the new
  * market.
@@ -681,7 +681,7 @@ player_id: PlayerId,
 /**
  * The liability this player issued.
  */
-liability: Liability, } } | { "action": "RedeemedLiability", "data": { 
+liability: LiabilityCard, } } | { "action": "RedeemedLiability", "data": { 
 /**
  * The id of the player who
  */
@@ -697,7 +697,7 @@ player_id: PlayerId,
 /**
  * The character which was fired.
  */
-character: Character, } } | { "action": "RegulatorSwapedYourCards", "data": { 
+character: CharacterType, } } | { "action": "RegulatorSwapedYourCards", "data": { 
 /**
  * This player's new hand.
  */
