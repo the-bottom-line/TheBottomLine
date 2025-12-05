@@ -1,7 +1,7 @@
 import type Asset from "./Asset.ts";
 import type Player from "./Player.ts";
 
-class Character {
+export default class Character {
     name: string;
     ability: string;
     description: string;
