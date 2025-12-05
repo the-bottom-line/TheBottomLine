@@ -7,7 +7,7 @@ import type Player from './Player.js';
 import type Character from './Characters.js';
 import type Liability from './Liability.js';
 import type Asset from './Asset.js';
-import type { Market, PlayerId, PlayerScore, RegulatorSwapPlayer } from '@shared-types';
+import type { CardType, MarketCard, PlayerId, PlayerScore, RegulatorSwapPlayer } from '@shared-types';
 import type GameState from './GameState.js';
 
 class UIManager {
@@ -419,7 +419,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
         player.positionTempCards();
     }
 
-    async displayOtherPlayerHand(assets: Asset[], liabilities: Liability[]) {        
+    async displayOtherPlayerHand(assets: Extract<CardType, 'Asset'>[], liabilities: Extract<CardType, 'Liability'>[]) {        
         // Remove all previous card backs to prevent ghost cards
         // TODO: fix custom property error or use different way to solve ghosting error
         // const oldCardBacks = this.elseTurnContainer.children.filter(child => child.isCardBack);
@@ -1043,7 +1043,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
             onPress: () => {
                 // Close the current popup and open the deck swap one
                 container.removeChild(tempContainer);   
-                this.displaySwapWithDeckPopup(container, gameState.getLocalPlayer()!, (card_idxs) => {
+                this.displaySwapWithDeckPopup(container, gameState.getLocalPlayer(), (card_idxs) => {
                     onSelectCallback2(card_idxs); 
                 });
             }
@@ -1220,7 +1220,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
         okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
         popupContainer.addChild(okButton.view);
     }
-    showMarket(marketData: Market){
+    showMarket(marketData: MarketCard){
         if (!marketData) {
             return;
         }
