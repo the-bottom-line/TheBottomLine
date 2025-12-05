@@ -1,8 +1,23 @@
-import type { DirectResponse, UniqueResponse } from "@shared-types";
+import type { Connect, DirectResponse, FrontendRequest, UniqueResponse } from "@shared-types";
 import type GameManager from "./GameManager.js";
 
 type NetworkResponse = MessageEvent<string>;
 export type Response = DirectResponse | UniqueResponse;
+
+type OutgoingRequest = Connect | FrontendRequest;
+
+// Helper type to extract data for a specific action request
+type ExtractData<T extends OutgoingRequest['action']> = Extract<OutgoingRequest, { action: T }> extends { data: infer D } ? D : never;
+
+// Helper type to check if an action has data
+type HasData<T extends OutgoingRequest['action']> = Extract<OutgoingRequest, { action: T }> extends { data: any } ? true : false;
+
+type ExtractAction<A extends OutgoingRequest["action"]> =
+    Extract<OutgoingRequest, { action: A }>;
+
+type ActionData<A extends OutgoingRequest["action"]> =
+    ExtractAction<A> extends { data: infer D } ? D : undefined;
+
 
 class NetworkManager {
     url: string;
@@ -89,13 +104,15 @@ class NetworkManager {
             this.queue.push(data);
         }
     }
-
-    // Creates a structured message with a given command and data
-    sendCommand(command: string, data?: any) {
+    
+    sendCommand<T extends OutgoingRequest['action']>(
+        command: T,
+        ...args: HasData<T> extends true ? [data: ExtractData<T>] : [data?: never]
+    ): void {
         let packet = {
-            "action" : command,
-            "data" : data
-        }
+            "action": command,
+            "data": args[0],
+        };
         let jsonData = JSON.stringify(packet, null, 0);
         console.log(jsonData);
         this.sendMessage(jsonData);

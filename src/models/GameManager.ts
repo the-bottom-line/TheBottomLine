@@ -181,7 +181,7 @@ class GameManager {
 
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
         this.uiManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, (character) => {
-            this.networkManager.sendCommand("UseAbility", { "target_player_id": player.playerID });
+            this.networkManager.sendCommand("UseAbility");
         });
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
