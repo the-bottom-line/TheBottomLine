@@ -2,6 +2,12 @@ import Player from './Player.js';
 import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Group } from 'tweedle.js';
+import type GameState from './GameState.js';
+import type UIManager from './UIManager.js';
+import type NetworkManager from './NetworkManager.js';
+import type { Application, Container } from 'pixi.js';
+import type { DirectResponse, EitherAssetLiability, PlayerInfo, UniqueResponse } from '@shared-types';
+import type Character from './Characters.js';
 
 /*
 Dark Indigo (Walls)	#2a2d3a	A deep, desaturated blue. Great for large backgrounds.
@@ -13,15 +19,19 @@ Warm Light (Glow)	#f5e5a6	Use for light sources (like the chandelier) and hover 
 */
 
 class GameManager {
+    app: Application;
+    gameState: GameState;
+    uiManager: UIManager;
+    networkManager: NetworkManager;
+    
+    activePopup: Container | null = null;
 
-    constructor(gameState, uiManager, networkManager) {
+    constructor(gameState: GameState, uiManager: UIManager, networkManager: NetworkManager) {
         
         this.gameState = gameState;
         this.uiManager = uiManager;
         this.networkManager = networkManager;
         this.app = uiManager.app;
-
-        this.activePopup = null;
 
         this.uiManager.app.ticker.add(() => {
             Group.shared.update();
@@ -67,16 +77,21 @@ class GameManager {
         };
 
         this.uiManager.createJoinButton(joinGame);
+        
+        
 
         this.uiManager.showMarket({
-            "title": "Stable Market",
-            "rfr": 0,
-            "mrp": 0,
-            "Yellow": "Zero",
-            "Blue": "Zero",
-            "Green": "Zero",
-            "Purple": "Zero",
-            "Red": "Zero",
+            title: "Stable Market",
+            rfr: 0,
+            mrp: 0,
+            Yellow: "Zero",
+            Blue: "Zero",
+            Green: "Zero",
+            Purple: "Zero",
+            Red: "Zero",
+            // TODO: probably coordinate with backend to get rid of backend-provided urls entirely
+            image_front_url: '',
+            image_back_url: ''
         });
         
     }
@@ -97,17 +112,19 @@ class GameManager {
         }
         this.updateUI();
     }
-    showLocalPlayerPicking(player){
+    showLocalPlayerPicking(player: Player){
         this.uiManager.showScreen('picking');
         this.uiManager.displayTempCards(player);
-        this.uiManager.statsText.text = `${player.name} is ${player.character.name} and is picking cards`;
+        // TODO: make sure throwing an error if player does not have character is correct. This is
+        // the same behaviour as the js version
+        this.uiManager.statsText.text = `${player.name} is ${player.character!.name} and is picking cards`;
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         player.positionCardsInHand();
 
         //this.uiManager.createAssetDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" }));
         //this.uiManager.createLiabilityDeck(() => this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" }));
     }
-    otherPlayerScreenSetup(player){
+    otherPlayerScreenSetup(player: Player){
         this.uiManager.showScreen('elseTurn');
         this.uiManager.elseTurnContainer.removeChildren();
         this.uiManager.playedCardsContainer.removeChildren();
@@ -195,12 +212,13 @@ class GameManager {
         this.uiManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList);
     
     }
-    async messageStartGame(data) {
+    async messageStartGame(data: Extract<UniqueResponse, { action: "StartGame" }>['data']) {
         console.log("Received StartGame data from server:", data);
         
         this.gameState.players = []; 
         this.gameState.myId = data.id;
-        let localPlayer = new Player(this.gameState.username, data.id,this.app);
+        // TODO: think about whether this should crash if gamestate does not have a username.
+        let localPlayer = new Player(this.gameState.username!, data.id,this.app);
         localPlayer.reveal = true;
         localPlayer.cash = data.cash;
 
@@ -246,7 +264,7 @@ class GameManager {
         this.initRound();
     }
 
-    initPlayers(player_info){
+    initPlayers(player_info: PlayerInfo[]){
         // Initialize all players from player_info
         for (const player_data of player_info) {
             const player = new Player(player_data.name, player_data.id,this.app);
@@ -277,8 +295,8 @@ class GameManager {
         localPlayer.positionCardsInHand();
     }
 
-    setupCardInteractions(card) {
-        const localPlayer = this.gameState.getLocalPlayer();
+    setupCardInteractions(card: Asset | Liability) {
+        const localPlayer = this.gameState.getLocalPlayer()!;
 
         // Setup click-to-play listener
         card.sprite.removeAllListeners('mousedown'); // Clear old listeners to be safe
@@ -301,7 +319,7 @@ class GameManager {
         card.sprite.on('cardHover', (hoveredCard) => localPlayer.positionCardsInHand(hoveredCard));
         card.sprite.on('cardOut', () => localPlayer.positionCardsInHand());
     }
-    makeCardDiscardable(newCard){
+    makeCardDiscardable(newCard: Asset | Liability){
         const currentPlayer = this.gameState.getCurrentPlayer();
         newCard.sprite.on('cardDiscarded', (discardCard) => {
             const cardIndex = currentPlayer.hand.indexOf(discardCard);
@@ -321,11 +339,11 @@ class GameManager {
             
         });
     }
-    async youDrewCard(data) {
+    async youDrewCard(data: Extract<DirectResponse, { action: "YouDrewCard" }>['data']) {
         console.log("You Drew Card:", data);
         const cardData = data.card;
         const currentPlayer = this.gameState.getCurrentPlayer();
-        let newCard;
+        let newCard: Asset | Liability;
 
         if (cardData.card_type === "asset") {
             newCard = new Asset(
@@ -369,7 +387,7 @@ class GameManager {
             //this.youPutBackCard({ kept_cards: [] }); // Passing empty array to avoid errors, as cards are already moved.
         }
     }
-    async drewCard(data){
+    async drewCard(data: Extract<UniqueResponse, { action: "DrewCard" }>['data']){
         const currentPlayer = this.gameState.getCurrentPlayer();
         if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
             console.log("Drew Card:", data);
@@ -377,12 +395,12 @@ class GameManager {
             this.otherCards();
         }
     }
-    youPutBackCard(data) {
+    youPutBackCard(data: Extract<DirectResponse, { action: "YouPutBackCard" }>['data']) {
         const localPlayer = this.gameState.getLocalPlayer();
         if (!localPlayer) return;
         
         const cardIndex = data.card_idx;
-        const card = localPlayer.hand[cardIndex];
+        const card = localPlayer.hand[cardIndex]!;
         console.log(localPlayer.hand, card);
         this.uiManager.tempCardsContainer.removeChild(card.sprite, card.discardButton);
         localPlayer.hand.splice(cardIndex,1);
@@ -400,7 +418,7 @@ class GameManager {
         }
       
     }
-    putBackCard(data){
+    putBackCard(data: Extract<UniqueResponse, { action: "PutBackCard" }>['data']){
         const currentPlayer = this.gameState.getPlayerById(data.player_id);
         
         
@@ -411,7 +429,7 @@ class GameManager {
             this.otherPlayerScreenSetup(currentPlayer);
         }
     }
-    newPlayer(data) {
+    newPlayer(data: Extract<UniqueResponse, { action: "PlayersInLobby" }>['data']) {
         this.uiManager.showScreen('lobby');
         //this.uiManager.statsText.text = `${data.usernames.length} / 4 Players`;
         this.gameState.players = []; 
@@ -426,27 +444,36 @@ class GameManager {
         
     }
 
-    chairmanSelectCharacter(data){ 
+    chairmanSelectCharacter(data: Extract<UniqueResponse, { action: "SelectingCharacters" }>['data']){ 
         this.uiManager.showScreen("character");
         this.gameState.resetForNewRound();
 
-        const currentPlayer = this.gameState.getPlayerById(data.chairman_id); 
+        // TODO: think about why this does not use gameState.currentPlayer().
+        const currentPlayer = this.gameState.getPlayerById(data.chairman_id)!; 
         this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
         currentPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
 
         this.gameState.openCharacters = this.gameState.characters.filter(character =>
-            data.open_characters.includes(character.textureName)
+            data.open_characters.map(c => c.toString()).includes(character.textureName)
         );
         
 
         if (currentPlayer.playerID === this.gameState.myId) {
-            this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                data.selectable_characters.includes(character.textureName)
-            );
-            let closedCharacter = this.gameState.characters.filter(character =>
-                data.closed_character.includes(character.textureName)
-            );
+            const selectable_characters = data.selectable_characters;
+            if (selectable_characters) {
+                this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
+                    selectable_characters.map(c => c.toString()).includes(character.textureName)
+                );
+            }
+            let closedCharacter: Character[] = [];
+            
+            let closed_character = data.closed_character;
+            if (closed_character) {
+                closedCharacter = this.gameState.characters.filter(character =>
+                    closed_character.includes(character.textureName)
+                );
+            }
             console.log(closedCharacter);
 
             this.uiManager.displayCharacterSelection(
@@ -464,19 +491,22 @@ class GameManager {
 
     }
 
-    receiveSelectableCharacters(data) {
+    receiveSelectableCharacters(data: Extract<UniqueResponse, { action: "SelectedCharacter" }>['data']) {
         this.uiManager.showScreen('character');
         if(data.currently_picking_id == null){ // is this still nececery?
             return;
         }
         console.log("Received selectable characters:", data);
         
-        const currentPlayer = this.gameState.getPlayerById(data.currently_picking_id);
+        const currentPlayer = this.gameState.getPlayerById(data.currently_picking_id)!;
         this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
         if (currentPlayer.playerID === this.gameState.myId) {
-            this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                data.selectable_characters.includes(character.textureName)
-            );
+            const selectable_characters = data.selectable_characters;
+            if (selectable_characters) {
+                this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
+                    selectable_characters.map(c => c.toString()).includes(character.textureName)
+                );
+            }
 
             this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, this.gameState.openCharacters, (character) => {
                 this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
@@ -488,15 +518,15 @@ class GameManager {
            
         }
     }
-    youSelectedCharacter(data) {
+    youSelectedCharacter(data: Extract<DirectResponse, { action: "YouSelectedCharacter" }>['data']) {
         // This function might be used to confirm your character selection
         const localPlayer = this.gameState.getLocalPlayer();
         if (localPlayer) {
-            localPlayer.character = this.gameState.characters.find(c => c.textureName === data.character);
+            localPlayer.character = this.gameState.characters.find(c => c.textureName === data.character)!;
             console.log(`Local player ${localPlayer.name} selected ${localPlayer.character.name}`);
         }
     }
-    turnStarts(data) {
+    turnStarts(data: Extract<UniqueResponse, { action: "TurnStarts" }>['data']) {
         console.log("Received TurnStart data from server:", data);
 
         const drawableCards = data.draws_n_cards;
@@ -533,11 +563,13 @@ class GameManager {
       
     }
    
-    youBoughtAsset(data){
+    // Coordinate with backend to also send idx of card that moved from hand so it doesn't have to
+    // happen here
+    youBoughtAsset(data: Extract<DirectResponse, { action: "YouBoughtAsset" }>['data']){
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
 
-        const card = player.hand.find(c => c.title === data.asset.title && c.gold === data.asset.gold_value && c.silver === data.asset.silver_value);
+        const card = player.hand.filter(c => c instanceof Asset).find(c => c.title === data.asset.title && c.gold === data.asset.gold_value && c.silver === data.asset.silver_value);
         if (!card) return;
 
         const cardIndex = player.hand.indexOf(card);
@@ -562,7 +594,7 @@ class GameManager {
         this.updateUI();
       
     }
-    async boughtAsset(data){
+    async boughtAsset(data: Extract<UniqueResponse, { action: "BoughtAsset" }>['data']){
         if (data.market_change) {
             this.uiManager.showMarket(data.market_change.new_market);
         }
@@ -587,14 +619,17 @@ class GameManager {
             this.otherCards();
             this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
             this.updateUI();
-            this.networkManager.notifyComman
+            
+            // TODO: I found this in this function. I assume it should be removed. I don't
+            // understand why this never caused any crashes.
+            // this.networkManager.notifyComman
         }
     }
-    youIssuedLiability(data){
+    youIssuedLiability(data: Extract<DirectResponse, { action: "YouIssuedLiability" }>['data']){
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
 
-        const card = player.hand.find(c => c.title === data.liability.rfr_type && c.gold === data.liability.value);
+        const card = player.hand.filter(c => c instanceof Liability).find(c => c.title === data.liability.rfr_type && c.gold === data.liability.value);
         if (!card) return;
 
         const cardIndex = player.hand.indexOf(card);
@@ -618,7 +653,7 @@ class GameManager {
         this.updateUI();
        
     }
-    youRedeemedLiability(data){
+    youRedeemedLiability(data: Extract<DirectResponse, { action: "YouRedeemedLiability" }>['data']){
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
         
@@ -636,10 +671,10 @@ class GameManager {
         
         this.updateUI();
     }
-    redeemedLiability(data){
+    redeemedLiability(data: Extract<UniqueResponse, { action: "RedeemedLiability" }>['data']){
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
-            const liability = player.liabilityList[data.liability_idx];
+            const liability = player.liabilityList[data.liability_idx]!;
             player.liabilityList.splice(data.liability_idx, 1); // remove liability from player
             player.cash -= liability.gold;
             
@@ -649,7 +684,7 @@ class GameManager {
             
         }
     }
-    async issuedLiability(data){
+    async issuedLiability(data: Extract<UniqueResponse, { action: "IssuedLiability" }>['data']){
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
             const liabilityIndex = player.othersHand.indexOf('Liability');
@@ -671,15 +706,15 @@ class GameManager {
         }
     }
 
-    async youAreFiringSomeone(data) {
-            let characters = this.gameState.characters.filter(character => data.characters.includes(character.textureName));
+    async youAreFiringSomeone(data: Extract<DirectResponse, { action: "YouAreFiringSomeone" }>['data']) {
+        let characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
 
             this.activePopup = await this.uiManager.StakeholdersPerk(
                 this.uiManager.mainContainer, // Or the active container
                 characters,
                 (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.textureName }));
     }
-    youFiredCharacter(data){
+    youFiredCharacter(data: Extract<DirectResponse, { action: "YouFiredCharacter" }>['data']){
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
@@ -687,17 +722,17 @@ class GameManager {
 
         this.switchToMainPhase();
     }
-    firedCharacter(data){
+    firedCharacter(data: Extract<UniqueResponse, { action: "FiredCharacter" }>['data']){
         const localPlayer = this.gameState.getLocalPlayer();
-        let character = this.gameState.characters.find(character => data.character.includes(character.textureName));
+        let character = this.gameState.characters.find(character => data.character == character.characterType)!;
         this.uiManager.firedCharacter(character,localPlayer)
     }
-    youCharacterAbility(data){
-        let character = this.gameState.characters.find(character => data.character.includes(character.textureName));
+    youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){
+        let character = this.gameState.characters.find(character => data.character == character.characterType)!;
         let perk = data.perk;
         this.uiManager.youCharacterAbility(character,perk)
     }
-    youAreDivesting(data){
+    youAreDivesting(data: Extract<DirectResponse, { action: "YouAreDivesting" }>['data']){
         console.log("You are divesting:", data.options);
 
         
@@ -705,7 +740,9 @@ class GameManager {
             const player = this.gameState.getPlayerById(option.player_id);
             if (!player) return null;
             
-            const divestibleAssets = [];
+            const divestibleAssets: { asset: Asset, cost: number }[] = [];
+            // TODO: coordinate with backend to actually get the data you want without needing this
+            // conversion
             option.assets.forEach(divestOption => {
                 const playerAsset = player.assetList.find(pa =>
                     pa.title === divestOption.asset.title &&
@@ -730,7 +767,8 @@ class GameManager {
                 }
         );
     }
-    youDivestedAnAsset(data){
+    // TODO: update the player's gold?
+    youDivestedAnAsset(data: Extract<DirectResponse, { action: "YouDivestedAnAsset" }>['data']){
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
@@ -738,10 +776,11 @@ class GameManager {
 
         this.switchToMainPhase();
     }
-    youAreTerminatingSomeone(data){
+    // TODO: coordinate with backend to see whether this is needed at all?
+    youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
 
     }
-    youRegulatorOptions(data){
+    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){
         console.log(data);
         let options = data.options;
         let perk = data.perk;
@@ -773,7 +812,24 @@ class GameManager {
         );
         
     }
-    async youSwapPlayer(data){
+    // TODO: coordinate with backend to rename to `swapped` with two ps
+    async swapedWithPlayer(data: Extract<UniqueResponse, { action: "SwapedWithPlayer" }>['data']){
+        console.log("swapedWithPlayer:", data);
+        if (this.activePopup) {
+            this.activePopup.destroy({ children: true });
+            this.activePopup = null;
+        }
+
+        const regulator = this.gameState.players.find(p => p.playerID === data.regulator_id)!;
+        const target = this.gameState.players.find(p => p.playerID === data.target_id)!;
+        let temphand = regulator.hand;
+        regulator.hand = target.hand;
+        target.hand = temphand;
+        
+        this.switchToMainPhase();
+    }
+
+    async youSwapPlayer(data: Extract<DirectResponse, { action: "YouSwapPlayer" }>['data']){
         console.log("youSwapPlayer:", data);
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
@@ -783,7 +839,7 @@ class GameManager {
         await this._updateHandFromServer(data.new_cards);
         this.switchToMainPhase();
     }
-    async regulatorSwapedYourCards(data){
+    async regulatorSwapedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwapedYourCards" }>['data']){
         console.log("regulatorSwapedYourCards:", data);
         // This function is called on the player whose cards were taken.
         // We'll update their hand with the new cards they received.
@@ -801,7 +857,7 @@ class GameManager {
             this.uiManager.displayRegulatorSwapNotification(container, regulatorPlayer);
         }
     }
-    youSwapDeck(data) {
+    youSwapDeck(data: Extract<DirectResponse, { action: "YouSwapDeck" }>['data']) {
         console.log("youSwapDeck:", data);
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
@@ -819,7 +875,7 @@ class GameManager {
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         localPlayer.positionCardsInHand();
     }
-    swapedWithDeck(data){
+    swapedWithDeck(data: Extract<UniqueResponse, { action: "SwapedWithDeck" }>['data']){
         const currentPlayer = this.gameState.getCurrentPlayer();
         if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
             console.log("Regulator swapped with deck:", data);
@@ -841,7 +897,7 @@ class GameManager {
         }
     }
 
-    async _updateHandFromServer(newCardsData) {
+    async _updateHandFromServer(newCardsData: EitherAssetLiability[]) {
         const localPlayer = this.gameState.getLocalPlayer();
         if (!localPlayer) return;
 
@@ -877,30 +933,13 @@ class GameManager {
         }
     }
 
-    /**
-    * @param {Object} data - The data received from the server.
-    * @param {Object.<number, number>} data.scores - Map of playerid (integers) to scores (numbers).
-    */
-    gameEnded(data) {
-        const names = this.gameState.players.map(p => p.name);
+    gameEnded(data: Extract<UniqueResponse, { action: "GameEnded" }>['data']) {
         
-        // const scores = data.scores;
-        console.log("Game ended!");
-        
-        const scores = Object.entries(data.scores).map(([id, score]) => {
-            
-            const player = this.gameState.getPlayerById(parseInt(id));
-            console.log(`${player.name}: ${scores[id]}`);
-          
-            return {
-                name: player.name,
-                score
-            }
-        });
+        console.log("Game ended!", data.scores);
         
         this.uiManager.showScreen('results');
         
-        this.uiManager.gameEnded(scores, names);
+        this.uiManager.gameEnded(data.scores);
     }
 }
 
