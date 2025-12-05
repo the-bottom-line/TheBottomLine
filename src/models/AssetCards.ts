@@ -1,36 +1,34 @@
 import { Assets, Sprite } from 'pixi.js';
-import Asset from './Asset.js';
-import boardgameData from '../../boardgame.json' assert { type: 'json' };
+import boardgameData from '../../boardgame.json' with { type: 'json' };
+
 class AssetCards {
-    constructor() {
-        this.cardTemplates = [];
-        this.deckSprite = null;
-        this.initializeDeck();
-    }
+    deckSprite?: Sprite;
+    
+    // TODO: probably get rid of this entirely
 
-    initializeDeck() {
-        const assetCards = boardgameData.deck_list.asset_deck.card_list;
-        assetCards.forEach(card=>{
-            this.cardTemplates.push({
-                title: card.title,
-                color: card.color,
-                gold: card.gold_value,
-                silver: card.silver_value,
-                ability: card.ability,
-                texturePath: card.card_image_url
-            });
-        })
-    }
+    // initializeDeck() {
+    //     const assetCards = boardgameData.deck_list.asset_deck.card_list;
+    //     assetCards.forEach(card=>{
+    //         this.cardTemplates.push({
+    //             title: card.title,
+    //             color: card.color,
+    //             gold: card.gold_value,
+    //             silver: card.silver_value,
+    //             ability: card.ability,
+    //             texturePath: card.card_image_url
+    //         });
+    //     })
+    // }
 
-    async initializeAllSprites() {
-        return Promise.resolve();
-    }
+    // async initializeAllSprites() {
+    //     return Promise.resolve();
+    // }
 
-    getRandomCard() {
-        const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
-        const template = this.cardTemplates[randomIndex];
-        return new Asset( template.title, template.color, template.gold, template.silver, template.ability, template.texturePath );
-    }
+    // getRandomCard() {
+    //     const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
+    //     const template = this.cardTemplates[randomIndex];
+    //     return new Asset( template.title, template.color, template.gold, template.silver, template.ability, template.texturePath );
+    // }
 
     async initializeDeckSprite() {
         const texture = await Assets.load(boardgameData.deck_list.asset_deck.card_image_back_url);
@@ -43,7 +41,7 @@ class AssetCards {
         return this.deckSprite;
     }
 
-    setDeckPosition(x, y) {
+    setDeckPosition(x: number, y: number) {
         if (this.deckSprite) {
             this.deckSprite.x = x;
             this.deckSprite.y = y;
