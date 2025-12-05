@@ -9,7 +9,7 @@ class Asset extends GeneralCard{
     ability: string | null = null;
     isTemporary = false;
     
-    constructor(title: string, color: string, gold: number, silver: number, ability: string, texturePath: string) {
+    constructor(title: string, color: string, gold: number, silver: number, ability: string | null, texturePath: string) {
         super(texturePath);
         this.title = title;
         this.color = color;
