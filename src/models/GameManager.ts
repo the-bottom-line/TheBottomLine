@@ -18,6 +18,14 @@ Parchment (UI)	#f2e8d5	A warm, off-white for text and the "place card" backgroun
 Warm Light (Glow)	#f5e5a6	Use for light sources (like the chandelier) and hover effects.
 */
 
+export type DivestmentTarget = {
+    player: Player;
+    assets: {
+        asset: Asset;
+        cost: number;
+    }[];
+};
+
 class GameManager {
     app: Application;
     gameState: GameState;
@@ -39,7 +47,7 @@ class GameManager {
 
         this.gameState.currentPhase = 'lobby';
 
-        window.addEventListener('beforeunload', (event) => {
+        window.addEventListener('beforeunload', () => {
             console.log("call a function before reloading");
         });
     }
@@ -98,7 +106,7 @@ class GameManager {
 
     
     startTurnPlayerVisibilty() {
-        let player = this.gameState.getCurrentPlayer();
+        const player = this.gameState.getCurrentPlayer();
 
         this.gameState.currentPhase = 'picking';
 
@@ -132,7 +140,7 @@ class GameManager {
         this.otherCards();
 
         this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
-        this.uiManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, (character) => {
+        this.uiManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, () => {
             this.networkManager.sendCommand("UseAbility");
         });
         this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
@@ -218,7 +226,7 @@ class GameManager {
         this.gameState.players = []; 
         this.gameState.myId = data.id;
         // TODO: think about whether this should crash if gamestate does not have a username.
-        let localPlayer = new Player(this.gameState.username!, data.id,this.app);
+        const localPlayer = new Player(this.gameState.username!, data.id,this.app);
         localPlayer.reveal = true;
         localPlayer.cash = data.cash;
 
@@ -468,7 +476,7 @@ class GameManager {
             }
             let closedCharacter: Character[] = [];
             
-            let closed_character = data.closed_character;
+            const closed_character = data.closed_character;
             if (closed_character) {
                 closedCharacter = this.gameState.characters.filter(character =>
                     closed_character.includes(character.characterType)
@@ -707,14 +715,14 @@ class GameManager {
     }
 
     async youAreFiringSomeone(data: Extract<DirectResponse, { action: "YouAreFiringSomeone" }>['data']) {
-        let characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
+        const characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
 
             this.activePopup = await this.uiManager.StakeholdersPerk(
                 this.uiManager.mainContainer, // Or the active container
                 characters,
                 (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.characterType }));
     }
-    youFiredCharacter(data: Extract<DirectResponse, { action: "YouFiredCharacter" }>['data']){
+    youFiredCharacter(_data: Extract<DirectResponse, { action: "YouFiredCharacter" }>['data']){
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
@@ -724,21 +732,21 @@ class GameManager {
     }
     firedCharacter(data: Extract<UniqueResponse, { action: "FiredCharacter" }>['data']){
         const localPlayer = this.gameState.getLocalPlayer();
-        let character = this.gameState.characters.find(character => data.character == character.characterType)!;
+        const character = this.gameState.characters.find(character => data.character == character.characterType)!;
         this.uiManager.firedCharacter(character,localPlayer)
     }
     youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){
-        let character = this.gameState.characters.find(character => data.character == character.characterType)!;
-        let perk = data.perk;
+        const character = this.gameState.characters.find(character => data.character == character.characterType)!;
+        const perk = data.perk;
         this.uiManager.youCharacterAbility(character,perk)
     }
     youAreDivesting(data: Extract<DirectResponse, { action: "YouAreDivesting" }>['data']){
         console.log("You are divesting:", data.options);
 
         
-        const divestmentTargets = data.options.map(option => {
-            const player = this.gameState.getPlayerById(option.player_id);
-            if (!player) return null;
+        const divestmentTargets: DivestmentTarget[] = data.options.map(option => {
+            // now throws error when frontend gives back invalid player id
+            const player = this.gameState.getPlayerById(option.player_id)!;
             
             const divestibleAssets: { asset: Asset, cost: number }[] = [];
             // TODO: coordinate with backend to actually get the data you want without needing this
@@ -756,7 +764,7 @@ class GameManager {
             });
 
             return { player, assets: divestibleAssets };
-        }).filter(target => target && target.assets.length > 0);
+        }).filter(target => target.assets.length > 0);
         console.log(divestmentTargets)
         this.uiManager.youAreDivesting(
             this.uiManager.mainContainer,
@@ -768,7 +776,7 @@ class GameManager {
         );
     }
     // TODO: update the player's gold?
-    youDivestedAnAsset(data: Extract<DirectResponse, { action: "YouDivestedAnAsset" }>['data']){
+    youDivestedAnAsset(_data: Extract<DirectResponse, { action: "YouDivestedAnAsset" }>['data']){
         if (this.activePopup) {
             this.activePopup.destroy({ children: true });
             this.activePopup = null;
@@ -777,13 +785,13 @@ class GameManager {
         this.switchToMainPhase();
     }
     // TODO: coordinate with backend to see whether this is needed at all?
-    youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
+    youAreTerminatingSomeone(_data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
 
     }
     youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){
         console.log(data);
-        let options = data.options;
-        let perk = data.perk;
+        const options = data.options;
+        const perk = data.perk;
         this.uiManager.youRegulatorOptions(
             this.uiManager.mainContainer,
             options,perk,
@@ -822,7 +830,7 @@ class GameManager {
 
         const regulator = this.gameState.players.find(p => p.playerID === data.regulator_id)!;
         const target = this.gameState.players.find(p => p.playerID === data.target_id)!;
-        let temphand = regulator.hand;
+        const temphand = regulator.hand;
         regulator.hand = target.hand;
         target.hand = temphand;
         

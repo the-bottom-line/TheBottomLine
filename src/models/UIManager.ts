@@ -9,6 +9,7 @@ import type Liability from './Liability.js';
 import type Asset from './Asset.js';
 import type { CardType, MarketCard, PlayerId, PlayerScore, RegulatorSwapPlayer } from '@shared-types';
 import type GameState from './GameState.js';
+import type { DivestmentTarget } from './GameManager.js';
 
 class UIManager {
     app: Application;
@@ -219,8 +220,8 @@ class UIManager {
 
         if(closedCharacter != null){
             closedCharacter.forEach(async (character: Character) =>{
-                let texture = await Assets.load(character.texturePath);
-                let closedCard = new Sprite(texture);
+                const texture = await Assets.load(character.texturePath);
+                const closedCard = new Sprite(texture);
                 closedCard.interactive = true;
                 closedCard.scale.set(0.3);
                 closedCard.anchor.set(0.5);
@@ -294,7 +295,7 @@ class UIManager {
             container.addChild(playerName);
 
 
-            let colors = ["blue","green","purple","red","yellow"];
+            const colors = ["blue","green","purple","red","yellow"];
 
             colors.forEach((color, index) =>{
                  const type = new Graphics()
@@ -593,10 +594,10 @@ async displayRevealedCharacters(players: Player[], container: Container) {
 
     async StakeholdersPerk(container: Container, characters: Character[], onSelectCallback: (_: Character) => void) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-300;
 
-        let texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -750,10 +751,10 @@ async displayRevealedCharacters(players: Player[], container: Container) {
 
     async youCharacterAbility(character: Character, perk: string) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-50;
 
-        let texture = await Assets.load(character.iconPath);
+        const texture = await Assets.load(character.iconPath);
         const characterIcon = new Sprite(texture);
         
         characterIcon.position.set(x, y);
@@ -787,15 +788,15 @@ async displayRevealedCharacters(players: Player[], container: Container) {
 
         this.popupContainer.addChild(tempContainer);
     }
-    async youAreDivesting(container: Container, divestmentTargets: any[] ,onSelectCallback: (playerID: number, cardIndex: number) => void) {
+    async youAreDivesting(container: Container, divestmentTargets: DivestmentTarget[] ,onSelectCallback: (playerID: number, cardIndex: number) => void) {
         
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-250;
 
 
 
-        let texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -847,10 +848,10 @@ async displayRevealedCharacters(players: Player[], container: Container) {
         
         for (const target of divestmentTargets) {
 
-            let playerX = startX + columnWidth / 2;
+            const playerX = startX + columnWidth / 2;
             let playerY = 450; 
 
-            let name = new Text({
+            const name = new Text({
                 text: target.player.name,
                 style:{fill:"#fff",fontSize:18,fontFamily:"MyFont"}
             });
@@ -860,12 +861,12 @@ async displayRevealedCharacters(players: Player[], container: Container) {
 
             playerY += 30;
 
-            let totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
+            const totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
             let cardStartX = playerX - totalWidth / 2;
 
             for(const card of target.assets){
-                let tex = await Assets.load(card.asset.texturePath);
-                let sprite = new Sprite(tex);
+                const tex = await Assets.load(card.asset.texturePath);
+                const sprite = new Sprite(tex);
                 sprite.scale.set(cardScale);
                 sprite.anchor.set(0.5);
                 sprite.interactive = true;
@@ -916,10 +917,10 @@ async displayRevealedCharacters(players: Player[], container: Container) {
     
     async youRegulatorOptions(container: Container, options: RegulatorSwapPlayer[], perk: string, gameState: GameState, onSelectCallback1: (id: PlayerId) => void, onSelectCallback2: (card_idxs: number[]) => void){
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-250;
 
-        let texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -977,7 +978,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
             const player = gameState.getPlayerById(option.player_id);
             if (!player) continue;
 
-            let playerX = startX + columnWidth / 2;
+            const playerX = startX + columnWidth / 2;
             let playerY = y + 50;
 
             const name = new Text({
@@ -990,7 +991,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
             
             playerY += 30;
 
-            let assetStartX = playerX - (cardWidth / 2) - (cardSpacing / 2);
+            const assetStartX = playerX - (cardWidth / 2) - (cardSpacing / 2);
             let cardBack = new Sprite(assetBackTexture);
             cardBack.scale.set(cardScale);
             cardBack.anchor.set(0.5);
@@ -1008,7 +1009,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
             tempContainer.addChild(assetCount);
 
             
-            let liabilityStartX = playerX + (cardWidth / 2) + (cardSpacing / 2);
+            const liabilityStartX = playerX + (cardWidth / 2) + (cardSpacing / 2);
            
             cardBack = new Sprite(liabilityBackTexture);
             cardBack.scale.set(cardScale);
@@ -1060,7 +1061,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
 
     async displaySwapWithDeckPopup(container: Container, player: Player, onConfirmCallback: (card_idxs: number[]) => void) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 250;
 
         const titleText = new Text({
@@ -1080,7 +1081,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
         const cardHeight = 940 * cardScale;
         const spacing = 20;
         const totalWidth = (player.hand.length * cardWidth) + ((player.hand.length - 1) * spacing);
-        let startX = x - totalWidth / 2 + cardWidth / 2;
+        const startX = x - totalWidth / 2 + cardWidth / 2;
 
         player.hand.forEach((card, index) => {
             const cardSprite = new Sprite(card.sprite.texture);
@@ -1134,11 +1135,11 @@ async displayRevealedCharacters(players: Player[], container: Container) {
 
     async displayRegulatorSwapNotification(container: Container, regulatorPlayer: Player) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 150;
 
         // Regulator Icon
-        let texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
         const regulatorIcon = new Sprite(texture);
         regulatorIcon.position.set(x, y);
         regulatorIcon.width = 200;
@@ -1163,7 +1164,8 @@ async displayRevealedCharacters(players: Player[], container: Container) {
         infoText.anchor.set(0.5);
         infoText.position.set(x, y);
 
-        const padding = 20;
+        // TODO: unused padding
+        const _padding = 20;
         const background = new Graphics()
             .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
             .fill(0x323232)
@@ -1251,7 +1253,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
         const circleY = height / 3-10;
         const spacing = 60;
         const totalCircleWidth = (colors.length - 1) * spacing;
-        let startX = (width - totalCircleWidth) / 2;
+        const startX = (width - totalCircleWidth) / 2;
 
         colors.forEach((colorInfo, index) => {
             const circleX = startX + index * spacing;

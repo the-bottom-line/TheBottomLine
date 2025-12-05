@@ -17,14 +17,14 @@ type OutgoingRequest = Connect | FrontendRequest;
 type ExtractData<T extends OutgoingRequest['action']> = Extract<OutgoingRequest, { action: T }> extends { data: infer D } ? D : never;
 
 // Helper type to check if an action has data
-type HasData<T extends OutgoingRequest['action']> = Extract<OutgoingRequest, { action: T }> extends { data: any } ? true : false;
+type HasData<T extends OutgoingRequest['action']> = Extract<OutgoingRequest, { action: T }> extends { data: ExtractData<T> } ? true : false;
 
 class NetworkManager {
     url: string;
     connection?: WebSocket;
     gameManager?: GameManager;
     commandList?: HandlerMap;
-    queue: any[] = [];
+    queue: string[] = [];
     messageInTransit = false;
     attempts = 0;
     timeoutTable = [2, 5, 15, 30, 60];
@@ -49,15 +49,15 @@ class NetworkManager {
             BoughtAsset: r => this.gameManager!.boughtAsset(r.data),
             IssuedLiability: r => this.gameManager!.issuedLiability(r.data),
             RedeemedLiability: r => this.gameManager!.redeemedLiability(r.data),
-            ShareholderIsFiring: r => { }, // TODO: implement
+            ShareholderIsFiring: _ => { }, // TODO: implement
             FiredCharacter: r => this.gameManager!.firedCharacter(r.data),
             RegulatorSwapedYourCards: r => this.gameManager!.regulatorSwapedYourCards(r.data),
             SwapedWithPlayer: r => this.gameManager!.swapedWithPlayer(r.data),
             SwapedWithDeck: r => this.gameManager!.swapedWithDeck(r.data),
-            AssetDivested: r => { }, // TODO: handle
-            TurnEnded: r => { }, // TODO: handle
+            AssetDivested: _ => { }, // TODO: handle
+            TurnEnded: _ => { }, // TODO: handle
             GameEnded: r => this.gameManager!.gameEnded(r.data),
-            YouStartedGame: r => { }, // TODO: handle
+            YouStartedGame: _ => { }, // TODO: handle
             YouSelectedCharacter: r => this.gameManager!.youSelectedCharacter(r.data),
             YouFiredCharacter: r => this.gameManager!.youFiredCharacter(r.data),
             YouRegulatorOptions: r => this.gameManager!.youRegulatorOptions(r.data),
@@ -73,7 +73,7 @@ class NetworkManager {
             YouDivestedAnAsset: r => this.gameManager!.youDivestedAnAsset(r.data),
             YouAreTerminatingSomeone: r => this.gameManager!.youAreTerminatingSomeone(r.data),
             YouRedeemedLiability: r => this.gameManager!.youRedeemedLiability(r.data),
-            YouEndedTurn: r => this.gameManager!.youEndedTurn(),
+            YouEndedTurn: _ => this.gameManager!.youEndedTurn(),
         };
     }
 
@@ -100,7 +100,7 @@ class NetworkManager {
 
         // Connection closed protocol
         this.connection.addEventListener("close", () => {
-            let timeout = this.timeoutTable[this.attempts]!;
+            const timeout = this.timeoutTable[this.attempts]!;
             console.warn("Connection has closed, retrying after " + timeout + " seconds...");
             setTimeout(() => this.connect(this.url), 1000 * timeout);
             if (this.attempts < this.timeoutTable.length - 1) {
@@ -114,20 +114,25 @@ class NetworkManager {
         this.queue.forEach(msg => {this.connection!.send(msg);});
         this.queue = [];
     }
+    
+    // helper function that provides type-safe wrapper around calling a command from the
+    // `commandList`. Can't really figure out a way to just use one function.
+    private callHandler<A extends Action>(
+        action: A,
+        message: IncomingResponse
+    ): void {
+        const handler = this.commandList![action];
+        handler(message as Extract<IncomingResponse, { action: A }>);
+    }
 
-    // Couples a received message to corresponding command,
-    // Echoes and otherwise ignores the received command if not found
     handleMessage(msg: NetworkResponse) {
-        let parsedMessage: DirectResponse | UniqueResponse = JSON.parse(msg.data);
-        let invokedCommand = this.commandList![parsedMessage.action];
-        // TODO: probably make type-safe somehow. I couldn't figure it out in a reasonable amount
-        // of time
-        invokedCommand(parsedMessage as any);
+        const parsedMessage: IncomingResponse = JSON.parse(msg.data);
+        this.callHandler(parsedMessage.action, parsedMessage)
     }
 
     // Attempts to send a message, if connection is closed will store messages in queue
     // Will discard duplicate messages or messages sent before a response has been returned by the server
-    sendMessage(data: any) {
+    sendMessage(data: string) {
         if (this.connection!.readyState == WebSocket.OPEN) {
             // Catch and reject duplicate messages
             if (this.messageInTransit || this.recentMessages.has(data)) {
@@ -147,11 +152,11 @@ class NetworkManager {
         command: T,
         ...args: HasData<T> extends true ? [data: ExtractData<T>] : [data?: never]
     ): void {
-        let packet = {
+        const packet = {
             "action": command,
             "data": args[0],
         };
-        let jsonData = JSON.stringify(packet, null, 0);
+        const jsonData = JSON.stringify(packet, null, 0);
         console.log(jsonData);
         this.sendMessage(jsonData);
     }
