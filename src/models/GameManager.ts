@@ -503,7 +503,7 @@ class GameManager {
         console.log("Received selectable characters:", data);
 
         this.gameState.openCharacters = this.gameState.characters.filter(character =>
-            data.open_characters.map(c => c.toString()).includes(character.textureName)
+            data.open_characters.includes(character.characterType)
         );
         
 
@@ -511,7 +511,7 @@ class GameManager {
             const selectable_characters = data.selectable_characters;
             if (selectable_characters) {
                 this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                    selectable_characters.map(c => c.toString()).includes(character.textureName)
+                    selectable_characters.includes(character.characterType)
                 );
             }
             let closedCharacter: Character[] = [];
@@ -519,7 +519,7 @@ class GameManager {
             let closed_character = data.closed_character;
             if (closed_character) {
                 closedCharacter = this.gameState.characters.filter(character =>
-                    closed_character.includes(character.textureName)
+                    closed_character.includes(character.characterType)
                 );
             }
             console.log(closedCharacter);
@@ -528,8 +528,8 @@ class GameManager {
                 this.gameState.faceUpCharacters,
                 this.gameState.openCharacters,
                 (character) => {
-                    this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
-                    console.log(`Selected character: ${character.textureName}`);
+                    this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
+                    console.log(`Selected character: ${character.characterType}`);
                     this.uiManager.characterCardsContainer.removeChildren();
                 }, 
                 closedCharacter);
@@ -552,13 +552,13 @@ class GameManager {
             const selectable_characters = data.selectable_characters;
             if (selectable_characters) {
                 this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                    selectable_characters.map(c => c.toString()).includes(character.textureName)
+                    selectable_characters.map(c => c.toString()).includes(character.characterType)
                 );
             }
 
             this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, this.gameState.openCharacters, (character) => {
-                this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
-                console.log(`Selected character: ${character.textureName}`);
+                this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
+                console.log(`Selected character: ${character.characterType}`);
                 this.uiManager.characterCardsContainer.removeChildren();
             });
         } else {
@@ -570,7 +570,7 @@ class GameManager {
         // This function might be used to confirm your character selection
         const localPlayer = this.gameState.getLocalPlayer();
         if (localPlayer) {
-            localPlayer.character = this.gameState.characters.find(c => c.textureName === data.character)!;
+            localPlayer.character = this.gameState.characters.find(c => c.characterType === data.character)!;
             console.log(`Local player ${localPlayer.name} selected ${localPlayer.character.name}`);
         }
     }
@@ -587,7 +587,7 @@ class GameManager {
         if (nextPlayerIndex !== -1) {
             this.gameState.setCurrentPlayerIndex(nextPlayerIndex);
             const currentPlayer = this.gameState.getCurrentPlayer();
-            const character = this.gameState.characters.find(c => c.textureName === data.player_character);
+            const character = this.gameState.characters.find(c => c.characterType === data.player_character);
             if (character) {
                 currentPlayer.character = character;
             } else {
@@ -760,7 +760,7 @@ class GameManager {
             this.activePopup = await this.uiManager.StakeholdersPerk(
                 this.uiManager.mainContainer, // Or the active container
                 characters,
-                (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.textureName }));
+                (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.characterType }));
     }
     youFiredCharacter(data: Extract<DirectResponse, { action: "YouFiredCharacter" }>['data']){
         if (this.activePopup) {

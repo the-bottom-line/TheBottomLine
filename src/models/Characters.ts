@@ -6,20 +6,20 @@ export default class Character {
     name: string;
     ability: string;
     description: string;
-    textureName: string;
     texturePath: string;
     iconPath: string;
     order: number;
+    characterType: CharacterType;
     
     used = false; 
     
-    constructor(name: string, ability: string, description: string, textureName: string ,order: number) {
+    constructor(name: string, ability: string, description: string, characterType: CharacterType ,order: number) {
         this.name = name;
         this.ability = ability;
         this.description = description;
-        this.textureName = textureName;
-        this.texturePath = `./miscellaneous/${textureName}.webp`;
-        this.iconPath = `./miscellaneous/${textureName}Icon.png`;
+        this.characterType = characterType;
+        this.texturePath = `./miscellaneous/${characterType}.webp`;
+        this.iconPath = `./miscellaneous/${characterType}Icon.png`;
         this.used = false; 
         this.order = order;
     }
@@ -35,8 +35,6 @@ export default class Character {
 }
 
 export class Shareholder extends Character {
-    characterType: CharacterType = 'Shareholder';
-
     constructor() {
         super(
             "The Shareholder",
@@ -58,8 +56,6 @@ export class Shareholder extends Character {
 }
 
 export class Banker extends Character {
-    characterType: CharacterType = 'Banker';
-
     constructor() {
         super(
             "The Banker",
@@ -84,8 +80,6 @@ export class Banker extends Character {
 }
 
 export class Regulator extends Character {
-    characterType: CharacterType = 'Regulator';
-
     constructor() {
         super(
             "The Regulator",
@@ -111,8 +105,6 @@ export class Regulator extends Character {
 }
 
 export class CEO extends Character {
-    characterType: CharacterType = 'CEO';
-
     constructor() {
         super(
             "The Chief Executive Officer",
@@ -144,8 +136,6 @@ export class CEO extends Character {
 }
 
 export class CFO extends Character {
-    characterType: CharacterType = 'CFO';
-
     constructor() {
         super(
             "The Chief Financial Officer",
@@ -171,8 +161,6 @@ export class CFO extends Character {
 }
 
 export class CSO extends Character {
-    characterType: CharacterType = 'CSO';
-
     constructor() {
         super(
             "The Chief Sustainablity Officer",
@@ -197,8 +185,6 @@ export class CSO extends Character {
 }
 
 export class HeadOfRD extends Character {
-    characterType: CharacterType = 'HeadRnD';
-
     constructor() {
         super(
             "The Head of R&D",
@@ -225,8 +211,6 @@ export class HeadOfRD extends Character {
 }
 
 export class Stakeholder extends Character {
-    characterType: CharacterType = 'Stakeholder';
-
     constructor() {
         super(
             "The Stakeholder",
