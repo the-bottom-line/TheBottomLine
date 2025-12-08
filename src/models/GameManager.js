@@ -286,6 +286,10 @@ class GameManager {
     async rejoinGame(data) {
         console.log("Received Resync data from server:", data);
 
+        // TODO: Check functionality of initRound with documentation (Oliver)
+        // Create the decks (I think?)
+        this.initRound();
+
         // Setup local player
         this.gameState.players = [];
         this.gameState.myId = data.id;
@@ -314,11 +318,14 @@ class GameManager {
 
         localPlayer.positionCardsInHand();
         this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
-        this.initRound();
         // Add the other players
         this.initPlayers(data.player_info);
         for (const player of data.player_info) {
             let otherPlayer = this.gameState.getPlayerById(player.id);
+
+            // Set up their data
+            otherPlayer.character = player.character;
+            
 
             // Handle already played cards
             for (const cardData in data.played_cards) {
