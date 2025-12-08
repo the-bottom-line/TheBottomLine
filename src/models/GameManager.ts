@@ -6,7 +6,7 @@ import type GameState from './GameState.js';
 import type UIManager from './UIManager.js';
 import type NetworkManager from './NetworkManager.js';
 import type { Application, Container } from 'pixi.js';
-import type { DirectResponse, EitherAssetLiability, PlayerInfo, UniqueResponse } from '@shared-types';
+import type { AssetCard, DirectResponse, EitherAssetLiability, LiabilityCard, PlayerInfo, UniqueResponse } from '@shared-types';
 import type Character from './Characters.js';
 
 /*
@@ -271,33 +271,40 @@ class GameManager {
         this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
         this.initRound();
     }
-    
-    async createCard(cardData: EitherAssetLiability) {
-        let newCard: Asset | Liability;
-        switch (cardData.card_type) {
-            case "asset": {
-                newCard = new Asset(
-                    cardData.title,
-                    cardData.color,
-                    cardData.gold_value,
-                    cardData.silver_value,
-                    cardData.ability,
-                    cardData.image_front_url
-                );
-            }
-                break;
-            case "liability": {
-                newCard = new Liability(
-                    cardData.rfr_type,
-                    cardData.value,
-                    cardData.image_front_url
-                );
-            }
-                break; 
-        }
-        
+    async createAsset(cardData: AssetCard) {
+        let newCard:Asset = new Asset(
+            cardData.title,
+            cardData.color,
+            cardData.gold_value,
+            cardData.silver_value,
+            cardData.ability,
+            cardData.image_front_url
+        );
         await newCard.initializeSprite();
         return newCard
+    }
+    async createLiability(cardData: LiabilityCard) {
+        let newCard: Liability = new Liability(
+            cardData.rfr_type,
+            cardData.value,
+            cardData.image_front_url
+        );
+        await newCard.initializeSprite();
+        return newCard
+    }
+
+    async createCard(cardData: EitherAssetLiability) {
+        let newCard : Asset | Liability;
+        if (cardData.card_type === "asset") {
+            const { card_type, ...asset } = cardData;
+            newCard = await this.createAsset(asset);
+        } else //if (cardData.card_type === "liability") 
+        {
+            const { card_type, ...liability } = cardData;
+            newCard = await this.createLiability(liability);
+        }
+
+        return newCard;
     }
 
     // Plays an assets and updates corresponding values
@@ -378,14 +385,14 @@ class GameManager {
             
 
             // Handle already played cards
-            // TODO: handle pushing both assets and liabilities for other players based on 
-            // PlayerInfo rather than pushing your own cards to their hand which I think is what is
-            // happening here?
-            // for (const cardData_ in data.played_cards) {
-            //     const cardData = cardData_ as EitherAssetLiability;
-            //     const card = (await this.createCard(cardData))!;
-            //     await this.playCard(otherPlayer, card);
-            // }
+            for (const asset of info.assets) {
+                const card = (await this.createAsset(asset))!;
+                await this.playCard(otherPlayer, card);
+            }
+            for (const liablity of info.liabilities) {
+                const card = (await this.createLiability(liablity))!;
+                await this.playCard(otherPlayer, card);
+            }
 
             // Handle cards in hand
             otherPlayer.othersHand.push(data.hand_cards);
