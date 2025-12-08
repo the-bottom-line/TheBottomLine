@@ -86,9 +86,8 @@ class GameManager {
 
         this.uiManager.createJoinButton(joinGame);
         
-        
+        this.uiManager.hudManager.showMarket({
 
-        this.uiManager.showMarket({
             title: "Stable Market",
             rfr: 0,
             mrp: 0,
@@ -100,7 +99,7 @@ class GameManager {
             // TODO: probably coordinate with backend to get rid of backend-provided urls entirely
             image_front_url: '',
             image_back_url: ''
-        });
+        }, this.uiManager.marketContainer);
         
     }
 
@@ -111,12 +110,12 @@ class GameManager {
         this.gameState.currentPhase = 'picking';
 
         if (player.playerID == this.gameState.myId) { // Use player.playerID for comparison
-            this.uiManager.anounceCharacter(this.uiManager.pickingContainer,player);
+            this.uiManager.popUpManager.anounceCharacter(player);
             this.showLocalPlayerPicking(player);
             
         } else {
             this.otherPlayerScreenSetup(player);
-            this.uiManager.anounceCharacter(this.uiManager.elseTurnContainer,player);
+            this.uiManager.popUpManager.anounceCharacter(player);
         }
         this.updateUI();
     }
@@ -139,11 +138,11 @@ class GameManager {
 
         this.otherCards();
 
-        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
-        this.uiManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, () => {
+        this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
+        this.uiManager.hudManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, () => {
             this.networkManager.sendCommand("UseAbility");
         });
-        this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
+        this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     switchToMainPhase() {
         this.uiManager.showScreen('main');
@@ -152,10 +151,10 @@ class GameManager {
         this.uiManager.handContainer.removeChildren();
         this.uiManager.playedCardsContainer.removeChildren();
 
-        this.uiManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"));
-        this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
+        this.uiManager.hudManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"), this.uiManager.mainContainer);
+        this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
 
-        this.uiManager.displayPlayerCharacter(
+        this.uiManager.hudManager.displayPlayerCharacter(
             this.gameState.getCurrentPlayer(),
             this.uiManager.mainContainer,
             () => {
@@ -163,7 +162,7 @@ class GameManager {
             }
         );
         
-        this.uiManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
+        this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
 
         const currentPlayer = this.gameState.getCurrentPlayer();
         currentPlayer.hand.forEach(card => {
@@ -174,7 +173,7 @@ class GameManager {
         
         this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         this.uiManager.handContainer.sortChildren();
-        this.uiManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList);
+        this.uiManager.hudManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList, this.uiManager.playedCardsContainer);
 
         this.uiManager.mainContainer.addChild(this.uiManager.handContainer, this.uiManager.playedCardsContainer);
         this.updateUI();
@@ -215,9 +214,9 @@ class GameManager {
         const othersHand = currentPlayer.othersHand;
         const assets = othersHand.filter(cardType => cardType == 'Asset');
         const liabilities = othersHand.filter(cardType => cardType == 'Liability');
-        this.uiManager.elseTurnContainer.addChild(this.uiManager.playedCardsContainer);
-        this.uiManager.displayOtherPlayerHand(assets, liabilities);
-        this.uiManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList);
+        this.uiManager.elseTurnContainer.addChild(this.uiManager.playedCardsContainer); // This remains as it's managing container structure
+        this.uiManager.hudManager.displayOtherPlayerHand(assets, liabilities, this.uiManager.elseTurnContainer);
+        this.uiManager.hudManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList, this.uiManager.playedCardsContainer);
     
     }
     async messageStartGame(data: Extract<UniqueResponse, { action: "StartGame" }>['data']) {
@@ -583,7 +582,7 @@ class GameManager {
         const cardIndex = player.hand.indexOf(card);
         if (cardIndex === -1) return;
         if (data.market_change) {
-            this.uiManager.showMarket(data.market_change.new_market);
+            this.uiManager.hudManager.showMarket(data.market_change.new_market, this.uiManager.marketContainer);
         }
 
         player.cash -= card.gold;
@@ -595,7 +594,7 @@ class GameManager {
 
         player.positionCardsInHand();
         player.positionAssetsToPile();
-        this.uiManager.addCardToPlayedContainer(card);
+        this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
         
         this.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
@@ -604,7 +603,7 @@ class GameManager {
     }
     async boughtAsset(data: Extract<UniqueResponse, { action: "BoughtAsset" }>['data']){
         if (data.market_change) {
-            this.uiManager.showMarket(data.market_change.new_market);
+            this.uiManager.hudManager.showMarket(data.market_change.new_market, this.uiManager.marketContainer);
         }
         const player = this.gameState.getCurrentPlayer();
         if (player && player.playerID !== this.gameState.myId) {
@@ -625,7 +624,7 @@ class GameManager {
             player.othersHand.splice(assetIndex,1);
             //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this into a function 
             this.otherCards();
-            this.uiManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
+            this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
             this.updateUI();
             
             // TODO: I found this in this function. I assume it should be removed. I don't
@@ -653,7 +652,7 @@ class GameManager {
         card.sprite.on('mousedown', () => {
             this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
         });
-        this.uiManager.addCardToPlayedContainer(card);
+        this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
         
         this.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
@@ -717,10 +716,9 @@ class GameManager {
     async youAreFiringSomeone(data: Extract<DirectResponse, { action: "YouAreFiringSomeone" }>['data']) {
         const characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
 
-            this.activePopup = await this.uiManager.StakeholdersPerk(
-                this.uiManager.mainContainer, // Or the active container
+            this.activePopup = await this.uiManager.popUpManager.StakeholdersPerk(
                 characters,
-                (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.characterType }));
+                (charToFire) => this.networkManager.sendCommand("FireCharacter", { "character": charToFire.characterType! }));
     }
     youFiredCharacter(_data: Extract<DirectResponse, { action: "YouFiredCharacter" }>['data']){
         if (this.activePopup) {
@@ -733,12 +731,12 @@ class GameManager {
     firedCharacter(data: Extract<UniqueResponse, { action: "FiredCharacter" }>['data']){
         const localPlayer = this.gameState.getLocalPlayer();
         const character = this.gameState.characters.find(character => data.character == character.characterType)!;
-        this.uiManager.firedCharacter(character,localPlayer)
+        this.uiManager.popUpManager.firedCharacter(character,localPlayer)
     }
     youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){
         const character = this.gameState.characters.find(character => data.character == character.characterType)!;
         const perk = data.perk;
-        this.uiManager.youCharacterAbility(character,perk)
+        this.uiManager.popUpManager.youCharacterAbility(character,perk)
     }
     youAreDivesting(data: Extract<DirectResponse, { action: "YouAreDivesting" }>['data']){
         console.log("You are divesting:", data.options);
@@ -766,8 +764,7 @@ class GameManager {
             return { player, assets: divestibleAssets };
         }).filter(target => target.assets.length > 0);
         console.log(divestmentTargets)
-        this.uiManager.youAreDivesting(
-            this.uiManager.mainContainer,
+        this.uiManager.popUpManager.youAreDivesting(
             divestmentTargets,
             (playerID,cardID) => {
                     this.networkManager.sendCommand("DivestAsset", { "target_player_id": playerID,"card_idx":cardID });
@@ -792,8 +789,7 @@ class GameManager {
         console.log(data);
         const options = data.options;
         const perk = data.perk;
-        this.uiManager.youRegulatorOptions(
-            this.uiManager.mainContainer,
+        this.uiManager.popUpManager.youRegulatorOptions(
             options,perk,
             this.gameState,
             (playerID)=>{
@@ -862,7 +858,7 @@ class GameManager {
             ? this.uiManager.mainContainer
             : this.uiManager.elseTurnContainer;
         if (this.gameState.myId !== regulatorPlayer.playerID) {
-            this.uiManager.displayRegulatorSwapNotification(container, regulatorPlayer);
+            this.uiManager.popUpManager.displayRegulatorSwapNotification(regulatorPlayer);
         }
     }
     youSwapDeck(data: Extract<DirectResponse, { action: "YouSwapDeck" }>['data']) {
