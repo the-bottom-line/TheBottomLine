@@ -1,43 +1,51 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application, TextStyle } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
 import LiabilityCards from "./LiabilityCards.js";
+import type Player from './Player.js';
+import type Character from './Characters.js';
+import type Liability from './Liability.js';
+import type Asset from './Asset.js';
+import type { CardType, MarketCard, PlayerId, PlayerScore, RegulatorSwapPlayer } from '@shared-types';
+import type GameState from './GameState.js';
+import type { DivestmentTarget } from './GameManager.js';
 
 class UIManager {
-    constructor(app) {
+    app: Application;
+    
+    loginContainer = new Container();
+    lobbyContainer = new Container();
+    mainContainer = new Container();
+    pickingContainer = new Container();
+    characterContainer = new Container();
+    characterOpenContainer = new Container();
+    characterCardsContainer = new Container();
+    decksContainer = new Container();
+    playedCardsContainer = new Container();
+    tempCardsContainer = new Container();
+    handContainer = new Container();
+    elseTurnContainer = new Container();
+    popupContainer = new Container();
+    resultsContainer = new Container();
+    marketContainer = new Container();
+    
+    _nextPlayedCardZIndex = 1;
+
+    statsText = new Text({
+        text: '',
+        style: {
+            fill: '#ffffff',
+            fontSize: 36,
+            fontFamily: 'MyFont',
+        }
+    });
+    
+    constructor(app: Application) {
         this.app = app;
 
-        this.loginContainer = new Container();
-        this.lobbyContainer = new Container();
-        this.mainContainer = new Container();
-        this.pickingContainer = new Container();
-        this.characterContainer = new Container();
-        this.characterOpenContainer = new Container();
-        this.characterCardsContainer = new Container();
-        this.decksContainer = new Container();
-        this.playedCardsContainer = new Container();
-        this.tempCardsContainer = new Container();
-        this.handContainer = new Container();
-        this.elseTurnContainer = new Container();
-        this.popupContainer = new Container();
-        this.resultsContainer = new Container();
-        this.marketContainer = new Container();
-
-        this._nextPlayedCardZIndex = 1;
-
-        this.statsText = new Text({
-            text: '',
-            style: {
-                fill: '#ffffff',
-                fontSize: 36,
-                fontFamily: 'MyFont',
-            }
-        });
         this.statsText.anchor.set(0.5);
         this.statsText.position.set(this.app.screen.width / 2, 30);
-
-       
 
         this._setupContainers();
     }
@@ -86,7 +94,7 @@ class UIManager {
         });
     }
 
-    showScreen(screenName) {
+    showScreen(screenName: string) {
         this.loginContainer.visible = screenName === 'login';
         this.lobbyContainer.visible = screenName === 'lobby';
         this.characterContainer.visible = screenName === 'character';
@@ -125,7 +133,7 @@ class UIManager {
         this.loginContainer.addChild(inputBox);
         return inputBox;
     }
-    createJoinButton(onPressCallback) {
+    createJoinButton(onPressCallback: () => void) {
         const joinButton = new FancyButton({
             text: "Join",
             width: 200,
@@ -137,7 +145,7 @@ class UIManager {
 
         this.loginContainer.addChild(joinButton.view);
     }
-    displayGameName(container){
+    displayGameName(container: Container){
         this.loginContainer.removeChildren();
         const titleText = new Text({
             text: 'The Bottom (on)Line',
@@ -147,7 +155,7 @@ class UIManager {
         titleText.position.set(this.app.screen.width  / 2, 20);
         container.addChild(titleText);
     }
-    displayLobbyPlayers(players, onStartGameCallback) {
+    displayLobbyPlayers(players: Player[], onStartGameCallback: () => void) {
         this.lobbyContainer.removeChildren();
         this.displayGameName(this.lobbyContainer);
 
@@ -163,7 +171,7 @@ class UIManager {
         this.createStartGameBox(onStartGameCallback);
     }
 
-    createStartGameBox(onPressCallback) {
+    createStartGameBox(onPressCallback: () => void) {
         const startGameButton = new FancyButton({
             text: "Start",
             width: 200,
@@ -174,7 +182,7 @@ class UIManager {
         this.lobbyContainer.addChild(startGameButton.view);
     }
 
-    createNextTurnButton(onPressCallback) {
+    createNextTurnButton(onPressCallback: () => void) {
         const nextButton = new FancyButton({
             text: "End Turn",
             width: 200,
@@ -185,7 +193,7 @@ class UIManager {
         this.mainContainer.addChild(nextButton.view);
     }
 
-    async createAssetDeck(onPressCallback) {
+    async createAssetDeck(onPressCallback: () => void) {
         const assetDeck = new AssetCards();
         const assetDeckSprite = await assetDeck.initializeDeckSprite();
         assetDeck.setDeckPosition(this.app.screen.width / 2 - 150, 70);
@@ -193,7 +201,7 @@ class UIManager {
         this.decksContainer.addChild(assetDeckSprite);
     }
 
-    async createLiabilityDeck(onPressCallback) {
+    async createLiabilityDeck(onPressCallback: () => void) {
         const liabilityDeck = new LiabilityCards();
         const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
         liabilityDeck.setDeckPosition(this.app.screen.width / 2 + 150, 70);
@@ -202,7 +210,8 @@ class UIManager {
     }
 
 
-    displayCharacterSelection(faceUpCharacters,openCharacters, onSelectCallback,closedCharacter) {
+    // TODO: make closedCharacter not list
+    displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter?: Character[]) {
         this.characterCardsContainer.removeChildren();
         const spacing = 200;
         const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
@@ -210,9 +219,9 @@ class UIManager {
         grayscaleFilter.grayscale(0.2, true);
 
         if(closedCharacter != null){
-            closedCharacter.forEach(async character=>{
-                let texture = await Assets.load(character.texturePath);
-                let closedCard = new Sprite(texture);
+            closedCharacter.forEach(async (character: Character) =>{
+                const texture = await Assets.load(character.texturePath);
+                const closedCard = new Sprite(texture);
                 closedCard.interactive = true;
                 closedCard.scale.set(0.3);
                 closedCard.anchor.set(0.5);
@@ -256,10 +265,10 @@ class UIManager {
         });
     }
 
-    displayAllPlayerStats(players, container, currentPlayer) { // here
+    displayAllPlayerStats(players: Player[], container: Container, currentPlayer: Player) { // here
         
         players.forEach(async (player, playerIndex) => {
-            const texture = await Assets.load(player.reveal ? player.character.iconPath : "./miscellaneous/noneCharacter.png");
+            const texture = await Assets.load(player.reveal && player.character ? player.character.iconPath : "./miscellaneous/noneCharacter.png");
             const characterIcon = new Sprite(texture);
             const x = 30 + playerIndex * 70;
             characterIcon.position.set(x, 30);
@@ -286,7 +295,7 @@ class UIManager {
             container.addChild(playerName);
 
 
-            let colors = ["blue","green","purple","red","yellow"];
+            const colors = ["blue","green","purple","red","yellow"];
 
             colors.forEach((color, index) =>{
                  const type = new Graphics()
@@ -335,13 +344,14 @@ class UIManager {
         });
     }
 
-async displayRevealedCharacters(players, container) {
+async displayRevealedCharacters(players: Player[], container: Container) {
 
         const sortedPlayerList = [...players].sort((a, b) => {
             const aIsRevealed = a.reveal && a.character;
             const bIsRevealed = b.reveal && b.character;
 
-            if (aIsRevealed && bIsRevealed) {
+            // TODO: make fix where ts compiler understands _IsRevealed variables
+            if (a.reveal && a.character && b.reveal && b.character) {
                
                 return a.character.order - b.character.order;
             } else if (aIsRevealed) {
@@ -383,7 +393,7 @@ async displayRevealedCharacters(players, container) {
         }
     }
 
-    displayTempCards(player) {
+    displayTempCards(player: Player) {
         this.tempCardsContainer.removeChildren();
         const tempCards = player.hand.filter(c => c.isTemporary);
 
@@ -410,10 +420,11 @@ async displayRevealedCharacters(players, container) {
         player.positionTempCards();
     }
 
-    async displayOtherPlayerHand(assets, liabilities) {        
+    async displayOtherPlayerHand(assets: Extract<CardType, 'Asset'>[], liabilities: Extract<CardType, 'Liability'>[]) {        
         // Remove all previous card backs to prevent ghost cards
-        const oldCardBacks = this.elseTurnContainer.children.filter(child => child.isCardBack);
-        oldCardBacks.forEach(child => this.elseTurnContainer.removeChild(child));
+        // TODO: fix custom property error or use different way to solve ghosting error
+        // const oldCardBacks = this.elseTurnContainer.children.filter(child => child.isCardBack);
+        // oldCardBacks.forEach(child => this.elseTurnContainer.removeChild(child));
 
         const baseY = this.app.screen.height - 100;
         const spacing = 60;
@@ -426,7 +437,7 @@ async displayRevealedCharacters(players, container) {
             const cardBack = new Sprite(assetBackTexture);
             cardBack.scale.set(0.25);
             cardBack.anchor.set(0.5);
-            cardBack.isCardBack = true; // Custom property to identify these sprites
+            // cardBack.isCardBack = true; // Custom property to identify these sprites
             cardBack.x = assetsStartX + i * spacing;
             cardBack.y = baseY;
             this.elseTurnContainer.addChild(cardBack);
@@ -440,13 +451,13 @@ async displayRevealedCharacters(players, container) {
             const cardBack = new Sprite(liabilityBackTexture);
             cardBack.scale.set(0.25);
             cardBack.anchor.set(0.5);
-            cardBack.isCardBack = true; // Custom property to identify these sprites
+            // cardBack.isCardBack = true; // Custom property to identify these sprites
             cardBack.x = liabilitiesStartX - i * spacing;
             cardBack.y = baseY;
             this.elseTurnContainer.addChild(cardBack);
         }
     }
-    async displayPlayerPlayedCards(assets, liabilities){
+    async displayPlayerPlayedCards(assets: Asset[], liabilities: Liability[]){
         this.playedCardsContainer.removeChildren();
         const texture = await Assets.load('./miscellaneous/cardBackdrop.svg');
         const cardBackdrop = Sprite.from(texture);
@@ -466,7 +477,7 @@ async displayRevealedCharacters(players, container) {
     }
 
 
-    async displayPlayerCharacter(player, container, onIconClick) { // here
+    async displayPlayerCharacter(player: Player, container: Container, onIconClick?: (_: Character) => void) { // here
         if (!player?.character) return;
 
         const tempContainer = new Container();
@@ -477,7 +488,11 @@ async displayRevealedCharacters(players, container) {
         if (onIconClick) {
             characterIcon.interactive = true;
             characterIcon.cursor = 'pointer';
-            characterIcon.on('mousedown', () => onIconClick(player.character));
+            // TODO: verify that players either always have a character when this happens, or that
+            // it's okay if this doesn't happen if the player does not have a character
+            characterIcon.on('mousedown', () => {
+                if (player.character) onIconClick(player.character)
+            });
         }
         characterIcon.scale.set(0.25);
         characterIcon.anchor.set(0.5, 1);
@@ -506,7 +521,7 @@ async displayRevealedCharacters(players, container) {
         tempContainer.position.set((tempContainer.width / 2) + 50, this.app.screen.height - 80);
     }
 
-    async anounceCharacter(container, player) {
+    async anounceCharacter(container: Container, player: Player) {
         const tempContainer = this._createPopupBase();
         let x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-120;
@@ -539,12 +554,26 @@ async displayRevealedCharacters(players, container) {
             .fill(0x323232) 
             .stroke({ width: 2, color: 0x000000 });
 
-        const characterText = new Text({
-            text: player.character.name,
-            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
-        });
-        characterText.anchor.set(0, 0.5);
-        characterText.position.set(x-140, y);
+        // TODO: verify that it's correct that this does not show at all if the player does not have
+        // a character for whatever reason
+        if (player.character) {
+            const characterText = new Text({
+                text: player.character?.name || '',
+                style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+            });
+            characterText.anchor.set(0, 0.5);
+            characterText.position.set(x-140, y);
+            
+            texture = await Assets.load(player.character.iconPath);
+            const characterIcon = new Sprite(texture);
+            characterIcon.position.set(x-200, y);
+            characterIcon.width = 80;
+            characterIcon.height = 90;
+            characterIcon.anchor.set(0.5);
+            
+            tempContainer.addChild(characterText);
+            tempContainer.addChild(characterIcon);
+        }
         const playerText = new Text({
             text: player.name,
             style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
@@ -552,32 +581,23 @@ async displayRevealedCharacters(players, container) {
         playerText.anchor.set(0, 0.5);
         playerText.position.set(x-140, y+20);
 
-        texture = await Assets.load(player.character.iconPath);
-        const characterIcon = new Sprite(texture);
-        characterIcon.position.set(x-200, y);
-        characterIcon.width = 80;
-        characterIcon.height = 90;
-        characterIcon.anchor.set(0.5);
-
         tempContainer.addChild(chairmanIcon);
         tempContainer.addChild(textChairmanBackground);   
         tempContainer.addChild(chairmanText);
         tempContainer.addChild(textPlayerBackground);  
-        tempContainer.addChild(characterText);
         tempContainer.addChild(playerText);
-        tempContainer.addChild(characterIcon);
 
         this._addPopupCloseButton(tempContainer);
         
         this.popupContainer.addChild(tempContainer);
     }
 
-    async StakeholdersPerk(container, characters, onSelectCallback) {
+    async StakeholdersPerk(container: Container, characters: Character[], onSelectCallback: (_: Character) => void) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-300;
 
-        let texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -657,7 +677,7 @@ async displayRevealedCharacters(players, container) {
         return tempContainer;
     }
 
-    async firedCharacter(character, localPlayer) {
+    async firedCharacter(character: Character, localPlayer: Player) {
         const tempContainer = this._createPopupBase();
         let x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-120;
@@ -729,12 +749,12 @@ async displayRevealedCharacters(players, container) {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async youCharacterAbility(character, perk) {
+    async youCharacterAbility(character: Character, perk: string) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-50;
 
-        let texture = await Assets.load(character.iconPath);
+        const texture = await Assets.load(character.iconPath);
         const characterIcon = new Sprite(texture);
         
         characterIcon.position.set(x, y);
@@ -768,15 +788,15 @@ async displayRevealedCharacters(players, container) {
 
         this.popupContainer.addChild(tempContainer);
     }
-    async youAreDivesting(container, divestmentTargets,onSelectCallback){
+    async youAreDivesting(container: Container, divestmentTargets: DivestmentTarget[] ,onSelectCallback: (playerID: number, cardIndex: number) => void) {
         
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-250;
 
 
 
-        let texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -828,10 +848,10 @@ async displayRevealedCharacters(players, container) {
         
         for (const target of divestmentTargets) {
 
-            let playerX = startX + columnWidth / 2;
+            const playerX = startX + columnWidth / 2;
             let playerY = 450; 
 
-            let name = new Text({
+            const name = new Text({
                 text: target.player.name,
                 style:{fill:"#fff",fontSize:18,fontFamily:"MyFont"}
             });
@@ -841,12 +861,12 @@ async displayRevealedCharacters(players, container) {
 
             playerY += 30;
 
-            let totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
+            const totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
             let cardStartX = playerX - totalWidth / 2;
 
             for(const card of target.assets){
-                let tex = await Assets.load(card.asset.texturePath);
-                let sprite = new Sprite(tex);
+                const tex = await Assets.load(card.asset.texturePath);
+                const sprite = new Sprite(tex);
                 sprite.scale.set(cardScale);
                 sprite.anchor.set(0.5);
                 sprite.interactive = true;
@@ -868,20 +888,16 @@ async displayRevealedCharacters(players, container) {
 
         return tempContainer;
     }
-    /**
-    * @param {Object.<string, number>} scores - Map of player names (string) to scores (numbers).
-    */
-    async gameEnded(scores) {
+    
+    async gameEnded(scores: PlayerScore[]) {
         const container = this.resultsContainer;
-        // Convert scores object to an array of [id, score] pairs
-        const entries = Object.entries(scores);
     
         // Vertical spacing between lines
         const lineHeight = 30;
     
-        entries.forEach(([name, score], index) => {
+        scores.forEach((score, index) => {
             const playerName = new Text({
-                text: `${name}: ${score}`,
+                text: `${score.name}: ${score.score}`,
                 style: {
                     fill: '#ffffff',
                     fontSize: 18,
@@ -899,12 +915,12 @@ async displayRevealedCharacters(players, container) {
         container.y = this.app.screen.height / 2;
     }
     
-    async youRegulatorOptions(container,options,perk,gameState,onSelectCallback1,onSelectCallback2){
+    async youRegulatorOptions(container: Container, options: RegulatorSwapPlayer[], perk: string, gameState: GameState, onSelectCallback1: (id: PlayerId) => void, onSelectCallback2: (card_idxs: number[]) => void){
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-250;
 
-        let texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -962,7 +978,7 @@ async displayRevealedCharacters(players, container) {
             const player = gameState.getPlayerById(option.player_id);
             if (!player) continue;
 
-            let playerX = startX + columnWidth / 2;
+            const playerX = startX + columnWidth / 2;
             let playerY = y + 50;
 
             const name = new Text({
@@ -975,7 +991,7 @@ async displayRevealedCharacters(players, container) {
             
             playerY += 30;
 
-            let assetStartX = playerX - (cardWidth / 2) - (cardSpacing / 2);
+            const assetStartX = playerX - (cardWidth / 2) - (cardSpacing / 2);
             let cardBack = new Sprite(assetBackTexture);
             cardBack.scale.set(cardScale);
             cardBack.anchor.set(0.5);
@@ -993,7 +1009,7 @@ async displayRevealedCharacters(players, container) {
             tempContainer.addChild(assetCount);
 
             
-            let liabilityStartX = playerX + (cardWidth / 2) + (cardSpacing / 2);
+            const liabilityStartX = playerX + (cardWidth / 2) + (cardSpacing / 2);
            
             cardBack = new Sprite(liabilityBackTexture);
             cardBack.scale.set(cardScale);
@@ -1043,9 +1059,9 @@ async displayRevealedCharacters(players, container) {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async displaySwapWithDeckPopup(container, player, onConfirmCallback) {
+    async displaySwapWithDeckPopup(container: Container, player: Player, onConfirmCallback: (card_idxs: number[]) => void) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 250;
 
         const titleText = new Text({
@@ -1058,14 +1074,14 @@ async displayRevealedCharacters(players, container) {
 
         y += 150;
 
-        const selectedIndices = [];
+        const selectedIndices: number[] = [];
 
         const cardScale = 0.25;
         const cardWidth = 590 * cardScale;
         const cardHeight = 940 * cardScale;
         const spacing = 20;
         const totalWidth = (player.hand.length * cardWidth) + ((player.hand.length - 1) * spacing);
-        let startX = x - totalWidth / 2 + cardWidth / 2;
+        const startX = x - totalWidth / 2 + cardWidth / 2;
 
         player.hand.forEach((card, index) => {
             const cardSprite = new Sprite(card.sprite.texture);
@@ -1117,13 +1133,13 @@ async displayRevealedCharacters(players, container) {
         return tempContainer;
     }
 
-    async displayRegulatorSwapNotification(container, regulatorPlayer) {
+    async displayRegulatorSwapNotification(container: Container, regulatorPlayer: Player) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 150;
 
         // Regulator Icon
-        let texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
         const regulatorIcon = new Sprite(texture);
         regulatorIcon.position.set(x, y);
         regulatorIcon.width = 200;
@@ -1148,7 +1164,8 @@ async displayRevealedCharacters(players, container) {
         infoText.anchor.set(0.5);
         infoText.position.set(x, y);
 
-        const padding = 20;
+        // TODO: unused padding
+        const _padding = 20;
         const background = new Graphics()
             .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
             .fill(0x323232)
@@ -1187,7 +1204,7 @@ async displayRevealedCharacters(players, container) {
         return tempContainer;
     }
 
-    _addPopupCloseButton(popupContainer, onOkCallback) {
+    _addPopupCloseButton(popupContainer: Container, onOkCallback?: () => void) {
         const okButton = new FancyButton({
             text: "OK",
             width: 200,
@@ -1205,7 +1222,7 @@ async displayRevealedCharacters(players, container) {
         okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
         popupContainer.addChild(okButton.view);
     }
-    showMarket(marketData){
+    showMarket(marketData: MarketCard){
         if (!marketData) {
             return;
         }
@@ -1236,7 +1253,7 @@ async displayRevealedCharacters(players, container) {
         const circleY = height / 3-10;
         const spacing = 60;
         const totalCircleWidth = (colors.length - 1) * spacing;
-        let startX = (width - totalCircleWidth) / 2;
+        const startX = (width - totalCircleWidth) / 2;
 
         colors.forEach((colorInfo, index) => {
             const circleX = startX + index * spacing;
@@ -1283,13 +1300,16 @@ async displayRevealedCharacters(players, container) {
         this.marketContainer.addChild(verticalLine);
 
         // Bottom half: RFR and MRP values
-        const textStyle = { 
+        const textStyle = new TextStyle({ 
             fill: '#ffffffff', 
             fontSize: 30, 
             fontFamily: 'MyFont',
             stroke: { color: '#000000', width: 4, join: 'round' }
-        };
-        const rfrText = new Text({ text: `RFR + ${marketData.rfr}%`, style: textStyle });
+        });
+        const rfrText = new Text({
+            text: `RFR + ${marketData.rfr}%`,
+            style: textStyle
+        });
         rfrText.anchor.set(0.5);
         rfrText.position.set(width / 3 - 20, height * 0.75);
         this.marketContainer.addChild(rfrText);
@@ -1300,7 +1320,7 @@ async displayRevealedCharacters(players, container) {
         this.marketContainer.addChild(mrpText);
     }
 
-    addCardToPlayedContainer(card) {
+    addCardToPlayedContainer(card: Asset | Liability) {
         card.sprite.zIndex = this._nextPlayedCardZIndex++;
         this.playedCardsContainer.addChild(card.sprite);
     }
