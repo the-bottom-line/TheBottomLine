@@ -271,6 +271,132 @@ class GameManager {
         this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
         this.initRound();
     }
+    
+    async createCard(cardData: EitherAssetLiability) {
+        let newCard: Asset | Liability;
+        switch (cardData.card_type) {
+            case "asset": {
+                newCard = new Asset(
+                    cardData.title,
+                    cardData.color,
+                    cardData.gold_value,
+                    cardData.silver_value,
+                    cardData.ability,
+                    cardData.image_front_url
+                );
+            }
+                break;
+            case "liability": {
+                newCard = new Liability(
+                    cardData.rfr_type,
+                    cardData.value,
+                    cardData.image_front_url
+                );
+            }
+                break; 
+        }
+        
+        await newCard.initializeSprite();
+        return newCard
+    }
+
+    // Plays an assets and updates corresponding values
+    playAsset(player: Player, card: Asset) {
+        player.gold += card.gold;
+        player.silver += card.silver;
+        player.assetList.push(card);
+        player.positionAssetsToPile();
+    }
+
+    // Plays a liability and updates corresponding values
+    playLiability(player: Player, card: Asset | Liability) {
+        player.liabilityList.push(card);
+        player.positionLiabilitiesToPile();
+    }
+
+    // Plays the given card by cardData as the given player
+    async playCard(player: Player, card: Asset | Liability) {
+        // Push card to the correct pile
+        if (card instanceof Asset) {
+            this.playAsset(player, card);
+        } else if (card instanceof Liability) {
+            this.playLiability(player, card);
+        } else {
+            throw "unreachable";
+        }
+    }
+
+    // Handles a full rejoin from any situation
+    async rejoinGame(data: any /* TODO: pull data type from backend */) {
+        console.log("Received Resync data from server:", data);
+
+        // TODO: Check functionality of initRound with documentation (Oliver)
+        // Create the decks (I think?)
+        this.initRound();
+
+        // Setup local player
+        this.gameState.players = [];
+        this.gameState.myId = data.id;
+        // TODO: pretty sure this is not set so this.gameState.username! will crash
+        const localPlayer = new Player(this.gameState.username!, data.id, this.app);
+        localPlayer.reveal = true;
+        localPlayer.cash = data.cash;
+
+        this.gameState.players.push(localPlayer);
+
+        // Handle played cards
+        for (const cardData of data.played_cards) {
+            const card = (await this.createCard(cardData))!;
+            await this.playCard(localPlayer, card);
+        }
+
+        // Handle cards in hand
+        for (const cardData of data.hand) {
+            const card = (await this.createCard(cardData))!;
+            localPlayer.addCardToHand(card);
+
+            // Attach event listeners for playing/discarding cards
+            this.setupCardInteractions(card);
+
+            // Sync UI
+            this.uiManager.handContainer.addChild(card.sprite);
+        }
+
+        localPlayer.positionCardsInHand();
+        this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
+        // Add the other players
+        this.initPlayers(data.player_info);
+        for (const player_ of data.player_info) {
+            const info = player_ as PlayerInfo;
+            const otherPlayer = this.gameState.getPlayerById(info.id)!;
+
+            // Set up their data
+            const character = this.gameState.characters.find(
+                character => character.characterType == info.character
+            )!;
+            otherPlayer.character = character;
+            
+
+            // Handle already played cards
+            // TODO: handle pushing both assets and liabilities for other players based on 
+            // PlayerInfo rather than pushing your own cards to their hand which I think is what is
+            // happening here?
+            // for (const cardData_ in data.played_cards) {
+            //     const cardData = cardData_ as EitherAssetLiability;
+            //     const card = (await this.createCard(cardData))!;
+            //     await this.playCard(otherPlayer, card);
+            // }
+
+            // Handle cards in hand
+            otherPlayer.othersHand.push(data.hand_cards);
+
+            // Set up their graphics
+            otherPlayer.positionAssetsToPile();
+            otherPlayer.positionLiabilitiesToPile();
+        };
+
+        // TODO: Add correct turn phase syncing
+    }
 
     initPlayers(player_info: PlayerInfo[]){
         // Initialize all players from player_info
