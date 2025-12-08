@@ -1,37 +1,51 @@
+import { Application } from "pixi.js";
 import Asset from './Asset.js';
 import Liability from './Liability.js';
 import { Tween } from 'tweedle.js';
+import type Character from "./Characters.js";
+import type { CardType } from "@shared-types";
+
+type HoveredCard = Asset | Liability | null;
+
 class Player {
-    constructor(name, id,app) {
+    app: Application;
+    name: string;
+    playerID: number;
+    
+    hand: (Asset | Liability)[] = [];
+    playableAssets = 1;
+    playableLiabilities = 1;
+    character: Character | null = null;
+    othersHand: CardType[] = [];
+    isChaiman = false;
+
+    assetList: Asset[] = [];
+    cash = 0;
+    liabilityList: Liability[] = [];        
+    
+    tradeCredit = 0;
+    bankLoans = 0;
+    bonds = 0;
+    silver = 0;
+    gold = 0;
+
+    cardSpacing = 180;
+
+    maxTempCards = 3;
+    maxKeepCards = 2;
+    drawableCards = this.maxTempCards;
+    skipNextTurn = false;
+    reveal = false;
+
+    _nextZIndex = 0;
+    
+    constructor(name: string, id: number, app: Application) {
         this.app = app;
-        this.hand = [];
-        this.playableAssets = 1;
-        this.playableLiabilities = 1;
-        this.character = null;
         this.name = name;
         this.playerID = id;
-        this.othersHand = []; 
-        this.isChaiman = false;
-
-        this.assetList = [];
-        this.cash = 0;
-        this.liabilityList = [];        
-        
-        this.tradeCredit = 0;
-        this.bankLoans = 0;
-        this.bonds = 0;
-        this.silver = 0;
-        this.gold = 0;
-
-        this.cardSpacing = 180;
-
-        this.skipNextTurn = false;
-        this.reveal = false;
-
-        this._nextZIndex = 0;
     }
 
-    positionCardsInHand(hoveredCard = null) {
+    positionCardsInHand(hoveredCard: HoveredCard = null) {
         const liabilities = this.hand.filter(c => c instanceof Liability && !c.isTemporary).reverse();
         const assets = this.hand.filter(c => c instanceof Asset && !c.isTemporary).reverse();
 
@@ -81,12 +95,12 @@ class Player {
         });
     }
 
-    addCardToHand(card) {
+    addCardToHand(card: Asset | Liability) {
         this.hand.push(card);
         if (card.sprite) card.sprite.zIndex = this._nextZIndex++;
         if (card.discardButton) card.discardButton.zIndex =this._nextZIndex + 1;
     }
-    playLiability(cardIndex) {
+    playLiability(cardIndex: number) {
         const card = this.hand[cardIndex];
         if (card instanceof Liability) {
             // Server-side logic will handle the rest.
@@ -94,7 +108,7 @@ class Player {
         }
         return false;
     }
-    playAsset(cardIndex) {
+    playAsset(cardIndex: number) {
         const card = this.hand[cardIndex];
         if (card instanceof Asset) {
             // Server-side logic will handle the rest.
@@ -108,7 +122,7 @@ class Player {
 
         const assetsStartX = this.app.screen.width / 2 - 145;
 
-        this.assetList.forEach((card, i) => {
+        this.assetList.forEach((card: Asset, i: number) => {
             card.setPosition(assetsStartX + i * spacing, baseY);
         });
     }
@@ -120,7 +134,7 @@ class Player {
 
         const assetsStartX = this.app.screen.width / 2 + 145;
 
-        this.liabilityList.forEach((card, i) => {
+        this.liabilityList.forEach((card: Liability, i: number) => {
             card.setPosition(assetsStartX + i * spacing, baseY);
         });
     }
@@ -136,9 +150,9 @@ class Player {
         });
    }
 
-    useCharacterAbility(targetPlayer = null, cardIndex = null, targetCardIndex = null) {
+    useCharacterAbility(targetPlayer?: Player, cardIndex?: number, targetCardIndex?: number) {
         if (this.character && !this.character.used) {
-            return this.character.useAbility(this, targetPlayer, cardIndex, targetCardIndex);
+            return this.character.useActive(this, targetPlayer, cardIndex, targetCardIndex);
         }
         return false;
     }

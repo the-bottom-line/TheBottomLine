@@ -5,6 +5,8 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     bun
     prettier
+    typescript
+    eslint
   ];
 
   shellHook = ''

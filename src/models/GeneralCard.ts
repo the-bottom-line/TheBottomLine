@@ -1,24 +1,28 @@
 import { Assets, Sprite } from 'pixi.js';
 
 class GeneralCard {
-    constructor(texturePath) {
+    texturePath: string;
+    sprite: Sprite;
+    discardButton: Sprite;
+    isTemporary = false;
+    
+    constructor(texturePath: string) {
         this.texturePath = texturePath;
-        this.sprite = null;   
-        this.discardButton = null;
-        this.isTemporary = false;
+        this.sprite = new Sprite();
+        this.discardButton = new Sprite();
         this.initializeSprite();
     }
 
     async initializeSprite() {
-        const texture = await Assets.load(this.texturePath);
-        const buttonTex = await Assets.load("./miscellaneous/discard.png");
+        const cardTexture = await Assets.load(this.texturePath);
+        const buttonTexture = await Assets.load("./miscellaneous/discard.png");
         
-        texture.scaleMode = 'linear';
-        this.sprite = new Sprite(texture);
+        cardTexture.scaleMode = 'linear';
+        this.sprite.texture = cardTexture;
         this.sprite.scale.set(0.25);
         this.sprite.anchor.set(0.5);
 
-        this.discardButton = new Sprite(buttonTex);
+        this.discardButton.texture = buttonTexture;
         this.discardButton.eventMode = 'static';
         this.discardButton.cursor = "pointer";
         this.discardButton.anchor.set(0.5);
@@ -48,7 +52,7 @@ class GeneralCard {
         this.sprite.off('mousedown');
     }
 
-    setPosition(x, y) {
+    setPosition(x: number, y: number) {
         if (this.sprite) {
             this.sprite.x = x;
             this.sprite.y = y;

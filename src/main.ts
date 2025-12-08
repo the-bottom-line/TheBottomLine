@@ -11,11 +11,9 @@ import NetworkManager from "./models/NetworkManager.js";
         autoDensity: true,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
-        autoStart: false, // Do not start the ticker automatically
     });
 
     app.canvas.style.position = "absolute";
-    console.log(app.ticker.FPS);
     document.body.appendChild(app.canvas);
 
     const gameState = new GameState();
@@ -26,7 +24,5 @@ import NetworkManager from "./models/NetworkManager.js";
     networkManager.setGameManager(gameManager);
 
     gameManager.initLobby();
-
-    // Start the ticker now that everything is set up
-    app.start();
 })();
+    
