@@ -1,0 +1,144 @@
+import type { Application } from 'pixi.js';
+import type GameState from '../GameState.js';
+import type UIManager from '../UIManager.js';
+import type NetworkManager from '../NetworkManager.js';
+import type Player from '../Player.js';
+import Asset from '../Asset.js';
+import Liability from '../Liability.js';
+import type GameManager from '../GameManager.js';
+
+class PlayerActionManager {
+    app: Application;
+    gameState: GameState;
+    uiManager: UIManager;
+    networkManager: NetworkManager;
+    gameManager: GameManager;
+
+    constructor(gameManager: GameManager) {
+        this.gameManager = gameManager;
+        this.gameState = gameManager.gameState;
+        this.uiManager = gameManager.uiManager;
+        this.networkManager = gameManager.networkManager;
+        this.app = gameManager.app;
+    }
+
+    initLobby() {
+        this.uiManager.showScreen('login');
+        
+        this.uiManager.displayGameName(this.uiManager.loginContainer);
+        const nameBox = this.uiManager.createNametBox();
+        const channelBox = this.uiManager.createChannelBox();
+
+        const joinGame = () => {
+            const username = nameBox.value;
+            const channel = channelBox.value;
+            if (!username) return;
+            this.networkManager.sendCommand("Connect", { "username": username, "channel": channel });
+            this.gameState.username = username;
+            this.uiManager.showScreen('lobby');
+        };
+
+        this.uiManager.createJoinButton(joinGame);
+        
+        this.uiManager.hudManager.showMarket({
+
+            title: "Stable Market",
+            rfr: 0,
+            mrp: 0,
+            Yellow: "Zero",
+            Blue: "Zero",
+            Green: "Zero",
+            Purple: "Zero",
+            Red: "Zero",
+            // TODO: probably coordinate with backend to get rid of backend-provided urls entirely
+            image_front_url: '',
+            image_back_url: ''
+        }, this.uiManager.marketContainer);
+    }
+
+    showLocalPlayerPicking(player: Player){
+        this.uiManager.showScreen('picking');
+        this.uiManager.displayTempCards(player);
+        // TODO: make sure throwing an error if player does not have character is correct. This is
+        // the same behaviour as the js version
+        this.uiManager.statsText.text = `${player.name} is ${player.character!.name} and is picking cards`;
+        this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
+        player.positionCardsInHand();
+    }
+
+    youEndedTurn(){
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        currentPlayer.hand.forEach(card => {
+            card.makeUnplayable();
+        });
+    }
+
+    updateHandPlayability() {
+        const localPlayer = this.gameState.getLocalPlayer();
+        if (!localPlayer) return;
+
+        localPlayer.hand.forEach(card => {
+            this.setupCardInteractions(card); // Re-attach listeners
+            // Determine if the card should be playable
+            const canPlayAsset = card instanceof Asset && localPlayer.playableAssets > 0;
+            const canPlayLiability = card instanceof Liability && localPlayer.playableLiabilities > 0;
+            const canPlay = canPlayAsset || canPlayLiability;
+
+            if (canPlay) {
+               
+                card.makePlayable();
+            } else {
+                card.makeUnplayable();
+            }
+        });
+        localPlayer.positionCardsInHand();
+    }
+
+    setupCardInteractions(card: Asset | Liability) {
+        const localPlayer = this.gameState.getLocalPlayer()!;
+
+        // Setup click-to-play listener
+        card.sprite.removeAllListeners('mousedown'); // Clear old listeners to be safe
+        card.sprite.on('mousedown', () => {
+            const cardIndex = localPlayer.hand.indexOf(card);
+            if (cardIndex !== -1) {
+                // Check if the card is actually playable before sending command
+                const canPlayAsset = card instanceof Asset && localPlayer.playableAssets > 0 && localPlayer.cash >= card.gold;
+                const canPlayLiability = card instanceof Liability && localPlayer.playableLiabilities > 0;
+
+                if (card instanceof Asset) {
+                    if (canPlayAsset) this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
+                } else if (card instanceof Liability) {                        
+                    if (canPlayLiability) this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
+                }
+            }
+        });
+
+        // Setup hover listeners
+        card.sprite.on('cardHover', (hoveredCard) => localPlayer.positionCardsInHand(hoveredCard));
+        card.sprite.on('cardOut', () => localPlayer.positionCardsInHand());
+    }
+
+    makeCardDiscardable(newCard: Asset | Liability){
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        newCard.sprite.on('cardDiscarded', (discardCard) => {
+            const cardIndex = currentPlayer.hand.indexOf(discardCard);
+            this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex });
+                /*this.uiManager.tempCardsContainer.removeChild(discardedCard.sprite);
+                this.uiManager.tempCardsContainer.removeChild(discardedCard.discardButton);
+                currentPlayer.tempHand.splice(cardIndex, 1);
+                currentPlayer.positionTempCards();*/
+
+                /*if (currentPlayer.tempHand.length === currentPlayer.maxKeepCards) {
+                    // When the number of cards in temp hand equals the max cards to keep,
+                    // it implies the player has made their choice.
+                    // We can now inform the server which cards are being kept.
+                    const keptCardIndices = currentPlayer.tempHand.map(card => currentPlayer.hand.length + currentPlayer.tempHand.indexOf(card));
+                    this.networkManager.sendCommand("PutBackCard", { kept_card_indices: keptCardIndices });
+                }*/
+            
+        });
+    }
+}
+
+export default PlayerActionManager;

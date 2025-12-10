@@ -23,6 +23,5 @@ import NetworkManager from "./models/NetworkManager.js";
 
     networkManager.setGameManager(gameManager);
 
-    gameManager.initLobby();
-})();
-    
+    gameManager.playerActionManager.initLobby();
+})();    
