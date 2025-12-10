@@ -305,25 +305,23 @@ class UIManager {
         });
     }
 
-    debugPurpleCards() {
-        const createMockSprite = (name: string) => {
-            const cardContainer = new Container();
-            const bg = new Graphics().roundRect(0, 0, 200, 300, 10).fill(0x6A0DAD).stroke({ width: 2, color: 0xFFFFFF });
-            const text = new Text({ text: name, style: { fill: '#ffffff', fontSize: 24, wordWrap: true, wordWrapWidth: 180, align: 'center', fontFamily: 'MyFont' } });
-            text.anchor.set(0.5);
-            text.position.set(100, 150);
-            cardContainer.addChild(bg, text);
-            cardContainer.pivot.set(100, 150);
-            return cardContainer;
-        };
-
-        const dummyCards = [
-            new Asset("R&D Lab", "Purple", 0, 0, "Ability", "mock_path"),
-            new Asset("Application Lab", "Purple", 0, 0, "Ability", "mock_path"),
-            new Asset("Pilot Plant", "Purple", 0, 0, "Ability", "mock_path")
+    async debugPurpleCards() {
+        const cardsData = [
+            { title: "R&D Lab", path: "./assets/R&D Lab.png" },
+            { title: "Application Lab", path: "./assets/Application Lab.png" },
+            { title: "Pilot Plant", path: "./assets/Pilot Plant.png" }
         ];
 
-        dummyCards.forEach(card => { card.sprite = createMockSprite(card.title); });
+        const dummyCards: Asset[] = [];
+
+        for (const data of cardsData) {
+            const card = new Asset(data.title, "Purple", 0, 0, "Ability", data.path);
+            const texture = await Assets.load(card.texturePath);
+            card.sprite = new Sprite(texture);
+            card.sprite.scale.set(0.25);
+            card.sprite.anchor.set(0.5);
+            dummyCards.push(card);
+        }
 
         this.displayPurpleCards(dummyCards);
         this.showScreen('purpleCards');
