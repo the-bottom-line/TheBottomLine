@@ -35,13 +35,13 @@ class PlayerActionManager {
             if (!username) return;
             this.networkManager.sendCommand("Connect", { "username": username, "channel": channel });
             this.gameState.username = username;
+            this.gameState.channel = channel;
             this.uiManager.showScreen('lobby');
         };
 
         this.uiManager.createJoinButton(joinGame);
         
         this.uiManager.hudManager.showMarket({
-
             title: "Stable Market",
             rfr: 0,
             mrp: 0,
@@ -49,7 +49,9 @@ class PlayerActionManager {
             Blue: "zero",
             Green: "zero",
             Purple: "zero",
-            Red: "zero"
+            Red: "zero",
+            image_front_url: "",
+            image_back_url: ""
         }, this.uiManager.marketContainer);
     }
 

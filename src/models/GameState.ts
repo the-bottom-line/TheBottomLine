@@ -7,6 +7,7 @@ class GameState {
     players: Player[] = [];
     myId?: number;
     username?: string;
+    channel?: string;
     currentPlayerIndex = 0;
     characters = getAllCharacters();
     faceUpCharacters: Character[] = [];
