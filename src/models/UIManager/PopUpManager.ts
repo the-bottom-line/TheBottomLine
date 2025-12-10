@@ -47,9 +47,6 @@ class PopUpManager {
             .roundRect(x - 200, y-20, 350, 60, 5)
             .fill(0x323232) 
             .stroke({ width: 2, color: 0x000000 });
-
-        // TODO: verify that it's correct that this does not show at all if the player does not have
-        // a character for whatever reason
         console.log("here:", player)
        
         const characterText = new Text({
@@ -633,8 +630,6 @@ class PopUpManager {
         infoText.anchor.set(0.5);
         infoText.position.set(x, y);
 
-        // TODO: unused padding
-        const _padding = 20;
         const background = new Graphics()
             .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
             .fill(0x323232)

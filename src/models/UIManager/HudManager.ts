@@ -138,8 +138,6 @@ class HudManager {
     }
 
     async displayOtherPlayerHand(assets: Extract<CardType, 'Asset'>[], liabilities: Extract<CardType, 'Liability'>[], elseTurnContainer: Container) {        
-        // Remove all previous card backs to prevent ghost cards
-        // TODO: fix custom property error or use different way to solve ghosting error
         const oldCardBacks = elseTurnContainer.children.filter(child => child.label === 'otherPlayerCardBack');
         oldCardBacks.forEach(child => elseTurnContainer.removeChild(child));
 
@@ -245,7 +243,7 @@ class HudManager {
             } else if (colorInfo.value === 'up') {
                 statusIndicator.text = '+';
               
-            } else if (colorInfo.value === 'Zero') {
+            } else if (colorInfo.value === 'zero') {
                 statusIndicator.text = '0';
             }
             marketContainer.addChild(statusIndicator);
@@ -295,10 +293,8 @@ class HudManager {
         if (onIconClick) {
             characterIcon.interactive = true;
             characterIcon.cursor = 'pointer';
-            // TODO: verify that players either always have a character when this happens, or that
-            // it's okay if this doesn't happen if the player does not have a character
             characterIcon.on('mousedown', () => {
-                if (player.character) onIconClick(player.character)
+                onIconClick(player.character!)
             });
         }
         characterIcon.scale.set(0.25);
@@ -333,7 +329,7 @@ class HudManager {
             const aIsRevealed = a.reveal && a.character;
             const bIsRevealed = b.reveal && b.character;
 
-            // TODO: make fix where ts compiler understands _IsRevealed variables
+            // TODO: reveal is pobably redundent 
             if (a.reveal && a.character && b.reveal && b.character) {
                
                 return a.character.order - b.character.order;

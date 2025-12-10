@@ -28,21 +28,12 @@ class GameState {
     }
 
     getLocalPlayer() {
-        // TODO: think about whether this should throw upon failure
         return this.getPlayerById(this.myId!)!;
     }
 
     resetForNewRound() {
-        // TODO: move to Player.reset()
         this.players.forEach(p => {
-            p.character = null;
-            p.reveal = false;
-            p.isChaiman = false;
-            p.playableAssets = 1;
-            p.playableLiabilities = 1;
-            p.maxTempCards = 3;
-            p.maxKeepCards = 2;
-            
+            p.resetForNewRound();
         });
         this.faceUpCharacters = [];
     }

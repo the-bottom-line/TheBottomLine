@@ -45,22 +45,17 @@ class PlayerActionManager {
             title: "Stable Market",
             rfr: 0,
             mrp: 0,
-            Yellow: "Zero",
-            Blue: "Zero",
-            Green: "Zero",
-            Purple: "Zero",
-            Red: "Zero",
-            // TODO: probably coordinate with backend to get rid of backend-provided urls entirely
-            image_front_url: '',
-            image_back_url: ''
+            Yellow: "zero",
+            Blue: "zero",
+            Green: "zero",
+            Purple: "zero",
+            Red: "zero"
         }, this.uiManager.marketContainer);
     }
 
     showLocalPlayerPicking(player: Player){
         this.uiManager.showScreen('picking');
         this.uiManager.displayTempCards(player);
-        // TODO: make sure throwing an error if player does not have character is correct. This is
-        // the same behaviour as the js version
         this.uiManager.statsText.text = `${player.name} is ${player.character!.name} and is picking cards`;
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         player.positionCardsInHand();

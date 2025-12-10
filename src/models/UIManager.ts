@@ -199,9 +199,7 @@ class UIManager {
         this.decksContainer.addChild(liabilityDeckSprite);
     }
 
-
-    // TODO: make closedCharacter not list
-    displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter?: Character[]) {
+    async displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter?: Character) {
         this.characterCardsContainer.removeChildren();
         const spacing = 200;
         const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
@@ -209,17 +207,15 @@ class UIManager {
         grayscaleFilter.grayscale(0.2, true);
 
         if(closedCharacter != null){
-            closedCharacter.forEach(async (character: Character) =>{
-                const texture = await Assets.load(character.texturePath);
-                const closedCard = new Sprite(texture);
-                closedCard.interactive = true;
-                closedCard.scale.set(0.3);
-                closedCard.anchor.set(0.5);
-                closedCard.x = this.app.screen.width / 2;
-                closedCard.y = this.app.screen.height / 2-300;
+            const texture = await Assets.load(closedCharacter.texturePath);
+            const closedCard = new Sprite(texture);
+            closedCard.interactive = true;
+            closedCard.scale.set(0.3);
+            closedCard.anchor.set(0.5);
+            closedCard.x = this.app.screen.width / 2;
+            closedCard.y = this.app.screen.height / 2-300;
 
-                this.characterCardsContainer.addChild(closedCard);
-            });
+            this.characterCardsContainer.addChild(closedCard);
         }
         
             

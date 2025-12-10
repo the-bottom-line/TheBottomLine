@@ -161,6 +161,15 @@ class Player {
             this.character.used = false;
         }
     }
+    resetForNewRound(){
+        this.character = null;
+        this.reveal = false;
+        this.isChaiman = false;
+        this.playableAssets = 1;
+        this.playableLiabilities = 1;
+        this.maxTempCards = 3;
+        this.maxKeepCards = 2;
+    }
 }
 
 export default Player;

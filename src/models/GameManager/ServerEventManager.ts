@@ -3,7 +3,7 @@ import type GameState from '../GameState.js';
 import type UIManager from '../UIManager.js';
 import type NetworkManager from '../NetworkManager.js';
 import type { DirectResponse, EitherAssetLiability, PlayerInfo, UniqueResponse } from '@shared-types';
-import type Character from '../Characters.js';
+import Character from '../Characters.js';
 import Player from '../Player.js';
 import Asset from '../Asset.js';
 import Liability from '../Liability.js';
@@ -30,7 +30,6 @@ class ServerEventManager {
         
         this.gameState.players = []; 
         this.gameState.myId = data.id;
-        // TODO: think about whether this should crash if gamestate does not have a username.
         const localPlayer = new Player(this.gameState.username!, data.id,this.app);
         localPlayer.reveal = true;
         localPlayer.cash = data.cash;
@@ -190,10 +189,9 @@ class ServerEventManager {
         this.uiManager.showScreen("character");
         this.gameState.resetForNewRound();
 
-        // TODO: think about why this does not use gameState.currentPlayer().
-        const currentPlayer = this.gameState.getPlayerById(data.chairman_id)!; 
-        this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
-        currentPlayer.isChaiman = true;
+        const localPlayer = this.gameState.getLocalPlayer(); 
+        this.uiManager.statsText.text = `${localPlayer.name} is choosing their character`;
+        localPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
 
         this.gameState.openCharacters = this.gameState.characters.filter(character =>
@@ -201,20 +199,20 @@ class ServerEventManager {
         );
         
 
-        if (currentPlayer.playerID === this.gameState.myId) {
+        if (localPlayer.playerID === this.gameState.myId) {
             const selectable_characters = data.selectable_characters;
             if (selectable_characters) {
                 this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
                     selectable_characters.includes(character.characterType)
                 );
             }
-            let closedCharacter: Character[] = [];
+            let closedCharacter: Character | undefined;
             
             const closed_character = data.closed_character;
             if (closed_character) {
-                closedCharacter = this.gameState.characters.filter(character =>
+                closedCharacter = this.gameState.characters.find(character =>
                     closed_character.includes(character.characterType)
-                );
+                )!;
             }
             console.log(closedCharacter);
 
@@ -360,9 +358,6 @@ class ServerEventManager {
             this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
             this.gameManager.updateUI();
             
-            // TODO: I found this in this function. I assume it should be removed. I don't
-            // understand why this never caused any crashes.
-            // this.networkManager.notifyComman
         }
     }
 
