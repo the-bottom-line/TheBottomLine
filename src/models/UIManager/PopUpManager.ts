@@ -50,25 +50,24 @@ class PopUpManager {
 
         // TODO: verify that it's correct that this does not show at all if the player does not have
         // a character for whatever reason
-        console.log(player);
-        if (player.character) {
-            const characterText = new Text({
-                text: player.character.name,
-                style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
-            });
-            characterText.anchor.set(0, 0.5);
-            characterText.position.set(x-140, y);
-            
-            texture = await Assets.load(player.character.iconPath);
-            const characterIcon = new Sprite(texture);
-            characterIcon.position.set(x-200, y);
-            characterIcon.width = 80;
-            characterIcon.height = 90;
-            characterIcon.anchor.set(0.5);
-            
-            tempContainer.addChild(characterText);
-            tempContainer.addChild(characterIcon);
-        }
+        console.log("here:", player)
+       
+        const characterText = new Text({
+            text: player.character!.name ,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        characterText.anchor.set(0, 0.5);
+        characterText.position.set(x-140, y);
+        
+        texture = await Assets.load(player.character!.iconPath);
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x-200, y);
+        characterIcon.width = 80;
+        characterIcon.height = 90;
+        characterIcon.anchor.set(0.5);
+        
+       
+        
         const playerText = new Text({
             text: player.name,
             style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
@@ -81,6 +80,8 @@ class PopUpManager {
         tempContainer.addChild(chairmanText);
         tempContainer.addChild(textPlayerBackground);  
         tempContainer.addChild(playerText);
+        tempContainer.addChild(characterText);
+        tempContainer.addChild(characterIcon);
 
         this._addPopupCloseButton(tempContainer);
         
@@ -646,6 +647,48 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
+    async displayPlayerSwapNotification(regulatorPlayer: Player, targetPlayer: Player) {
+        const tempContainer = this._createPopupBase();
+        const x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 150;
+
+        // Regulator Icon
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
+        const regulatorIcon = new Sprite(texture);
+        regulatorIcon.position.set(x, y);
+        regulatorIcon.width = 200;
+        regulatorIcon.height = 220;
+        regulatorIcon.anchor.set(0.5);
+        y += 130;
+
+        // "The Regulator..." text
+        const titleText = new Text({
+            text: `The Regulator (${regulatorPlayer.name})`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        y += 40;
+
+        // "...swapped cards with player" text
+        const infoText = new Text({
+            text: `has swapped cards with ${targetPlayer.name}.`,
+            style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        infoText.anchor.set(0.5);
+        infoText.position.set(x, y);
+
+        const background = new Graphics()
+            .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        background.pivot.set(background.width / 2, 0);
+        background.position.set(x, y - 50);
+
+        tempContainer.addChild(regulatorIcon, background, titleText, infoText);
+        this._addPopupCloseButton(tempContainer);
+        this.popupContainer.addChild(tempContainer);
+    }
     
     _createPopupBase() {
         this.popupContainer.removeChildren();

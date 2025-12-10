@@ -136,8 +136,9 @@ class HudManager {
     async displayOtherPlayerHand(assets: Extract<CardType, 'Asset'>[], liabilities: Extract<CardType, 'Liability'>[], elseTurnContainer: Container) {        
         // Remove all previous card backs to prevent ghost cards
         // TODO: fix custom property error or use different way to solve ghosting error
-        // const oldCardBacks = this.elseTurnContainer.children.filter(child => child.isCardBack);
-        // oldCardBacks.forEach(child => this.elseTurnContainer.removeChild(child));
+        const oldCardBacks = elseTurnContainer.children.filter(child => child.label === 'otherPlayerCardBack');
+        oldCardBacks.forEach(child => elseTurnContainer.removeChild(child));
+
 
         const baseY = this.app.screen.height - 100;
         const spacing = 60;
@@ -150,7 +151,7 @@ class HudManager {
             const cardBack = new Sprite(assetBackTexture);
             cardBack.scale.set(0.25);
             cardBack.anchor.set(0.5);
-            // cardBack.isCardBack = true; // Custom property to identify these sprites
+            cardBack.label = 'otherPlayerCardBack';
             cardBack.x = assetsStartX + i * spacing;
             cardBack.y = baseY;
             elseTurnContainer.addChild(cardBack);
@@ -164,7 +165,7 @@ class HudManager {
             const cardBack = new Sprite(liabilityBackTexture);
             cardBack.scale.set(0.25);
             cardBack.anchor.set(0.5);
-            // cardBack.isCardBack = true; // Custom property to identify these sprites
+            cardBack.label = 'otherPlayerCardBack';
             cardBack.x = liabilitiesStartX - i * spacing;
             cardBack.y = baseY;
             elseTurnContainer.addChild(cardBack);
