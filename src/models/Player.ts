@@ -127,7 +127,6 @@ class Player {
         });
     }
     positionLiabilitiesToPile() {
-        
 
         const baseY = this.app.screen.height / 2 - 50;
         const spacing = 60; 

@@ -133,6 +133,10 @@ class HudManager {
         playedCardsContainer.addChild(card.sprite);
     }
 
+    removeCardFromPlayedContainer(card: Asset | Liability, playedCardsContainer: Container) {
+        playedCardsContainer.removeChild(card.sprite);
+    }
+
     async displayOtherPlayerHand(assets: Extract<CardType, 'Asset'>[], liabilities: Extract<CardType, 'Liability'>[], elseTurnContainer: Container) {        
         // Remove all previous card backs to prevent ghost cards
         // TODO: fix custom property error or use different way to solve ghosting error

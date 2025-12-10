@@ -402,16 +402,17 @@ class ServerEventManager {
         const card = player.liabilityList[data.liability_idx];
         if (!card) return;
 
+        this.uiManager.hudManager.removeCardFromPlayedContainer(card, this.uiManager.playedCardsContainer);
+
         player.cash -= card.gold;
         player.liabilityList.splice(data.liability_idx, 1);
         player.playableLiabilities--;
-
-        player.positionLiabilitiesToPile();
         
         this.gameManager.playerActionManager.updateHandPlayability();
         this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
-        this.gameManager.updateUI();
+        player.positionLiabilitiesToPile();
+        this.gameManager.updateUI();    
     }
 
     redeemedLiability(data: Extract<UniqueResponse, { action: "RedeemedLiability" }>['data']){

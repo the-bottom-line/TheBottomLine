@@ -150,7 +150,6 @@ class GameManager {
                 if (card.sprite) card.sprite.visible = true;
             });
         }
-        
     }
     
     async otherCards() {
