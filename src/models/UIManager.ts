@@ -29,6 +29,7 @@ class UIManager {
     popupContainer = new Container();
     resultsContainer = new Container();
     marketContainer = new Container();
+    purpleCardsContainer = new Container();
     
     statsText = new Text({
         text: '',
@@ -73,7 +74,8 @@ class UIManager {
             this.statsText,
             this.resultsContainer,
             this.marketContainer,
-            this.popupContainer
+            this.popupContainer,
+            this.purpleCardsContainer
         );
 
         this.handContainer.sortableChildren = true;
@@ -102,6 +104,7 @@ class UIManager {
         this.mainContainer.visible = screenName === 'main';
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
+        this.purpleCardsContainer.visible = screenName == 'purpleCards'
         this.resultsContainer.visible = screenName === 'results';
         this.marketContainer.visible = screenName === 'main' || screenName === 'elseTurn';
     }

@@ -668,9 +668,9 @@ class ServerEventManager {
         
         console.log("Game ended!", data.scores);
         
-        this.uiManager.showScreen('results');
+        this.uiManager.showScreen('purpleCards');
         
-        this.uiManager.gameEnded(data.scores);
+        //this.uiManager.gameEnded(data.scores);
     }
 }
 

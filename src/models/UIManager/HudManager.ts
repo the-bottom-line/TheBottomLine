@@ -371,5 +371,6 @@ class HudManager {
             index++;
         }
     }
+    
 }
 export default HudManager;
