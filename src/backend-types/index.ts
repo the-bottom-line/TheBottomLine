@@ -427,7 +427,7 @@ new_market: MarketCard, };
  *
  * NOTE: The default state is `Zero`, which is also the case when parsing with serde.
  */
-export type MarketCondition = "up" | "down" | "Zero";
+export type MarketCondition = "up" | "down" | "zero";
 
 /**
  * Errors that can happen when someone plays a card.
