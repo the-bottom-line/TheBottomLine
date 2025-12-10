@@ -53,6 +53,7 @@ class PlayerActionManager {
             image_front_url: "",
             image_back_url: ""
         }, this.uiManager.marketContainer);
+        this.uiManager.debugPurpleCards();
     }
 
     showLocalPlayerPicking(player: Player){
@@ -121,21 +122,9 @@ class PlayerActionManager {
         newCard.sprite.on('cardDiscarded', (discardCard) => {
             const cardIndex = currentPlayer.hand.indexOf(discardCard);
             this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex });
-                /*this.uiManager.tempCardsContainer.removeChild(discardedCard.sprite);
-                this.uiManager.tempCardsContainer.removeChild(discardedCard.discardButton);
-                currentPlayer.tempHand.splice(cardIndex, 1);
-                currentPlayer.positionTempCards();*/
-
-                /*if (currentPlayer.tempHand.length === currentPlayer.maxKeepCards) {
-                    // When the number of cards in temp hand equals the max cards to keep,
-                    // it implies the player has made their choice.
-                    // We can now inform the server which cards are being kept.
-                    const keptCardIndices = currentPlayer.tempHand.map(card => currentPlayer.hand.length + currentPlayer.tempHand.indexOf(card));
-                    this.networkManager.sendCommand("PutBackCard", { kept_card_indices: keptCardIndices });
-                }*/
-            
         });
     }
+    
 }
 
 export default PlayerActionManager;

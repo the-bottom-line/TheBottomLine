@@ -2,6 +2,7 @@ import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFil
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
+import Asset from "./Asset.js";
 import LiabilityCards from "./LiabilityCards.js";
 import type Player from './Player.js';
 import type Character from './Characters.js';
@@ -279,6 +280,53 @@ class UIManager {
             if (card.discardButton) this.tempCardsContainer.addChild(card.discardButton);
         });
         player.positionTempCards();
+    }
+
+    displayPurpleCards(cards: { sprite: Container }[]) {
+        this.purpleCardsContainer.removeChildren();
+
+        const title = new Text({
+            text: 'End Game Abilities',
+            style: { fill: '#ffffff', fontSize: 48, fontFamily: 'MyFont' }
+        });
+        title.anchor.set(0.5);
+        title.position.set(this.app.screen.width / 2, 100);
+        this.purpleCardsContainer.addChild(title);
+
+        const spacing = 250;
+        const startX = (this.app.screen.width - ((cards.length - 1) * spacing)) / 2;
+        const y = this.app.screen.height / 2;
+
+        cards.forEach((card, index) => {
+            if (card.sprite) {
+                card.sprite.position.set(startX + index * spacing, y);
+                this.purpleCardsContainer.addChild(card.sprite);
+            }
+        });
+    }
+
+    debugPurpleCards() {
+        const createMockSprite = (name: string) => {
+            const cardContainer = new Container();
+            const bg = new Graphics().roundRect(0, 0, 200, 300, 10).fill(0x6A0DAD).stroke({ width: 2, color: 0xFFFFFF });
+            const text = new Text({ text: name, style: { fill: '#ffffff', fontSize: 24, wordWrap: true, wordWrapWidth: 180, align: 'center', fontFamily: 'MyFont' } });
+            text.anchor.set(0.5);
+            text.position.set(100, 150);
+            cardContainer.addChild(bg, text);
+            cardContainer.pivot.set(100, 150);
+            return cardContainer;
+        };
+
+        const dummyCards = [
+            new Asset("R&D Lab", "Purple", 0, 0, "Ability", "mock_path"),
+            new Asset("Application Lab", "Purple", 0, 0, "Ability", "mock_path"),
+            new Asset("Pilot Plant", "Purple", 0, 0, "Ability", "mock_path")
+        ];
+
+        dummyCards.forEach(card => { card.sprite = createMockSprite(card.title); });
+
+        this.displayPurpleCards(dummyCards);
+        this.showScreen('purpleCards');
     }
 
     async gameEnded(scores: PlayerScore[]) {
