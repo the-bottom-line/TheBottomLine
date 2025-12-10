@@ -26,7 +26,7 @@ class PlayerActionManager {
         this.uiManager.showScreen('login');
         
         this.uiManager.displayGameName(this.uiManager.loginContainer);
-        const nameBox = this.uiManager.createNametBox();
+        const nameBox = this.uiManager.createNameBox();
         const channelBox = this.uiManager.createChannelBox();
 
         const joinGame = () => {

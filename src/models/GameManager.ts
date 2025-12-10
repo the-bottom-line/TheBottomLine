@@ -92,11 +92,11 @@ class GameManager {
             title: "Stable Market",
             rfr: 0,
             mrp: 0,
-            Yellow: "Zero",
-            Blue: "Zero",
-            Green: "Zero",
-            Purple: "Zero",
-            Red: "Zero",
+            Yellow: "zero",
+            Blue: "zero",
+            Green: "zero",
+            Purple: "zero",
+            Red: "zero",
             // TODO: probably coordinate with backend to get rid of backend-provided urls entirely
             image_front_url: '',
             image_back_url: ''

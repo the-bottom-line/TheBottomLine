@@ -1345,7 +1345,7 @@ async displayRevealedCharacters(players: Player[], container: Container) {
             } else if (colorInfo.value === 'up') {
                 statusIndicator.text = '+';
               
-            } else if (colorInfo.value === 'Zero') {
+            } else if (colorInfo.value === 'zero') {
                 statusIndicator.text = '0';
             }
             this.marketContainer.addChild(statusIndicator);
