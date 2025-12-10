@@ -710,6 +710,7 @@ class PopUpManager {
             .rect(0, 0, this.app.screen.width, this.app.screen.height)
             .fill(gradient);
         darkenBackground.alpha = 0.8;
+        darkenBackground.interactive = true;
 
         tempContainer.addChild(darkenBackground);
         return tempContainer;
