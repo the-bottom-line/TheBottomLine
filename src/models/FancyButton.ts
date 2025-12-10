@@ -30,7 +30,7 @@ export class FancyButton extends Button {
         ];
         const buttonText = new Text({
             text: options.text,
-            style: { fill: '#f2e8d5', fontSize: 24, fontFamily: 'MyFont' }
+            style: { fill: '#f2e8d5', fontSize: 48, fontFamily: 'MyFont' }
         });
         buttonText.anchor.set(0.5);
         buttonText.position.set(width / 2, height / 2);
