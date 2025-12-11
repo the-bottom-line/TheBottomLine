@@ -201,7 +201,7 @@ class UIManager {
         }//laad nameplate foto
 
         players.forEach((player, index) => {
-            const y = 700 + index ;
+            const y = this.app.screen.height /1.43 + index ;
             const x = this.app.screen.width / 4 + index * 155;
 
             if (nameplateTexture) {
@@ -224,7 +224,7 @@ class UIManager {
             this.lobbyContainer.addChild(playerText);
 
             const lobbycode = new Text({
-                text: "HI",
+                text: "123",
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             })
             lobbycode.anchor.set(0.5);
@@ -242,7 +242,7 @@ class UIManager {
             height: 80,
             onPress: onPressCallback,
         });
-        startGameButton.view.position.set(this.app.screen.width / 2 + (startGameButton.view.width * 2), this.app.screen.height - 150);
+        startGameButton.view.position.set(this.app.screen.width / 2 + (startGameButton.view.width * 2), this.app.screen.height - (this.app.screen.height / 7));
         this.lobbyContainer.addChild(startGameButton.view);
     }
 
