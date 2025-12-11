@@ -190,7 +190,47 @@ perk: string, } } | { "action": "YouRedeemedLiability", "data": {
 /**
  * The index of the liability that was redeemed.
  */
-liability_idx: number, } } | { "action": "YouEndedTurn" };
+liability_idx: number, } } | { "action": "YouEndedTurn" } | { "action": "YouMinusedIntoPlus", "data": { 
+/**
+ * The market color that was changed,
+ */
+color: Color, 
+/**
+ * The new market for this player.
+ */
+new_market: MarketCard, 
+/**
+ * The updated player score.
+ */
+new_score: number, } } | { "action": "YouSilveredIntoGold", "data": { 
+/**
+ * The index of the asset which silver was changed into gold.
+ */
+asset_idx: number, 
+/**
+ * The new gold value,
+ */
+gold_value: number, 
+/**
+ * The updated player score.
+ */
+new_score: number, } } | { "action": "YouChangedAssetColor", "data": { 
+/**
+ * The index of the asset which changed color.
+ */
+asset_idx: number, 
+/**
+ * The new color of this asset.
+ */
+color: Color, 
+/**
+ * The updated player score.
+ */
+new_score: number, } } | { "action": "YouConfirmedAssetAbility", "data": { 
+/**
+ * The asset the player confirmed their choice for.
+ */
+asset_idx: number, } };
 
 /**
  * Represents an asset that can be divested from a certain player including the cost of doing so.
@@ -317,7 +357,27 @@ target_player_id: PlayerId,
 /**
  * The index of the asset that is to be divested.
  */
-card_idx: number, } } | { "action": "EndTurn" };
+card_idx: number, } } | { "action": "EndTurn" } | { "action": "MinusIntoPlus", "data": { 
+/**
+ * The color to change the minus from.
+ */
+color: Color, } } | { "action": "SilverIntoGold", "data": { 
+/**
+ * The index of the asset to change silver into gold from.
+ */
+asset_idx: number, } } | { "action": "ChangeAssetColor", "data": { 
+/**
+ * The index of the asset to change color from.
+ */
+asset_idx: number, 
+/**
+ * The new color of the asset.
+ */
+color: Color, } } | { "action": "ConfirmAssetAbility", "data": { 
+/**
+ * The index of the asset which ability was used.
+ */
+asset_idx: number, } };
 
 /**
  * The main error enum used by the game logic.
@@ -427,7 +487,7 @@ new_market: MarketCard, };
  *
  * NOTE: The default state is `Zero`, which is also the case when parsing with serde.
  */
-export type MarketCondition = "up" | "down" | "zero";
+export type MarketCondition = "up" | "down" | "Zero";
 
 /**
  * Errors that can happen when someone plays a card.
@@ -741,4 +801,56 @@ player_id: PlayerId, } } | { "action": "GameEnded", "data": {
 /**
  * A list of player scores.
  */
-scores: Array<PlayerScore>, } };
+scores: Array<PlayerScore>, } } | { "action": "MinusedIntoPlus", "data": { 
+/**
+ * The id of the player which changed one of their market colors.
+ */
+player_id: PlayerId, 
+/**
+ * The new market for the player that performed the action,
+ */
+new_market: MarketCard, 
+/**
+ * The updated player score.
+ */
+new_score: number, } } | { "action": "SilveredIntoGold", "data": { 
+/**
+ * The id of the player which changed the silver of one of their cards into gold.
+ */
+player_id: PlayerId, 
+/**
+ * The index of the asset which silver was changed into gold.
+ */
+asset_idx: number, 
+/**
+ * The new gold value,
+ */
+gold_value: number, 
+/**
+ * The updated player score.
+ */
+new_score: number, } } | { "action": "ChangedAssetColor", "data": { 
+/**
+ * The id of the player which changed the color of one of their assets.
+ */
+player_id: PlayerId, 
+/**
+ * The index of the asset which changed color.
+ */
+asset_idx: number, 
+/**
+ * The new color of this asset.
+ */
+color: Color, 
+/**
+ * The updated player score.
+ */
+new_score: number, } } | { "action": "ConfirmedAssetAbility", "data": { 
+/**
+ * The id of the player which confirmed an asset ability's choice.
+ */
+player_id: PlayerId, 
+/**
+ * The asset the player confirmed their choice for.
+ */
+asset_idx: number, } };

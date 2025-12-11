@@ -1,18 +1,22 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application,TextStyle } from 'pixi.js';
 import { FancyButton } from '../FancyButton.js';
 import type Player from '../Player.js';
 import type Character from '../Characters.js';
-import type { PlayerId, RegulatorSwapPlayer } from '@shared-types';
-import type GameState from '../GameState.js';
+import type { Color, PlayerId, RegulatorSwapPlayer } from '@shared-types';
+import type GameState from '../GameState.js'; 
+import type { MarketState } from '../GameState.js';
 import type { DivestmentTarget } from '../GameManager.js';
+import type HudManager from './HudManager.js';
 
 class PopUpManager {
     app: Application;
     popupContainer: Container;
+    hudManager: HudManager;
 
-    constructor(app: Application, popupContainer: Container) {
+    constructor(app: Application, popupContainer: Container, hudManager: HudManager) {
         this.app = app;
         this.popupContainer = popupContainer;
+        this.hudManager = hudManager;
     }
 
     async anounceCharacter(player: Player) {
@@ -685,6 +689,94 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
     
+    displayMarketPopup(marketState: MarketState, onSelectCallback: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, cardIndex: number) {
+        const tempContainer = this._createPopupBase();
+        
+        const width = 420;
+        const height = 100;
+        
+        const marketContent = new Container();
+        marketContent.x = (this.app.screen.width - width) / 2;
+        marketContent.y = (this.app.screen.height - height) / 2;
+
+        const background = new Graphics()
+            .roundRect(0, 0, width, height, 15)
+            .fill(0x61594C); // Dark Indigo
+
+        marketContent.addChild(background);
+
+        const colors = [
+            { name: 'Yellow', value: marketState.Yellow },
+            { name: 'Blue', value: marketState.Blue },
+            { name: 'Green', value: marketState.Green },
+            { name: 'Purple', value: marketState.Purple },
+            { name: 'Red', value: marketState.Red }
+        ];
+
+        const circleRadius = 30;
+        const circleY = height /2;
+        const spacing = 80;
+        const totalCircleWidth = (colors.length - 1) * spacing;
+        const startX = (width - totalCircleWidth) / 2;
+
+        colors.forEach((colorInfo, index) => {
+            const circleX = startX + index * spacing;
+            const circle = new Graphics()
+                .circle(0, 0, circleRadius)
+                .fill(colorInfo.name.toLowerCase())
+                .stroke({ width: 2, color: 0x000000 });
+            circle.position.set(circleX, circleY);
+            
+            circle.interactive = true;
+            circle.cursor = 'pointer';
+            circle.on('mousedown', () => onSelectCallback(colorInfo.name as Color));
+
+            marketContent.addChild(circle);
+
+            const statusIndicator = new Text({
+                text: '',
+                style: { 
+                    fill: '#000000ff', 
+                    fontSize: 30, 
+                    fontFamily: 'MyFont'
+                }
+            });
+            statusIndicator.anchor.set(0.5);
+            statusIndicator.position.set(circleX, circleY); // here
+
+            if (colorInfo.value === 'down') {
+                statusIndicator.text = '-';
+             
+            } else if (colorInfo.value === 'up') {
+                statusIndicator.text = '+';
+              
+            } else if (colorInfo.value === 'Zero') {
+                statusIndicator.text = '0';
+            }
+            marketContent.addChild(statusIndicator);
+        });
+
+        const confirmButton = new FancyButton({
+            text: "Confirm",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                confirmAssetAbilityCall(cardIndex);
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+            }
+        });
+        confirmButton.view.position.set(this.app.screen.width / 2 - (confirmButton.view.width / 2), this.app.screen.height - 180);
+        tempContainer.addChild(confirmButton.view);
+
+        tempContainer.addChild(marketContent);
+        this._addPopupCloseButton(tempContainer);
+        
+        this.popupContainer.addChild(tempContainer);
+
+    
+    }
     _createPopupBase() {
         this.popupContainer.removeChildren();
 
@@ -711,18 +803,15 @@ class PopUpManager {
         return tempContainer;
     }
 
-    _addPopupCloseButton(popupContainer: Container, onOkCallback?: () => void) {
+    _addPopupCloseButton(popupContainer: Container) {
         const okButton = new FancyButton({
-            text: "OK",
+            text: "CLOSE",
             width: 200,
             height: 60,
             onPress: () => {
                 // Always remove the popup from its parent container
                 if (popupContainer.parent) {
                     popupContainer.parent.removeChild(popupContainer);
-                }
-                if (onOkCallback) {
-                    onOkCallback();
                 }
             }
         });

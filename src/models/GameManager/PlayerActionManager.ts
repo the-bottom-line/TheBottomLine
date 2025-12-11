@@ -41,19 +41,25 @@ class PlayerActionManager {
 
         this.uiManager.createJoinButton(joinGame);
         
-        this.uiManager.hudManager.showMarket({
+        const marketData = {
             title: "Stable Market",
             rfr: 0,
             mrp: 0,
-            Yellow: "zero",
-            Blue: "zero",
-            Green: "zero",
-            Purple: "zero",
-            Red: "zero",
+            Yellow: "Zero",
+            Blue: "up",
+            Green: "Zero",
+            Purple: "Zero",
+            Red: "down",
             image_front_url: "",
-            image_back_url: ""
-        }, this.uiManager.marketContainer);
-        this.uiManager.debugPurpleCards();
+            image_back_url: "" 
+        };
+        this.gameState.marketState = marketData;
+
+        /*this.uiManager.debugPurpleCards(
+            this.gameState.marketState, 
+            (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
+            (index)=> { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); }
+        );*/
     }
 
     showLocalPlayerPicking(player: Player){

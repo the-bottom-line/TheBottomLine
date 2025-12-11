@@ -667,6 +667,14 @@ class ServerEventManager {
     gameEnded(data: Extract<UniqueResponse, { action: "GameEnded" }>['data']) {
         
         console.log("Game ended!", data.scores);
+        const player = this.gameState.getLocalPlayer();
+        const marketState = this.gameState.marketState!;
+        console.log(player.assetList);
+
+        this.uiManager.displayPurpleCards(player, marketState,
+            (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
+            (index) => { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); }
+        );
         
         this.uiManager.showScreen('purpleCards');
         

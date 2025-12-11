@@ -224,7 +224,8 @@ class HudManager {
                 .circle(0, 0, circleRadius)
                 .fill(colorInfo.name.toLowerCase())
                 .stroke({ width: 2, color: 0x000000 });
-            circle.position.set(circleX, circleY); // here
+            circle.position.set(circleX, circleY);
+            circle.label = colorInfo.name;
             marketContainer.addChild(circle);
 
             const statusIndicator = new Text({
@@ -243,7 +244,7 @@ class HudManager {
             } else if (colorInfo.value === 'up') {
                 statusIndicator.text = '+';
               
-            } else if (colorInfo.value === 'zero') {
+            } else if (colorInfo.value === 'Zero') {
                 statusIndicator.text = '0';
             }
             marketContainer.addChild(statusIndicator);

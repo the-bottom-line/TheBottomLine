@@ -74,6 +74,15 @@ class NetworkManager {
             YouAreTerminatingSomeone: r => this.gameManager!.serverEventManager.youAreTerminatingSomeone(r.data),
             YouRedeemedLiability: r => this.gameManager!.serverEventManager.youRedeemedLiability(r.data),
             YouEndedTurn: _ => this.gameManager!.playerActionManager.youEndedTurn(),
+            YouMinusedIntoPlus: _ => { }, // TODO: handle
+            YouSilveredIntoGold: _ => { }, // TODO: handle
+            YouChangedAssetColor: _ => { }, // TODO: handle
+            YouConfirmedAssetAbility: _ => { }, // TODO: handle
+            MinusedIntoPlus: _ => { }, // TODO: handle
+            SilveredIntoGold: _ => { }, // TODO: handle
+            ChangedAssetColor: _ => { }, // TODO: handle
+            ConfirmedAssetAbility: _ => { }, // TODO: handle
+
         };
     }
 

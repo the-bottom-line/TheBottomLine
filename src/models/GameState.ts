@@ -3,6 +3,19 @@ import type Player from './Player.ts';
 
 
 
+export interface MarketState {
+    title: string;
+    rfr: number;
+    mrp: number;
+    Yellow: string;
+    Blue: string;
+    Green: string;
+    Purple: string;
+    Red: string;
+    image_front_url: string;
+    image_back_url: string;
+}
+
 class GameState {
     players: Player[] = [];
     myId?: number;
@@ -12,6 +25,7 @@ class GameState {
     characters = getAllCharacters();
     faceUpCharacters: Character[] = [];
     openCharacters: Character[] = [];
+    marketState?: MarketState;
     currentPhase = 'lobby';
 
     setCurrentPlayerIndex(index: number) {
@@ -38,6 +52,7 @@ class GameState {
         });
         this.faceUpCharacters = [];
     }
+    
 }
 
 export default GameState;
