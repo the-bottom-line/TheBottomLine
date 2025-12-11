@@ -6,10 +6,10 @@ import Asset from "./Asset.js";
 import LiabilityCards from "./LiabilityCards.js";
 import Player from './Player.js';
 import type Character from './Characters.js';
-import type {  Color, PlayerScore } from '@shared-types';
+import type {  Color, PlayerScore,MarketCard } from '@shared-types';
 import PopUpManager from './UIManager/PopUpManager.js';
 import HudManager from './UIManager/HudManager.js';
-import type { MarketState } from './GameState.js';
+//import type { MarketState } from './GameState.js';
 
 
 class UIManager {
@@ -285,7 +285,7 @@ class UIManager {
         player.positionTempCards();
     }
 
-    displayPurpleCards(player: Player, marketState: MarketState, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void) {
+    displayPurpleCards(player: Player, marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void) {
         this.purpleCardsContainer.removeChildren();
         player.assetList.filter(card => card.ability)
         let cards = player.assetList.filter(card => card.ability);
@@ -337,7 +337,7 @@ class UIManager {
             }
             return player;
         }
-    async debugPurpleCards(marketState: MarketState, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void) {
+    async debugPurpleCards(marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void) {
         let player = await this.createDummyPlayerWithPurpleCards(this.app);
 
         this.displayPurpleCards(player, marketState, minusIntoPlusCall,confirmAssetAbilityCall);

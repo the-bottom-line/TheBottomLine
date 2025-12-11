@@ -6,6 +6,7 @@ import type Player from '../Player.js';
 import Asset from '../Asset.js';
 import Liability from '../Liability.js';
 import type GameManager from '../GameManager.js';
+import type { MarketCard } from '@shared-types';
 
 class PlayerActionManager {
     app: Application;
@@ -45,21 +46,21 @@ class PlayerActionManager {
             title: "Stable Market",
             rfr: 0,
             mrp: 0,
-            Yellow: "Zero",
+            Yellow: "zero",
             Blue: "up",
-            Green: "Zero",
-            Purple: "Zero",
+            Green: "zero",
+            Purple: "zero",
             Red: "down",
-            image_front_url: "",
-            image_back_url: "" 
-        };
-        this.gameState.marketState = marketData;
 
-        /*this.uiManager.debugPurpleCards(
-            this.gameState.marketState, 
+        };
+
+        this.gameState.marketState = marketData as MarketCard;
+
+        this.uiManager.debugPurpleCards(
+            this.gameState.marketState,
             (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
             (index)=> { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); }
-        );*/
+        );
     }
 
     showLocalPlayerPicking(player: Player){
@@ -89,7 +90,6 @@ class PlayerActionManager {
             const canPlay = canPlayAsset || canPlayLiability;
 
             if (canPlay) {
-               
                 card.makePlayable();
             } else {
                 card.makeUnplayable();

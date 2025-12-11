@@ -1,20 +1,6 @@
 import Character, { getAllCharacters } from './Characters.js';
 import type Player from './Player.ts';
-
-
-
-export interface MarketState {
-    title: string;
-    rfr: number;
-    mrp: number;
-    Yellow: string;
-    Blue: string;
-    Green: string;
-    Purple: string;
-    Red: string;
-    image_front_url: string;
-    image_back_url: string;
-}
+import type { MarketCard } from '@shared-types';
 
 class GameState {
     players: Player[] = [];
@@ -25,7 +11,7 @@ class GameState {
     characters = getAllCharacters();
     faceUpCharacters: Character[] = [];
     openCharacters: Character[] = [];
-    marketState?: MarketState;
+    marketState?: MarketCard;
     currentPhase = 'lobby';
 
     setCurrentPlayerIndex(index: number) {

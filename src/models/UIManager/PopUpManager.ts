@@ -4,7 +4,7 @@ import type Player from '../Player.js';
 import type Character from '../Characters.js';
 import type { Color, PlayerId, RegulatorSwapPlayer } from '@shared-types';
 import type GameState from '../GameState.js'; 
-import type { MarketState } from '../GameState.js';
+import type { MarketCard } from '@shared-types';
 import type { DivestmentTarget } from '../GameManager.js';
 import type HudManager from './HudManager.js';
 
@@ -689,7 +689,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
     
-    displayMarketPopup(marketState: MarketState, onSelectCallback: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, cardIndex: number) {
+    displayMarketPopup(marketState: MarketCard, onSelectCallback: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, cardIndex: number) {
         const tempContainer = this._createPopupBase();
         
         const width = 420;
@@ -750,7 +750,7 @@ class PopUpManager {
             } else if (colorInfo.value === 'up') {
                 statusIndicator.text = '+';
               
-            } else if (colorInfo.value === 'Zero') {
+            } else if (colorInfo.value === 'zero') {
                 statusIndicator.text = '0';
             }
             marketContent.addChild(statusIndicator);
