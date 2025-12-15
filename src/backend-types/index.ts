@@ -74,7 +74,15 @@ channel: string, } };
  * a confirmation that the action was succesful, including the data needed to update the UI
  * accordingly.
  */
-export type DirectResponse = { "action": "Error", "data": ResponseError } | { "action": "YouStartedGame" } | { "action": "YouSelectedCharacter", "data": { 
+export type DirectResponse = { "action": "Error", "data": { 
+/**
+ * The error message.
+ */
+message: string, 
+/**
+ * The error type.
+ */
+source: ResponseError, } } | { "action": "YouStartedGame" } | { "action": "YouSelectedCharacter", "data": { 
 /**
  * The character this player selected.
  */
@@ -396,15 +404,7 @@ Purple: MarketCondition,
 /**
  * The market condition for red
  */
-Red: MarketCondition, 
-/**
- * A url which points to the front of this market card in the assets folder
- */
-image_front_url: string, 
-/**
- * A url which points to the back of a market card in the assets folder
- */
-image_back_url: string, };
+Red: MarketCondition, };
 
 /**
  * Data used when someone buys a new asset and a market change is triggered
