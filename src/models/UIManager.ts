@@ -30,6 +30,7 @@ class UIManager {
     popupContainer = new Container();
     resultsContainer = new Container();
     marketContainer = new Container();
+    errorContainers: Container[] = [];
     
     statsText = new Text({
         text: '',
