@@ -279,7 +279,7 @@ class ServerEventManager {
         this.uiManager.showScreen("character");
         this.gameState.resetForNewRound();
 
-        const localPlayer = this.gameState.getLocalPlayer(); 
+        const localPlayer = this.gameState.getPlayerById(data.chairman_id)!;
         this.uiManager.statsText.text = `${localPlayer.name} is choosing their character`;
         localPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
