@@ -56,13 +56,13 @@ class PlayerActionManager {
 
         this.gameState.marketState = marketData as MarketCard;
 
-        this.uiManager.debugPurpleCards(
+        /*this.uiManager.debugPurpleCards(
             this.gameState.marketState,
             (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
             (index)=> { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); },
             (index,color) => {this.networkManager.sendCommand("ChangeAssetColor",{ asset_idx: index, color: color }); },
             (index) => {this.networkManager.sendCommand("SilverIntoGold",{asset_idx: index})}
-        );
+        );*/
     }
 
     showLocalPlayerPicking(player: Player){
