@@ -50,8 +50,6 @@ class PlayerActionManager {
             Green: "zero",
             Purple: "zero",
             Red: "zero",
-            image_front_url: "",
-            image_back_url: ""
         }, this.uiManager.marketContainer);
     }
 

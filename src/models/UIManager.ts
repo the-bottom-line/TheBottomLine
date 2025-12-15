@@ -30,6 +30,7 @@ class UIManager {
     popupContainer = new Container();
     resultsContainer = new Container();
     marketContainer = new Container();
+    errorContainers: Container[] = [];
     
     statsText = new Text({
         text: '',
@@ -297,13 +298,17 @@ class UIManager {
             faceUpCard.interactive = true;
             faceUpCard.scale.set(0.3);
             faceUpCard.anchor.set(0.5);
-            faceUpCard.rotation = (Math.PI / -2) * 0.5+ (index * (Math.PI / (faceUpCharacters.length - 1)))* 0.5;
+            faceUpCard.rotation = (Math.PI / -2) * 0.3+ (index * (Math.PI / (faceUpCharacters.length - 1)))* 0.3;
             faceUpCard.zIndex = index;
 
             
             faceUpCard.x = startX + index * spacing;
-            faceUpCard.y = this.app.screen.height / 2;
-            faceUpCard.on('mousedown', () => onSelectCallback(character)); // here
+            const midIndex = (faceUpCharacters.length - 1) / 2;
+            const distanceFromMid = Math.abs(index - midIndex);
+            const maxDistance = midIndex;
+            const yOffset = -Math.pow(distanceFromMid / maxDistance, 2) * -50; // Adjust for height difference at the sides
+            faceUpCard.y = this.app.screen.height / 2 + yOffset;
+            faceUpCard.on('mousedown', () => onSelectCallback(character)); 
             this.characterCardsContainer.addChild(faceUpCard);
             
         });
