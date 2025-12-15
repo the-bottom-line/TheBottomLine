@@ -673,7 +673,9 @@ class ServerEventManager {
 
         this.uiManager.displayPurpleCards(player, marketState,
             (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
-            (index) => { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); }
+            (index) => { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); },
+            (index,color) => {this.networkManager.sendCommand("ChangeAssetColor",{ asset_idx: index, color: color }); },
+            (index) => {this.networkManager.sendCommand("SilverIntoGold",{asset_idx: index})}
         );
         
         this.uiManager.showScreen('purpleCards');

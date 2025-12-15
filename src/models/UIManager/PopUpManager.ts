@@ -51,7 +51,7 @@ class PopUpManager {
             .roundRect(x - 200, y-20, 350, 60, 5)
             .fill(0x323232) 
             .stroke({ width: 2, color: 0x000000 });
-        console.log("here:", player)
+        
        
         const characterText = new Text({
             text: player.character!.name ,
@@ -66,7 +66,6 @@ class PopUpManager {
         characterIcon.width = 80;
         characterIcon.height = 90;
         characterIcon.anchor.set(0.5);
-        
        
         
         const playerText = new Text({
@@ -689,7 +688,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
     
-    displayMarketPopup(marketState: MarketCard, onSelectCallback: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, cardIndex: number) {
+    displayRnDPopup(marketState: MarketCard, onSelectCallback: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, cardIndex: number) {
         const tempContainer = this._createPopupBase();
         
         const width = 420;
@@ -776,6 +775,190 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
 
     
+    }
+    displayPilotPlantPopup(localPlayer: Player, confirmColorChangeCall: ( cardIndex: number,color: Color,) => void,confirmAssetAbilityCall: (index: number) => void,cardIndex: number){
+        const tempContainer = this._createPopupBase();
+
+        let selectedCardIndex = -1;
+        const cardOutlines: Graphics[] = [];
+
+        const totalAssetsWidth = (localPlayer.assetList.length) * 200;
+        let startX = (window.innerWidth - totalAssetsWidth) /2;
+        let startY = window.innerHeight /2;
+        localPlayer.assetList.forEach(async (asset, index) =>{
+            let texture = await Assets.load(asset.texturePath);
+            const card = new Sprite(texture);
+            card.scale.set(0.25);
+            card.anchor.set(0.5);
+           
+            card.x = startX + index * 200;
+            card.y = startY;
+
+            card.eventMode = 'static';
+            card.cursor = 'pointer';
+
+            const outline = new Graphics()
+                .roundRect(-card.width / 2 - 5, -card.height / 2 - 5, card.width + 10, card.height + 10, 10)
+                .stroke({ width: 5, color: 0xFFFFFF });
+            outline.position.copyFrom(card.position);
+            outline.visible = false;
+            cardOutlines[index] = outline;
+
+            card.on('pointerdown', () => {
+                selectedCardIndex = index;
+                cardOutlines.forEach((o) => { if (o) o.visible = false; });
+                if (cardOutlines[index]) cardOutlines[index].visible = true;
+                confirmColorChangeCall(selectedCardIndex, colors[selectedIndex]?.name as Color);
+            });
+
+            tempContainer.addChild(card);
+            tempContainer.addChild(outline);
+        });
+
+
+        const wheel = new Container();
+
+        const colors = [
+            { name: 'Yellow', color: 0xFFFF00 },
+            { name: 'Blue',   color: 0x0000FF },
+            { name: 'Green',  color: 0x00FF00 },
+            { name: 'Purple', color: 0x800080 },
+            { name: 'Red',    color: 0xFF0000 },
+        ];
+
+        const centerX = (window.innerWidth - totalAssetsWidth) /2 + totalAssetsWidth;
+        const centerY = window.innerHeight/2 ;
+        const radius = 100;
+        const segments = colors.length;
+        const angleStep = (Math.PI * 2) / segments;
+
+        let selectedIndex = -1;
+        const segmentGraphics: Graphics[] = [];
+
+        const drawSegment = (g: Graphics, index: number, isSelected: boolean) => {
+            const startAngle = index * angleStep;
+            const endAngle = startAngle + angleStep;
+            g.clear()
+                .moveTo(centerX, centerY)
+                .arc(centerX, centerY, radius, startAngle, endAngle)
+                .closePath()
+                .fill(colors[index]?.color!);
+            
+            if (isSelected) {
+                g.stroke({ width: 5, color: 0xFFFFFF });
+                if (selectedCardIndex> 0){
+                    confirmColorChangeCall(selectedCardIndex, colors[selectedIndex]!.name as Color);
+                }
+               
+                
+              
+            }
+        };
+
+        for (let i = 0; i < segments; i++) {
+            const segment = new Graphics();
+            drawSegment(segment, i, false);
+
+            segment.eventMode = 'static';
+            segment.cursor = 'pointer';
+            segment.on('pointerdown', () => {
+                if (selectedIndex === i) return;
+
+                if (selectedIndex !== -1) {
+                    drawSegment(segmentGraphics[selectedIndex]!, selectedIndex, false);
+                   
+                }
+                
+                selectedIndex = i;
+                drawSegment(segment, i, true);
+                wheel.addChild(segment);
+               
+            });
+            segmentGraphics.push(segment);
+            wheel.addChild(segment);
+        }
+        wheel.pivot.set(centerX, centerY);
+        wheel.position.set(centerX, centerY);
+        wheel.rotation += 0.92;
+        tempContainer.addChild(wheel);
+
+
+        const confirmButton = new FancyButton({
+            text: "Confirm",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                confirmAssetAbilityCall(cardIndex);
+                //confirmColorChangeCall(selectedCardIndex, colors[selectedIndex]!.name as Color);
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+                
+            }
+        });
+        confirmButton.view.position.set(this.app.screen.width / 2 - (confirmButton.view.width / 2), this.app.screen.height - 180);
+        tempContainer.addChild(confirmButton.view);
+
+        this._addPopupCloseButton(tempContainer);
+        
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    displayApplicationLabPopup(localPlayer: Player, silverIntoGoldCall: (index: number) => void,confirmAssetAbilityCall: (index: number) => void,cardIndex: number){
+        const tempContainer = this._createPopupBase();
+
+        let selectedCardIndex = -1;
+        const cardOutlines: Graphics[] = [];
+
+        const totalAssetsWidth = (localPlayer.assetList.length - 1) * 200;
+        let startX = (window.innerWidth - totalAssetsWidth) /2;
+        let startY = window.innerHeight /2;
+        localPlayer.assetList.forEach(async (asset, index) =>{
+            let texture = await Assets.load(asset.texturePath);
+            const card = new Sprite(texture);
+            card.scale.set(0.25);
+            card.anchor.set(0.5);
+           
+            card.x = startX + index * 200;
+            card.y = startY;
+
+            card.eventMode = 'static';
+            card.cursor = 'pointer';
+
+            const outline = new Graphics()
+                .roundRect(-card.width / 2 - 5, -card.height / 2 - 5, card.width + 10, card.height + 10, 10)
+                .stroke({ width: 5, color: 0xFFFFFF });
+            outline.position.copyFrom(card.position);
+            outline.visible = false;
+            cardOutlines[index] = outline;
+
+            card.on('pointerdown', () => {
+                cardOutlines.forEach((o) => { if (o) o.visible = false; });
+                if (cardOutlines[index]) cardOutlines[index].visible = true;
+                silverIntoGoldCall(index)
+            });
+
+            tempContainer.addChild(card);
+            tempContainer.addChild(outline);
+        });
+
+        const confirmButton = new FancyButton({
+            text: "Confirm",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                confirmAssetAbilityCall(cardIndex);
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+            }
+        });
+        confirmButton.view.position.set(this.app.screen.width / 2 - (confirmButton.view.width / 2), this.app.screen.height - 180);
+        tempContainer.addChild(confirmButton.view);
+
+        this._addPopupCloseButton(tempContainer);
+        
+        this.popupContainer.addChild(tempContainer);
     }
     _createPopupBase() {
         this.popupContainer.removeChildren();

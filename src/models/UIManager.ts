@@ -79,7 +79,6 @@ class UIManager {
             this.marketContainer,
             this.purpleCardsContainer,
             this.popupContainer
-            
         );
 
         this.handContainer.sortableChildren = true;
@@ -285,7 +284,7 @@ class UIManager {
         player.positionTempCards();
     }
 
-    displayPurpleCards(player: Player, marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void) {
+    displayPurpleCards(player: Player, marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void,confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
         this.purpleCardsContainer.removeChildren();
         player.assetList.filter(card => card.ability)
         let cards = player.assetList.filter(card => card.ability);
@@ -309,7 +308,21 @@ class UIManager {
                     card.sprite.interactive = true;
                     card.sprite.cursor = 'pointer';
                     card.sprite.on('mousedown', () => {
-                        this.popUpManager.displayMarketPopup(marketState, minusIntoPlusCall, confirmAssetAbilityCall, player.assetList.indexOf(card));
+                        this.popUpManager.displayRnDPopup(marketState, minusIntoPlusCall, confirmAssetAbilityCall, player.assetList.indexOf(card));
+                    });
+                }
+                else if( card.title == "Pilot Plant"){
+                    card.sprite.interactive = true;
+                    card.sprite.cursor = 'pointer';
+                    card.sprite.on('mousedown', () => {
+                        this.popUpManager.displayPilotPlantPopup(player,confirmColorChangeCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
+                    });
+                }
+                else if( card.title == "Application Lab"){
+                    card.sprite.interactive = true;
+                    card.sprite.cursor = 'pointer';
+                    card.sprite.on('mousedown', () => {
+                        this.popUpManager.displayApplicationLabPopup(player,silverIntoGoldCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
                     });
                 }
 
@@ -337,10 +350,10 @@ class UIManager {
             }
             return player;
         }
-    async debugPurpleCards(marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void) {
+    async debugPurpleCards(marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
         let player = await this.createDummyPlayerWithPurpleCards(this.app);
 
-        this.displayPurpleCards(player, marketState, minusIntoPlusCall,confirmAssetAbilityCall);
+        this.displayPurpleCards(player, marketState, minusIntoPlusCall,confirmAssetAbilityCall, confirmColorChangeCall,silverIntoGoldCall);
         this.showScreen('purpleCards');
     }
 

@@ -3,7 +3,7 @@
 /**
  * Errors that can happen while performing card abilities
  */
-export type AssetAbilityError = { "AlreadyConfirmedAssetIndex": number };
+export type AssetAbilityError = { "InvalidAbilityIndex": number } | { "PlayerDoesNotHaveAbility": AssetPowerup } | { "AlreadyConfirmedAssetIndex": number };
 
 /**
  * Representation of an asset card. Each asset has a gold and a silver value, as well as an
@@ -101,7 +101,15 @@ character: CharacterType, } } | { "action": "YouFiredCharacter", "data": {
 /**
  * The character that was fired.
  */
-character: CharacterType, } } | { "action": "YouRegulatorOptions", "data": { 
+character: CharacterType, } } | { "action": "YouTerminateCreditCharacter", "data": { 
+/**
+ * The character who's credit line was terminated.
+ */
+character: CharacterType, } } | { "action": "YouPaidBanker", "data": { 
+/**
+ * The amount of gold paid
+ */
+cash: number, } } | { "action": "YouRegulatorOptions", "data": { 
 /**
  * The options this player has to swap with other players.
  */
@@ -364,7 +372,15 @@ liability_idx: number, } } | { "action": "UseAbility" } | { "action": "FireChara
 /**
  * The character that is to be fired.
  */
-character: CharacterType, } } | { "action": "SwapWithDeck", "data": { 
+character: CharacterType, } } | { "action": "TerminateCreditCharacter", "data": { 
+/**
+ * The character who's credit line will be terminated.
+ */
+character: CharacterType, } } | { "action": "PayBanker", "data": { 
+/**
+ * The amount of cash to pay
+ */
+cash: number, } } | { "action": "SwapWithDeck", "data": { 
 /**
  * The list of card indices to be swapped with the deck.
  */
@@ -405,7 +421,7 @@ asset_idx: number, } };
 /**
  * The main error enum used by the game logic.
  */
-export type GameError = { "Lobby": LobbyError } | { "SelectingCharacters": SelectingCharactersError } | { "PlayCard": PlayCardError } | { "RedeemLiability": RedeemLiabilityError } | { "GiveBackCard": GiveBackCardError } | { "DrawCard": DrawCardError } | { "FireCharacter": FireCharacterError } | { "Swap": SwapError } | { "DivestAsset": DivestAssetError } | { "CardAbility": AssetAbilityError } | { "InvalidAssetIndex": number } | { "InvalidPlayerCount": number } | { "InvalidPlayerIndex": number } | { "InvalidPlayerName": string } | "PlayerMissingCharacter" | "NotPlayersTurn" | "PlayerShouldGiveBackCard" | "NotLobbyState" | "NotSelectingCharactersState" | "NotRoundState" | "NotResultsState" | "NotAvailableInLobbyState" | "NotAvailableInResultsState";
+export type GameError = { "Lobby": LobbyError } | { "SelectingCharacters": SelectingCharactersError } | { "PlayCard": PlayCardError } | { "RedeemLiability": RedeemLiabilityError } | { "GiveBackCard": GiveBackCardError } | { "DrawCard": DrawCardError } | { "FireCharacter": FireCharacterError } | { "TerminateCreditCharacter": TerminateCreditCharacterError } | { "Swap": SwapError } | { "DivestAsset": DivestAssetError } | { "CardAbility": AssetAbilityError } | { "InvalidAssetIndex": number } | { "InvalidPlayerCount": number } | { "InvalidPlayerIndex": number } | { "InvalidPlayerName": string } | "PlayerMissingCharacter" | "NotPlayersTurn" | "PlayerShouldGiveBackCard" | "NotLobbyState" | "NotSelectingCharactersState" | "NotRoundState" | "NotResultsState" | "NotAvailableInLobbyState" | "NotAvailableInBankerTargetState" | "NotAvailableInResultsState";
 
 /**
  * Errors that can happen when a player must give back a card.
@@ -642,6 +658,11 @@ silver_value: number, };
 export type SwapError = "AlreadySwapedThisTurn" | "InvalidPlayerCharacter" | "InvalidCardIdxs" | "InvalidTargetPlayer";
 
 /**
+ * Errors related to terminating a character's credit line.
+ */
+export type TerminateCreditCharacterError = "InvalidCharacter" | "InvalidPlayerCharacter" | "AlreadyFiredThisTurn";
+
+/**
  * A response type that is meant for every other player when one player performs an action.
  */
 export type UniqueResponse = { "action": "PlayersInLobby", "data": { 
@@ -737,7 +758,11 @@ player_character: CharacterType,
 /**
  * A list of characters which were called but were not available.
  */
-skipped_characters: Array<CharacterType>, } } | { "action": "DrewCard", "data": { 
+skipped_characters: Array<CharacterType>, 
+/**
+ * Indicates if the current player is targeted by the banker
+ */
+banker_target: boolean, } } | { "action": "DrewCard", "data": { 
 /**
  * The id of the player who drew a card.
  */
@@ -789,6 +814,14 @@ liability_idx: number, } } | { "action": "ShareholderIsFiring", "data": Record<s
 player_id: PlayerId, 
 /**
  * The character which was fired.
+ */
+character: CharacterType, } } | { "action": "TerminatedCreditCharacter", "data": { 
+/**
+ * The id of the player who teminated the credit line someone.
+ */
+player_id: PlayerId, 
+/**
+ * The character who's credit line was terminated.
  */
 character: CharacterType, } } | { "action": "RegulatorSwapedYourCards", "data": { 
 /**
