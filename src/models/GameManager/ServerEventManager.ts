@@ -468,6 +468,71 @@ class ServerEventManager {
         const character = this.gameState.characters.find(character => data.character == character.characterType)!;
         this.uiManager.popUpManager.firedCharacter(character,localPlayer)
     }
+    
+    terminatedCreditCharacter(data: Extract<UniqueResponse, { action: "TerminatedCreditCharacter" }>['data']){
+        const targetPlayer = this.gameState.getPlayerById(data.player_id);
+        const character = this.gameState.characters.find(character => data.character == character.characterType)!;
+        const localPlayer = this.gameState.getLocalPlayer();
+
+        if (targetPlayer) {
+            this.uiManager.popUpManager.terminatedCreditCharacter(character, targetPlayer, localPlayer.playerID === targetPlayer.playerID);
+        }
+    }
+
+    playerTargetedByBanker(data: Extract<UniqueResponse, { action: "PlayerTargetedByBanker" }>['data']){
+        const targetPlayer = this.gameState.getPlayerById(data.player_turn);
+        const localPlayer = this.gameState.getLocalPlayer();
+
+        if (targetPlayer) {
+            this.uiManager.popUpManager.playerTargetedByBanker(
+                targetPlayer, 
+                data.cash_to_be_paid, 
+                localPlayer.playerID === targetPlayer.playerID,
+                (amount) => this.networkManager.sendCommand("PayBanker", {cash: amount}),
+                (index) => this.networkManager.sendCommand("SelectAssetToDivest",{asset_id: index}),
+                (index) => this.networkManager.sendCommand("UnselectAssetToDivest",{asset_id: index}),
+                (index) => this.networkManager.sendCommand("SelectLiabilityToIssue",{liability_id: index}),
+                (index) => this.networkManager.sendCommand("UnselectLiabilityToIssue",{liability_id: index})
+            );
+        }
+    }
+
+    youPaidBanker(data: Extract<DirectResponse, { action: "YouPaidBanker" }>['data']) {
+        const localPlayer = this.gameState.getLocalPlayer();
+        const banker = this.gameState.getPlayerById(data.banker_id);
+
+        if (localPlayer) {
+            localPlayer.cash = data.your_new_cash;
+        }
+        if (banker) {
+            banker.cash = data.new_banker_cash;
+        }
+        
+        this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liablities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`;
+        this.gameManager.updateUI();
+
+        if (banker) {
+             this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker);
+        }
+    }
+
+    playerPayedBanker(data: Extract<UniqueResponse, { action: "PlayerPayedBanker" }>['data']) {
+        const targetPlayer = this.gameState.getPlayerById(data.player_id);
+        const banker = this.gameState.getPlayerById(data.banker_id);
+
+        if (targetPlayer) {
+            targetPlayer.cash = data.new_target_cash;
+        }
+        if (banker) {
+            banker.cash = data.new_banker_cash;
+        }
+
+        this.gameManager.updateUI();
+
+        if (targetPlayer && banker) {
+            this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker);
+        }
+    }
 
     youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){
         const character = this.gameState.characters.find(character => data.character == character.characterType)!;
@@ -519,8 +584,16 @@ class ServerEventManager {
         this.gameManager.switchToMainPhase();
     }
 
-    youAreTerminatingSomeone(_data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
-
+    async youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
+        //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
+        const characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
+        let perk = data.perk
+        
+            this.uiManager.popUpManager.youAreTerminatingSomeone(
+                characters,
+                perk,
+                (charToTerminate) => this.networkManager.sendCommand("TerminateCreditCharacter", { "character": charToTerminate.characterType! })
+            );
     }
 
     youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){

@@ -244,6 +244,425 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
+    async terminatedCreditCharacter(character: Character, targetPlayer: Player, isSelf: boolean) {
+        const tempContainer = this._createPopupBase();
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-120;
+
+        let texture = await Assets.load("./miscellaneous/BankerIcon.png");
+        const bankerIcon = new Sprite(texture);
+        
+        bankerIcon.position.set(x, y);
+        bankerIcon.width = 200;
+        bankerIcon.height = 240;
+        bankerIcon.anchor.set(0.5);
+        y +=100;
+
+        const textBankerBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        const bankerText = new Text({
+            text: "The Banker terminated...",
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        bankerText.anchor.set(0.5);
+        bankerText.position.set(x, y);      
+        x +=50
+        y += 100;
+
+        const textPlayerBackground = new Graphics()
+            .roundRect(x - 200, y-20, 350, 60, 5)
+            .fill(0x323232) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        const characterText = new Text({
+            text: character.name,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        characterText.anchor.set(0, 0.5);
+        characterText.position.set(x-140, y);
+
+        texture = await Assets.load(character.iconPath);
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x-200, y);
+        characterIcon.width = 80;
+        characterIcon.height = 90;
+        characterIcon.anchor.set(0.5);
+
+        tempContainer.addChild(bankerIcon);
+        tempContainer.addChild(textBankerBackground);   
+        tempContainer.addChild(bankerText);
+        tempContainer.addChild(textPlayerBackground);  
+        tempContainer.addChild(characterText);
+        tempContainer.addChild(characterIcon);
+
+        if(isSelf){
+            const playerText = new Text({
+                text: "You have been terminated",
+                style: { fill: '#CBC28E', fontSize: 18, fontFamily: 'MyFont' }
+            });
+            playerText.anchor.set(0, 0.5);
+            playerText.position.set(x-140, y+20);
+            tempContainer.addChild(playerText);
+        }
+        
+        this._addPopupCloseButton(tempContainer);
+
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnelectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
+        const tempContainer = this._createPopupBase();
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 200;
+
+        let texture = await Assets.load("./miscellaneous/BankerIcon.png");
+        const bankerIcon = new Sprite(texture);
+        
+        bankerIcon.position.set(x, y);
+        bankerIcon.width = 200;
+        bankerIcon.height = 240;
+        bankerIcon.anchor.set(0.5);
+        y += 140;
+
+        const titleText = new Text({
+            text: isSelf ? "The Banker has TERMINATED you" : `The Banker has TERMINATED ${targetPlayer.character?.name ?? targetPlayer.name}`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont', align: 'center' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        y += 40;
+
+        // Breakdown
+        const assetCounts: Record<string, number> = {};
+        targetPlayer.assetList.forEach(asset => {
+            const color = asset.color;
+            assetCounts[color] = (assetCounts[color] || 0) + 1;
+        });
+
+        const breakdownContainer = new Container();
+        let rowY = 0;
+        
+        const addRow = (parts: {text: string, color: string, bold?: boolean}[], value: string) => {
+            let currentX = 0;
+            parts.forEach(part => {
+                const t = new Text({ 
+                    text: part.text, 
+                    style: { 
+                        fill: part.color, 
+                        fontSize: 20, 
+                        fontFamily: 'MyFont',
+                        fontWeight: part.bold ? 'bold' : 'normal'
+                    } 
+                });
+                t.position.set(currentX, rowY);
+                breakdownContainer.addChild(t);
+                currentX += t.width + 5;
+            });
+
+            const v = new Text({ text: value, style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' } });
+            v.anchor.set(1, 0);
+            v.position.set(250, rowY);
+            breakdownContainer.addChild(v);
+            rowY += 30;
+        };
+
+        addRow([{text: "Base Fee", color: "#cccccc"}], "+1 Gold");
+        for(const color in assetCounts) {
+            addRow([
+                {text: color, color: color, bold: true},
+                {text: "Assets", color: color}
+            ], `+1 Gold`);
+        }
+        
+        const line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
+        breakdownContainer.addChild(line);
+        rowY += 10;
+
+        addRow([{text: "Total Due", color: "#cccccc"}], `${cashDue} Gold`);
+
+        breakdownContainer.x = x - 125;
+        breakdownContainer.y = y;
+        
+        const bgPadding = 20;
+        const breakdownBg = new Graphics()
+            .roundRect(breakdownContainer.x - bgPadding, breakdownContainer.y - bgPadding, 250 + bgPadding*2, rowY + bgPadding*2, 10)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+
+        tempContainer.addChild(bankerIcon);
+        tempContainer.addChild(titleText);
+        tempContainer.addChild(breakdownBg);
+        tempContainer.addChild(breakdownContainer);
+
+        y += rowY + 50;
+
+        if (isSelf) {
+            if (targetPlayer.cash >= cashDue) {
+                const payButton = new FancyButton({
+                    text: "Pay Banker",
+                    width: 200,
+                    height: 60,
+                    onPress: () => {
+                        onPayCallback(cashDue);
+                        if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+                    }
+                });
+                payButton.view.position.set(x - 100, y);
+                tempContainer.addChild(payButton.view);
+            } else {
+                const payButton = new FancyButton({
+                    text: "Pay Banker",
+                    width: 200,
+                    height: 60,
+                });
+                payButton.view.position.set(x - 100, y);
+                payButton.view.alpha = 0.5;
+                payButton.view.interactive = false;
+
+                const crossLine = new Graphics()
+                    .moveTo(0, 30)
+                    .lineTo(200, 30)
+                    .stroke({ width: 3, color: 0x000000 });
+                payButton.view.addChild(crossLine);
+                tempContainer.addChild(payButton.view);
+                y += 70;
+                const sellButton = new FancyButton({
+                    text: "Sell Assets",
+                    width: 200,
+                    height: 60,
+                    onPress: () => {
+                        if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+                        this.displayBankerSellAssets(targetPlayer, cashDue, onPayCallback, onSelectCallback, onUnelectCallback,onSelectLiablityCallback,onUnselectLiablityCallback);
+                    }
+                });
+                sellButton.view.position.set(x - 100, y);
+                tempContainer.addChild(sellButton.view);
+            }
+        } else {
+            this._addPopupCloseButton(tempContainer);
+        }
+
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    async displayBankerPaymentNotification(payer: Player, banker: Player) {
+        const tempContainer = this._createPopupBase();
+        const x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 150;
+
+        let texture = await Assets.load("./miscellaneous/BankerIcon.png");
+        const bankerIcon = new Sprite(texture);
+        bankerIcon.position.set(x, y);
+        bankerIcon.width = 200;
+        bankerIcon.height = 240;
+        bankerIcon.anchor.set(0.5);
+        y += 140;
+
+        const text = new Text({
+            text: `${payer.name} has paid their debt to the Banker.`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont', align: 'center', wordWrap: true, wordWrapWidth: 500 }
+        });
+        text.anchor.set(0.5);
+        text.position.set(x, y);
+
+        const bgPadding = 20;
+        const textBg = new Graphics()
+            .roundRect(x - text.width/2 - bgPadding, y - text.height/2 - bgPadding, text.width + bgPadding*2, text.height + bgPadding*2, 10)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        
+        tempContainer.addChild(bankerIcon);
+        tempContainer.addChild(textBg);
+        tempContainer.addChild(text);
+
+        this._addPopupCloseButton(tempContainer);
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    async displayBankerSellAssets(targetPlayer: Player, cashDue: number, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnselectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
+        const tempContainer = this._createPopupBase();
+        
+        const titleText = new Text({
+            text: `Sell Assets (Due: ${cashDue} Gold)`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(this.app.screen.width / 2, 100);
+        tempContainer.addChild(titleText);
+
+        const cardScale = 0.25;
+        const cardWidth = 590 * cardScale;
+        const spacing = 20;
+        const totalWidth = (targetPlayer.assetList.length * cardWidth) + ((targetPlayer.assetList.length - 1) * spacing);
+        const startX = this.app.screen.width / 2 - totalWidth / 2 + cardWidth / 2;
+        const startY = this.app.screen.height - 250;
+
+        const selectedIndices: number[] = [];
+        const cardSprites: { sprite: Sprite, originalPos: {x: number, y: number}, index: number }[] = [];
+
+        const updateSelectedPositions = () => {
+            const totalSelWidth = (selectedIndices.length * cardWidth) + ((selectedIndices.length - 1) * spacing);
+            const selStartX = this.app.screen.width / 2 - totalSelWidth / 2 + cardWidth / 2;
+            
+            selectedIndices.forEach((originalIndex, i) => {
+                const cardObj = cardSprites.find(c => c.index === originalIndex);
+                if (cardObj) {
+                    cardObj.sprite.position.set(selStartX + i * (cardWidth + spacing), this.app.screen.height / 2);
+                }
+            });
+        };
+
+        for (let i = 0; i < targetPlayer.assetList.length; i++) {
+            const asset = targetPlayer.assetList[i]!;
+            const texture = await Assets.load(asset.texturePath);
+            const sprite = new Sprite(texture);
+            sprite.scale.set(cardScale);
+            sprite.anchor.set(0.5);
+            
+            const originalX = startX + i * (cardWidth + spacing);
+            const originalY = startY;
+            
+            sprite.position.set(originalX, originalY);
+            sprite.interactive = true;
+            sprite.cursor = 'pointer';
+
+            cardSprites.push({ sprite, originalPos: { x: originalX, y: originalY }, index: i });
+
+            sprite.on('mousedown', () => {
+                const selIdx = selectedIndices.indexOf(i);
+                if (selIdx === -1) {
+                    selectedIndices.push(i);
+                    onSelectCallback(i);
+                } else {
+                    selectedIndices.splice(selIdx, 1);
+                    onUnselectCallback(i);
+                    sprite.position.set(originalX, originalY);
+                }
+                updateSelectedPositions();
+            });
+
+            tempContainer.addChild(sprite);
+        }
+
+        const payButton = new FancyButton({
+            text: "Pay Banker",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                onPayCallback(cashDue);
+                if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+            }
+        });
+        payButton.view.position.set(this.app.screen.width / 2 - 100, this.app.screen.height - 170);
+        tempContainer.addChild(payButton.view);
+
+        const backButton = new FancyButton({
+            text: "Back",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+                this.playerTargetedByBanker(targetPlayer, cashDue, true, onPayCallback, onSelectCallback, onUnselectCallback,onSelectLiablityCallback,onUnselectLiablityCallback,);
+            }
+        });
+        backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);
+        tempContainer.addChild(backButton.view);
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    async youAreTerminatingSomeone(characters:Character[], perk: string, onSelectCallback: (charToTerminate:Character) => void ){
+        const tempContainer = this._createPopupBase();
+
+        const x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2-300;
+
+        const texture = await Assets.load("./miscellaneous/BankerIcon.png"); // here
+        const characterIcon = new Sprite(texture);
+        characterIcon.position.set(x, y);
+        characterIcon.width = 160;
+        characterIcon.height = 180;
+        characterIcon.anchor.set(0.5);
+
+        y+=90;
+
+        const perkBackground = new Graphics()
+            .roundRect(x - 120, y-25 , 240, 50, 5)
+            .fill(0x60584C) 
+            .stroke({ width: 2, color: 0x000000 });
+
+        
+        const perkText = new Text({
+            text: 'Banker’s perk',
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        perkText.anchor.set(0.5);
+        perkText.position.set(x, y);
+        y+= 70;
+
+        const descriptionText = new Text({
+            text: perk, // here
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+
+        const descriptionBackground = new Graphics()
+        .roundRect(x - (descriptionText.width + 20) / 2, y - (descriptionText.height + 20) / 2, descriptionText.width + 20, descriptionText.height + 20, 5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+
+        y+=100
+
+        const cardScale = 0.3;
+        const cardWidth = 590 * cardScale; // Assuming original card width
+        const spacing = 20;
+        const totalWidth = (characters.length * cardWidth) + ((characters.length - 1) * spacing);
+        const startX = x - totalWidth / 2 + cardWidth / 2;
+
+        const backgroundPadding = 50;
+        const charactersBackground = new Graphics()
+        .roundRect(
+            startX - (cardWidth / 2) - backgroundPadding, 
+            y - backgroundPadding, 
+            totalWidth + (backgroundPadding * 2), 
+            (940 * cardScale) + (backgroundPadding * 2), // Assuming original card height
+            5)
+        .fill(0x323232) 
+        .stroke({ width: 2, color: 0x000000 });
+        
+        tempContainer.addChild(characterIcon);  
+        tempContainer.addChild(perkBackground);  
+        tempContainer.addChild(perkText);
+        tempContainer.addChild(descriptionBackground);  
+        tempContainer.addChild(descriptionText);
+        tempContainer.addChild(charactersBackground);  
+       
+        characters.forEach(async (character, index) => {
+            const texture = await Assets.load(character.texturePath);
+            const faceUpCard = new Sprite(texture);
+            faceUpCard.interactive = true;
+            faceUpCard.scale.set(cardScale);
+            faceUpCard.anchor.set(0.5);
+            
+            faceUpCard.x = startX + index * (cardWidth + spacing);
+            faceUpCard.y = y + (940 * cardScale) / 2;
+            faceUpCard.on('mousedown', () => {
+                onSelectCallback(character);
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+            });
+            tempContainer.addChild(faceUpCard);
+            
+        });    
+
+        this.popupContainer.addChild(tempContainer);
+    }
+    //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
+
     async youCharacterAbility(character: Character, perk: string) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;

@@ -80,11 +80,19 @@ class NetworkManager {
             YouConfirmedAssetAbility: _ => { }, // TODO: handle
             MinusedIntoPlus: _ => { }, // TODO: handle
             SilveredIntoGold: _ => { }, // TODO: handle
-            ChangedAssetColor: _ => { }, // TODO: handle
+            ChangedAssetColor: _ => { }, // TODO: handle 
             ConfirmedAssetAbility: _ => { }, // TODO: handle
+            YouTerminateCreditCharacter: _ => { }, // TODO: handle
+            SelectedCardsBankerTarget: _ => { }, // TODO: handle
+            YouSelectCardBankerTarget: _ => { }, // TODO: handle
+            TerminatedCreditCharacter: r => this.gameManager!.serverEventManager.terminatedCreditCharacter(r.data),
+            PlayerTargetedByBanker: r => this.gameManager!.serverEventManager.playerTargetedByBanker(r.data),
+            YouPaidBanker: r => this.gameManager!.serverEventManager.youPaidBanker(r.data),
+            PlayerPayedBanker: r => this.gameManager!.serverEventManager.playerPayedBanker(r.data),
 
         };
     }
+    
 
     // Sets up the connection with to Websocket the websocket at url
     connect(url: string) {

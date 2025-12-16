@@ -45,6 +45,8 @@ image_back_url: string, };
  */
 export type AssetPowerup = "At the end of the game, for one color, turn - into 0 or 0 into +" | "At the end of the game, turn silver into gold on one asset card" | "At the end of the game, count one of your assets as any color";
 
+export type BankerTargetSelectError = "AssetValueToLow" | "AssetAlreadySelected" | "AssetNotSelected" | "InvalidAssetId" | "InvalidLiabilityId" | "LiabilityNotSelected" | "LiabilityAlreadySelected" | "NotCFO" | "AlreadySelected3Liabilities";
+
 /**
  * A card type used in relation to actions taken with player's hands. Can either be `Asset` or
  * `Liability`.
@@ -109,7 +111,7 @@ character: CharacterType, } } | { "action": "YouPaidBanker", "data": {
 /**
  * The amount of gold paid
  */
-cash: number, } } | { "action": "YouRegulatorOptions", "data": { 
+banker_id: PlayerId, new_banker_cash: number, your_new_cash: number, selected_cards: SelectedAssetsAndLiabilities, } } | { "action": "YouSelectCardBankerTarget", "data": { assets: { [key in number]?: number }, liabilities: { [key in number]?: number }, } } | { "action": "YouRegulatorOptions", "data": { 
 /**
  * The options this player has to swap with other players.
  */
@@ -376,7 +378,7 @@ character: CharacterType, } } | { "action": "TerminateCreditCharacter", "data": 
 /**
  * The character who's credit line will be terminated.
  */
-character: CharacterType, } } | { "action": "PayBanker", "data": { 
+character: CharacterType, } } | { "action": "SelectAssetToDivest", "data": { asset_id: number, } } | { "action": "UnselectAssetToDivest", "data": { asset_id: number, } } | { "action": "SelectLiabilityToIssue", "data": { liability_id: number, } } | { "action": "UnselectLiabilityToIssue", "data": { liability_id: number, } } | { "action": "PayBanker", "data": { 
 /**
  * The amount of cash to pay
  */
@@ -421,7 +423,7 @@ asset_idx: number, } };
 /**
  * The main error enum used by the game logic.
  */
-export type GameError = { "Lobby": LobbyError } | { "SelectingCharacters": SelectingCharactersError } | { "PlayCard": PlayCardError } | { "RedeemLiability": RedeemLiabilityError } | { "GiveBackCard": GiveBackCardError } | { "DrawCard": DrawCardError } | { "FireCharacter": FireCharacterError } | { "TerminateCreditCharacter": TerminateCreditCharacterError } | { "Swap": SwapError } | { "DivestAsset": DivestAssetError } | { "CardAbility": AssetAbilityError } | { "InvalidAssetIndex": number } | { "InvalidPlayerCount": number } | { "InvalidPlayerIndex": number } | { "InvalidPlayerName": string } | "PlayerMissingCharacter" | "NotPlayersTurn" | "PlayerShouldGiveBackCard" | "NotLobbyState" | "NotSelectingCharactersState" | "NotRoundState" | "NotResultsState" | "NotAvailableInLobbyState" | "NotAvailableInBankerTargetState" | "NotAvailableInResultsState";
+export type GameError = { "Lobby": LobbyError } | { "SelectingCharacters": SelectingCharactersError } | { "PlayCard": PlayCardError } | { "RedeemLiability": RedeemLiabilityError } | { "GiveBackCard": GiveBackCardError } | { "DrawCard": DrawCardError } | { "FireCharacter": FireCharacterError } | { "PayBanker": PayBankerError } | { "BankerTargetSelect": BankerTargetSelectError } | { "TerminateCreditCharacter": TerminateCreditCharacterError } | { "Swap": SwapError } | { "DivestAsset": DivestAssetError } | { "CardAbility": AssetAbilityError } | { "InvalidAssetIndex": number } | { "InvalidPlayerCount": number } | { "InvalidPlayerIndex": number } | { "InvalidPlayerName": string } | "PlayerMissingCharacter" | "NotPlayersTurn" | "PlayerShouldGiveBackCard" | "NotLobbyState" | "NotSelectingCharactersState" | "NotRoundState" | "NotbankerTargetState" | "NotResultsState" | "NotAvailableInLobbyState" | "NotAvailableInBankerTargetState" | "NotAvailableInResultsState";
 
 /**
  * Errors that can happen when a player must give back a card.
@@ -519,6 +521,11 @@ new_market: MarketCard, };
  * NOTE: The default state is `Zero`, which is also the case when parsing with serde.
  */
 export type MarketCondition = "up" | "down" | "zero";
+
+/**
+ * Errors related to paying the banker on the targets turn
+ */
+export type PayBankerError = "NotEnoughCash" | "NoBankerPlayer" | "NotRightCashAmount";
 
 /**
  * Errors that can happen when someone plays a card.
@@ -628,6 +635,8 @@ liability_count: number, };
  * The general error type that can be sent back in a response.
  */
 export type ResponseError = { "Game": GameError } | "GameNotYetStarted" | "GameAlreadyStarted" | "InvalidData";
+
+export type SelectedAssetsAndLiabilities = { assets: { [key in number]?: number }, liabilities: { [key in number]?: number }, };
 
 /**
  * Errors that can happen while selecting characters.
@@ -758,11 +767,15 @@ player_character: CharacterType,
 /**
  * A list of characters which were called but were not available.
  */
-skipped_characters: Array<CharacterType>, 
+skipped_characters: Array<CharacterType>, } } | { "action": "PlayerTargetedByBanker", "data": { 
 /**
- * Indicates if the current player is targeted by the banker
+ * Id of the player whose turn it is
  */
-banker_target: boolean, } } | { "action": "DrewCard", "data": { 
+player_turn: PlayerId, 
+/**
+ * Amount of Cash to be paid to Banker
+ */
+cash_to_be_paid: number, } } | { "action": "SelectedCardsBankerTarget", "data": { assets: { [key in number]?: number }, liability_count: number, } } | { "action": "DrewCard", "data": { 
 /**
  * The id of the player who drew a card.
  */
@@ -823,7 +836,7 @@ player_id: PlayerId,
 /**
  * The character who's credit line was terminated.
  */
-character: CharacterType, } } | { "action": "RegulatorSwapedYourCards", "data": { 
+character: CharacterType, } } | { "action": "PlayerPayedBanker", "data": { banker_id: PlayerId, player_id: PlayerId, new_banker_cash: number, new_target_cash: number, selected_cards: SelectedAssetsAndLiabilities, } } | { "action": "RegulatorSwapedYourCards", "data": { 
 /**
  * This player's new hand.
  */
