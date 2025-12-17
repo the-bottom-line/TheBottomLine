@@ -610,21 +610,22 @@ class ServerEventManager {
 
             data.issued_liabilities.forEach(item => {
                 if (item.card_idx >= 0 && item.card_idx < localPlayer.hand.length) {
-                    // Create a new Liability object from the LiabilityCard data
+                    
                     const newLiability = new Liability(
                         item.liability.rfr_type,
                         item.liability.value,
                         item.liability.image_front_url
                     );
-                    // Initialize its sprite
+                  
                     newLiability.initializeSprite();
 
-                    // Add to player's liability list
+                    
                     localPlayer.liabilityList.push(newLiability);
-                    // Remove from player's hand (assuming it was in hand to be issued)
+                    
                     localPlayer.hand.splice(item.card_idx, 1);
-                    // Add to played cards container
+                   
                     this.uiManager.hudManager.addCardToPlayedContainer(newLiability, this.uiManager.playedCardsContainer);
+                    localPlayer.positionLiabilitiesToPile();
                 }
             });
             }
@@ -675,6 +676,7 @@ class ServerEventManager {
                     targetPlayer.othersHand.splice(liabilityIndex, 1);
                 }
             }
+            
             targetPlayer.positionLiabilitiesToPile();
             // For remote players, we remove the liability from their abstract hand count
             this.gameManager.otherCards();
