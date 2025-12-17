@@ -12,6 +12,7 @@ class PopUpManager {
     app: Application;
     popupContainer: Container;
     hudManager: HudManager;
+    private updateBankerSellTable?: (data: any) => void;
 
     constructor(app: Application, popupContainer: Container, hudManager: HudManager) {
         this.app = app;
@@ -482,9 +483,71 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
+    updateBankerSellAssets(data: any) {
+        if (this.updateBankerSellTable) {
+            this.updateBankerSellTable(data);
+        }
+    }
+
     async displayBankerSellAssets(targetPlayer: Player, cashDue: number, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnselectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
         const tempContainer = this._createPopupBase();
         
+        // Table for breakdown
+        const breakdownContainer = new Container();
+        let rowY = 0;
+        
+        const addRow = (label: string, value: string, updateRef?: { text: Text }) => {
+            const t = new Text({ 
+                text: label, 
+                style: { fill: '#cccccc', fontSize: 20, fontFamily: 'MyFont' } 
+            });
+            t.position.set(0, rowY);
+            breakdownContainer.addChild(t);
+
+            const v = new Text({ text: value, style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' } });
+            v.anchor.set(1, 0);
+            v.position.set(250, rowY);
+            breakdownContainer.addChild(v);
+            
+            if (updateRef) updateRef.text = v;
+            
+            rowY += 30;
+        };
+
+        addRow("Amount Due", `${cashDue} Gold`);
+        addRow("Current Cash", `${targetPlayer.cash} Gold`);
+        
+        const assetsValueRef: { text: Text } = { text: null as any };
+        addRow("Assets Value", "0 Gold", assetsValueRef);
+        
+        const line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
+        breakdownContainer.addChild(line);
+        rowY += 10;
+        
+        const resultingCashRef: { text: Text } = { text: null as any };
+        addRow("Resulting Cash", `${targetPlayer.cash - cashDue} Gold`, resultingCashRef);
+
+        const bgPadding = 20;
+        const breakdownBg = new Graphics()
+            .roundRect(-bgPadding, -bgPadding, 250 + bgPadding*2, rowY + bgPadding*2, 10)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        
+        const tableContainer = new Container();
+        tableContainer.addChild(breakdownBg);
+        tableContainer.addChild(breakdownContainer);
+        tableContainer.position.set(40, 40);
+        tempContainer.addChild(tableContainer);
+
+        this.updateBankerSellTable = (data: { assets: Record<string, number> }) => {
+            let totalValue = 0;
+            if (data.assets) {
+                Object.values(data.assets).forEach((v: number) => totalValue += v);
+            }
+            if (assetsValueRef.text) assetsValueRef.text.text = `${totalValue} Gold`;
+            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + totalValue - cashDue} Gold`;
+        };
+
         const titleText = new Text({
             text: `Sell Assets (Due: ${cashDue} Gold)`,
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }

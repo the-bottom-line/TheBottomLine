@@ -84,7 +84,7 @@ class NetworkManager {
             ConfirmedAssetAbility: _ => { }, // TODO: handle
             YouTerminateCreditCharacter: _ => { }, // TODO: handle
             SelectedCardsBankerTarget: _ => { }, // TODO: handle
-            YouSelectCardBankerTarget: _ => { }, // TODO: handle
+            YouSelectCardBankerTarget: r => this.gameManager!.serverEventManager.youSelectCardBankerTarget(r.data),
             TerminatedCreditCharacter: r => this.gameManager!.serverEventManager.terminatedCreditCharacter(r.data),
             PlayerTargetedByBanker: r => this.gameManager!.serverEventManager.playerTargetedByBanker(r.data),
             YouPaidBanker: r => this.gameManager!.serverEventManager.youPaidBanker(r.data),

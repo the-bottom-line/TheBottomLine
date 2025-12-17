@@ -499,12 +499,51 @@ class ServerEventManager {
         }
     }
 
+    youSelectCardBankerTarget(data: any) {
+        this.uiManager.popUpManager.updateBankerSellAssets(data);
+    }
+
     youPaidBanker(data: Extract<DirectResponse, { action: "YouPaidBanker" }>['data']) {
         const localPlayer = this.gameState.getLocalPlayer();
         const banker = this.gameState.getPlayerById(data.banker_id);
 
         if (localPlayer) {
             localPlayer.cash = data.your_new_cash;
+
+            const paymentData = data as any;
+            if (paymentData.selected_cards) {
+                if (paymentData.selected_cards.assets) {
+                    const assetIndices = Object.keys(paymentData.selected_cards.assets)
+                        .map(Number)
+                        .sort((a, b) => b - a);
+                    
+                    assetIndices.forEach(index => {
+                        if (index >= 0 && index < localPlayer.assetList.length) {
+                            localPlayer.assetList.splice(index, 1);
+                        }
+                    });
+                    localPlayer.positionAssetsToPile();
+                }
+
+                if (paymentData.selected_cards.liabilities) {
+                    const liabilityIndices = Object.keys(paymentData.selected_cards.liabilities)
+                        .map(Number)
+                        .sort((a, b) => b - a);
+                    
+                    liabilityIndices.forEach(index => {
+                        if (index >= 0 && index < localPlayer.hand.length) {
+                            const card = localPlayer.hand[index];
+                            if (card instanceof Liability) {
+                                localPlayer.liabilityList.push(card);
+                                localPlayer.hand.splice(index, 1);
+                                this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
+                            }
+                        }
+                    });
+                    localPlayer.positionCardsInHand();
+                    localPlayer.positionLiabilitiesToPile();
+                }
+            }
         }
         if (banker) {
             banker.cash = data.new_banker_cash;
@@ -524,6 +563,37 @@ class ServerEventManager {
 
         if (targetPlayer) {
             targetPlayer.cash = data.new_target_cash;
+
+            const paymentData = data as any;
+            if (paymentData.selected_cards) {
+                if (paymentData.selected_cards.assets) {
+                    const assetIndices = Object.keys(paymentData.selected_cards.assets)
+                        .map(Number)
+                        .sort((a, b) => b - a);
+                    
+                    assetIndices.forEach(index => {
+                        if (index >= 0 && index < targetPlayer.assetList.length) {
+                            targetPlayer.assetList.splice(index, 1);
+                        }
+                    });
+                    targetPlayer.positionAssetsToPile();
+                }
+
+                if (paymentData.selected_cards.liabilities) {
+                    const liabilityIndices = Object.keys(paymentData.selected_cards.liabilities)
+                        .map(Number)
+                        .sort((a, b) => b - a);
+                    
+                    // For remote players, we remove the liability from their abstract hand count
+                    liabilityIndices.forEach(_ => {
+                        const handIndex = targetPlayer.othersHand.indexOf('Liability');
+                        if (handIndex !== -1) {
+                            targetPlayer.othersHand.splice(handIndex, 1);
+                        }
+                    });
+                    this.gameManager.otherCards();
+                }
+            }
         }
         if (banker) {
             banker.cash = data.new_banker_cash;
