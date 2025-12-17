@@ -7,6 +7,7 @@ import type GameState from '../GameState.js';
 import type { MarketCard } from '@shared-types';
 import type { DivestmentTarget } from '../GameManager.js';
 import type HudManager from './HudManager.js';
+import Liability from '../Liability.js';
 
 class PopUpManager {
     app: Application;
@@ -441,6 +442,21 @@ class PopUpManager {
                 });
                 sellButton.view.position.set(x - 100, y);
                 tempContainer.addChild(sellButton.view);
+
+                if (targetPlayer.character?.characterType === 'CFO') {
+                    y += 70;
+                    const issueButton = new FancyButton({
+                        text: "Issue Liabilities",
+                        width: 200,
+                        height: 60,
+                        onPress: () => {
+                            if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+                            this.displayBankerIssueLiabilities(targetPlayer, cashDue, onPayCallback, onSelectCallback, onUnelectCallback, onSelectLiablityCallback, onUnselectLiablityCallback);
+                        }
+                    });
+                    issueButton.view.position.set(x - 100, y);
+                    tempContainer.addChild(issueButton.view);
+                }
             }
         } else {
             this._addPopupCloseButton(tempContainer);
@@ -629,6 +645,161 @@ class PopUpManager {
             onPress: () => {
                 if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
                 this.playerTargetedByBanker(targetPlayer, cashDue, true, onPayCallback, onSelectCallback, onUnselectCallback,onSelectLiablityCallback,onUnselectLiablityCallback,);
+            }
+        });
+        backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);
+        tempContainer.addChild(backButton.view);
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    async displayBankerIssueLiabilities(targetPlayer: Player, cashDue: number, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnselectCallback: (index: number) => void, onSelectLiablityCallback: (index: number) => void, onUnselectLiablityCallback: (index: number) => void) {
+        const tempContainer = this._createPopupBase();
+        
+        // Table for breakdown
+        const breakdownContainer = new Container();
+        let rowY = 0;
+        
+        const addRow = (label: string, value: string, updateRef?: { text: Text }) => {
+            const t = new Text({ 
+                text: label, 
+                style: { fill: '#cccccc', fontSize: 20, fontFamily: 'MyFont' } 
+            });
+            t.position.set(0, rowY);
+            breakdownContainer.addChild(t);
+
+            const v = new Text({ text: value, style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' } });
+            v.anchor.set(1, 0);
+            v.position.set(250, rowY);
+            breakdownContainer.addChild(v);
+            
+            if (updateRef) updateRef.text = v;
+            
+            rowY += 30;
+        };
+
+        addRow("Amount Due", `${cashDue} Gold`);
+        addRow("Current Cash", `${targetPlayer.cash} Gold`);
+        
+        const liabilitiesValueRef: { text: Text } = { text: null as any };
+        addRow("Liabilities Value", "0 Gold", liabilitiesValueRef);
+        
+        const line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
+        breakdownContainer.addChild(line);
+        rowY += 10;
+        
+        const resultingCashRef: { text: Text } = { text: null as any };
+        addRow("Resulting Cash", `${targetPlayer.cash - cashDue} Gold`, resultingCashRef);
+
+        const bgPadding = 20;
+        const breakdownBg = new Graphics()
+            .roundRect(-bgPadding, -bgPadding, 250 + bgPadding*2, rowY + bgPadding*2, 10)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        
+        const tableContainer = new Container();
+        tableContainer.addChild(breakdownBg);
+        tableContainer.addChild(breakdownContainer);
+        tableContainer.position.set(40, 40);
+        tempContainer.addChild(tableContainer);
+
+        this.updateBankerSellTable = (data: { liabilities: Record<string, number> }) => {
+            let totalValue = 0;
+            if (data.liabilities) {
+                Object.values(data.liabilities).forEach((v: number) => totalValue += v);
+            }
+            if (liabilitiesValueRef.text) liabilitiesValueRef.text.text = `${totalValue} Gold`;
+            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + totalValue - cashDue} Gold`;
+        };
+
+        const titleText = new Text({
+            text: `Issue Liabilities (Due: ${cashDue} Gold)`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(this.app.screen.width / 2, 100);
+        tempContainer.addChild(titleText);
+
+        const cardScale = 0.25;
+        const cardWidth = 590 * cardScale;
+        const spacing = 20;
+        
+        const liabilityCards: { card: Liability, index: number }[] = [];
+        targetPlayer.hand.forEach((card, index) => {
+            if (card instanceof Liability) {
+                liabilityCards.push({ card, index });
+            }
+        });
+
+        const totalWidth = (liabilityCards.length * cardWidth) + ((liabilityCards.length - 1) * spacing);
+        const startX = this.app.screen.width / 2 - totalWidth / 2 + cardWidth / 2;
+        const startY = this.app.screen.height - 250;
+
+        const selectedIndices: number[] = [];
+        const cardSprites: { sprite: Sprite, originalPos: {x: number, y: number}, index: number }[] = [];
+
+        const updateSelectedPositions = () => {
+            const totalSelWidth = (selectedIndices.length * cardWidth) + ((selectedIndices.length - 1) * spacing);
+            const selStartX = this.app.screen.width / 2 - totalSelWidth / 2 + cardWidth / 2;
+            
+            selectedIndices.forEach((originalIndex, i) => {
+                const cardObj = cardSprites.find(c => c.index === originalIndex);
+                if (cardObj) {
+                    cardObj.sprite.position.set(selStartX + i * (cardWidth + spacing), this.app.screen.height / 2);
+                }
+            });
+        };
+
+        for (let i = 0; i < liabilityCards.length; i++) {
+            const { card, index } = liabilityCards[i]!;
+            const texture = await Assets.load(card.texturePath);
+            const sprite = new Sprite(texture);
+            sprite.scale.set(cardScale);
+            sprite.anchor.set(0.5);
+            
+            const originalX = startX + i * (cardWidth + spacing);
+            const originalY = startY;
+            
+            sprite.position.set(originalX, originalY);
+            sprite.interactive = true;
+            sprite.cursor = 'pointer';
+
+            cardSprites.push({ sprite, originalPos: { x: originalX, y: originalY }, index: index });
+
+            sprite.on('mousedown', () => {
+                const selIdx = selectedIndices.indexOf(index);
+                if (selIdx === -1) {
+                    selectedIndices.push(index);
+                    onSelectLiablityCallback(index);
+                } else {
+                    selectedIndices.splice(selIdx, 1);
+                    onUnselectLiablityCallback(index);
+                    sprite.position.set(originalX, originalY);
+                }
+                updateSelectedPositions();
+            });
+
+            tempContainer.addChild(sprite);
+        }
+
+        const payButton = new FancyButton({
+            text: "Pay Banker",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                onPayCallback(cashDue);
+                if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+            }
+        });
+        payButton.view.position.set(this.app.screen.width / 2 - 100, this.app.screen.height - 170);
+        tempContainer.addChild(payButton.view);
+
+        const backButton = new FancyButton({
+            text: "Back",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
+                this.playerTargetedByBanker(targetPlayer, cashDue, true, onPayCallback, onSelectCallback, onUnselectCallback, onSelectLiablityCallback, onUnselectLiablityCallback);
             }
         });
         backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);
