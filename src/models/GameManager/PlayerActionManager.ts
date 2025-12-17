@@ -6,6 +6,7 @@ import type Player from '../Player.js';
 import Asset from '../Asset.js';
 import Liability from '../Liability.js';
 import type GameManager from '../GameManager.js';
+import type { MarketCard } from '@shared-types';
 
 class PlayerActionManager {
     app: Application;
@@ -41,18 +42,13 @@ class PlayerActionManager {
 
         this.uiManager.createJoinButton(joinGame);
         
-        this.uiManager.hudManager.showMarket({
-            title: "Stable Market",
-            rfr: 0,
-            mrp: 0,
-            Yellow: "zero",
-            Blue: "zero",
-            Green: "zero",
-            Purple: "zero",
-            Red: "zero",
-            image_front_url: "",
-            image_back_url: ""
-        }, this.uiManager.marketContainer);
+        /*this.uiManager.debugPurpleCards(
+            this.gameState.marketState,
+            (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
+            (index)=> { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); },
+            (index,color) => {this.networkManager.sendCommand("ChangeAssetColor",{ asset_idx: index, color: color }); },
+            (index) => {this.networkManager.sendCommand("SilverIntoGold",{asset_idx: index})}
+        );*/
     }
 
     showLocalPlayerPicking(player: Player){
@@ -82,7 +78,6 @@ class PlayerActionManager {
             const canPlay = canPlayAsset || canPlayLiability;
 
             if (canPlay) {
-               
                 card.makePlayable();
             } else {
                 card.makeUnplayable();
@@ -121,21 +116,9 @@ class PlayerActionManager {
         newCard.sprite.on('cardDiscarded', (discardCard) => {
             const cardIndex = currentPlayer.hand.indexOf(discardCard);
             this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex });
-                /*this.uiManager.tempCardsContainer.removeChild(discardedCard.sprite);
-                this.uiManager.tempCardsContainer.removeChild(discardedCard.discardButton);
-                currentPlayer.tempHand.splice(cardIndex, 1);
-                currentPlayer.positionTempCards();*/
-
-                /*if (currentPlayer.tempHand.length === currentPlayer.maxKeepCards) {
-                    // When the number of cards in temp hand equals the max cards to keep,
-                    // it implies the player has made their choice.
-                    // We can now inform the server which cards are being kept.
-                    const keptCardIndices = currentPlayer.tempHand.map(card => currentPlayer.hand.length + currentPlayer.tempHand.indexOf(card));
-                    this.networkManager.sendCommand("PutBackCard", { kept_card_indices: keptCardIndices });
-                }*/
-            
         });
     }
+    
 }
 
 export default PlayerActionManager;

@@ -2,7 +2,7 @@ import type { Application, Container } from 'pixi.js';
 import type GameState from '../GameState.js';
 import type UIManager from '../UIManager.js';
 import type NetworkManager from '../NetworkManager.js';
-import type { DirectResponse, EitherAssetLiability, PlayerInfo, UniqueResponse } from '@shared-types';
+import type { DirectResponse, UniqueResponse } from '@shared-types';
 import Character from '../Characters.js';
 import Player from '../Player.js';
 import Asset from '../Asset.js';
@@ -30,6 +30,7 @@ class ServerEventManager {
         
         this.gameState.players = []; 
         this.gameState.myId = data.id;
+        this.gameState.marketState = data.initial_market;
         const localPlayer = new Player(this.gameState.username!, data.id,this.app);
         localPlayer.reveal = true;
         localPlayer.cash = data.cash;
@@ -37,6 +38,7 @@ class ServerEventManager {
         this.gameState.players.push(localPlayer);
 
         this.gameManager.initPlayers(data.player_info);
+         this.uiManager.hudManager.showMarket(this.gameState.marketState , this.uiManager.marketContainer);
 
         if (!localPlayer) {
             console.error("Could not find the local player in server data!");
@@ -117,7 +119,7 @@ class ServerEventManager {
                     this.uiManager.tempCardsContainer.removeChild(card.discardButton);
                 }
             });
-            // After moving cards, if there are no more to draw, switch to the main phase.
+          
             if (currentPlayer.drawableCards === 0) {
                 this.gameManager.switchToMainPhase();
             }
@@ -468,6 +470,147 @@ class ServerEventManager {
         const character = this.gameState.characters.find(character => data.character == character.characterType)!;
         this.uiManager.popUpManager.firedCharacter(character,localPlayer)
     }
+    
+    terminatedCreditCharacter(data: Extract<UniqueResponse, { action: "TerminatedCreditCharacter" }>['data']){
+        const targetPlayer = this.gameState.getPlayerById(data.player_id);
+        const character = this.gameState.characters.find(character => data.character == character.characterType)!;
+        const localPlayer = this.gameState.getLocalPlayer();
+
+        if (targetPlayer) {
+            this.uiManager.popUpManager.terminatedCreditCharacter(character, targetPlayer, localPlayer.playerID === targetPlayer.playerID);
+        }
+    }
+
+    playerTargetedByBanker(data: Extract<UniqueResponse, { action: "PlayerTargetedByBanker" }>['data']){
+        const targetPlayer = this.gameState.getPlayerById(data.player_turn);
+        const localPlayer = this.gameState.getLocalPlayer();
+
+        if (targetPlayer) {
+            this.uiManager.popUpManager.playerTargetedByBanker(
+                targetPlayer, 
+                data.cash_to_be_paid, 
+                localPlayer.playerID === targetPlayer.playerID,
+                (amount) => this.networkManager.sendCommand("PayBanker", {cash: amount}),
+                (index) => this.networkManager.sendCommand("SelectAssetToDivest",{asset_id: index}),
+                (index) => this.networkManager.sendCommand("UnselectAssetToDivest",{asset_id: index}),
+                (index) => this.networkManager.sendCommand("SelectLiabilityToIssue",{liability_id: index}),
+                (index) => this.networkManager.sendCommand("UnselectLiabilityToIssue",{liability_id: index})
+            );
+        }
+    }
+
+    youSelectCardBankerTarget(data: Extract<DirectResponse, {action: "YouSelectCardBankerTarget"}>['data']) {
+        this.uiManager.popUpManager.updateBankerSellAssets(data);
+    }
+
+    youPaidBanker(data: Extract<DirectResponse, { action: "YouPaidBanker" }>['data']) {
+        const localPlayer = this.gameState.getLocalPlayer();
+        const banker = this.gameState.getPlayerById(data.banker_id);
+        const amountPaid = data.paid_amount; // here same fix
+
+        if (localPlayer) {
+            localPlayer.cash = data.your_new_cash;
+            
+            data.sold_assets.forEach(item => {
+                if (item.asset_idx >= 0 && item.asset_idx < localPlayer.assetList.length) {
+                    localPlayer.assetList.splice(item.asset_idx, 1);
+                }
+            });
+            localPlayer.positionAssetsToPile();
+
+            data.issued_liabilities.forEach(item => {
+                if (item.card_idx >= 0 && item.card_idx < localPlayer.hand.length) {
+                    // Create a new Liability object from the LiabilityCard data
+                    const newLiability = new Liability(
+                        item.liability.rfr_type,
+                        item.liability.value,
+                        item.liability.image_front_url
+                    );
+                    // Initialize its sprite
+                    newLiability.initializeSprite();
+
+                    // Add to player's liability list
+                    localPlayer.liabilityList.push(newLiability);
+                    // Remove from player's hand (assuming it was in hand to be issued)
+                    localPlayer.hand.splice(item.card_idx, 1);
+                    // Add to played cards container
+                    this.uiManager.hudManager.addCardToPlayedContainer(newLiability, this.uiManager.playedCardsContainer);
+                }
+            });
+            }
+        
+        if (banker) {
+            banker.cash = data.new_banker_cash;
+        }
+        
+        this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liablities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`;
+        this.gameManager.updateUI();
+
+        if (banker) {
+            this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker, amountPaid, banker.playerID === this.gameState.myId, true, data.sold_assets, data.issued_liabilities);
+        }
+    }
+
+    async playerPaidBanker(data: Extract<UniqueResponse, { action: "PlayerPaidBanker" }>['data']) {
+        const targetPlayer = this.gameState.getPlayerById(data.player_id);
+        const banker = this.gameState.getPlayerById(data.banker_id);
+        const amountPaid = data.paid_amount;
+        
+
+        if (targetPlayer) {
+            targetPlayer.cash = data.new_target_cash;
+
+            const soldAssets = data.sold_assets;
+            const issuedLiabilities = data.issued_liabilities;
+                    
+            soldAssets.forEach((asset) => {
+                if (asset.asset_idx >= 0 && asset.asset_idx < targetPlayer.assetList.length) {
+                    targetPlayer.assetList.splice(asset.asset_idx, 1);
+                }
+            });
+            targetPlayer.positionAssetsToPile();
+                
+            for (const item of issuedLiabilities) {
+                const cardData = item.liability;
+                const newCard = new Liability(
+                    cardData.rfr_type,
+                    cardData.value,
+                    cardData.image_front_url
+                );
+                await newCard.initializeSprite();
+                targetPlayer.liabilityList.push(newCard);
+
+                const liabilityIndex = targetPlayer.othersHand.indexOf('Liability');
+                if (liabilityIndex > -1) {
+                    targetPlayer.othersHand.splice(liabilityIndex, 1);
+                }
+            }
+            targetPlayer.positionLiabilitiesToPile();
+            // For remote players, we remove the liability from their abstract hand count
+            this.gameManager.otherCards();
+                
+            
+        }
+        if (banker) {
+            banker.cash = data.new_banker_cash;
+        }
+
+        this.gameManager.updateUI();
+
+        if (targetPlayer && banker) {
+            this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker, amountPaid, banker.playerID === this.gameState.myId, targetPlayer.playerID === this.gameState.myId,data.sold_assets,data.issued_liabilities,);
+        }
+    }
+
+    youMinusedIntoPlus(data: Extract<DirectResponse, { action: "YouMinusedIntoPlus" }>['data']) {
+        this.gameState.marketState = data.new_market;
+        this.uiManager.popUpManager.updateRnDMarket(data.new_market);
+        
+        const localPlayer = this.gameState.getLocalPlayer();
+        if (localPlayer) {
+            this.uiManager.popUpManager.updateEndGameScore(localPlayer.name, data.new_score);
+        }
+    }
 
     youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){
         const character = this.gameState.characters.find(character => data.character == character.characterType)!;
@@ -505,7 +648,7 @@ class ServerEventManager {
             divestmentTargets,
             (playerID,cardID) => {
                     this.networkManager.sendCommand("DivestAsset", { "target_player_id": playerID,"card_idx":cardID });
-                    console.log("Here")
+                  
                 }
         );
     }
@@ -515,15 +658,22 @@ class ServerEventManager {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;
         }
-
         this.gameManager.switchToMainPhase();
     }
 
-    youAreTerminatingSomeone(_data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
-
+    async youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
+        //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
+        const characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
+        let perk = data.perk
+        
+            this.uiManager.popUpManager.youAreTerminatingSomeone(
+                characters,
+                perk,
+                (charToTerminate) => this.networkManager.sendCommand("TerminateCreditCharacter", { "character": charToTerminate.characterType! })
+            );
     }
 
-    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){
+    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){ 
         console.log(data);
         const options = data.options;
         const perk = data.perk;
@@ -555,7 +705,7 @@ class ServerEventManager {
         
     }
 
-    async swapedWithPlayer(data: Extract<UniqueResponse, { action: "SwapedWithPlayer" }>['data']){
+    async swappedWithPlayer(data: Extract<UniqueResponse, { action: "SwappedWithPlayer" }>['data']){
         console.log("swapedWithPlayer:", data);
         if (this.gameManager.activePopup) {
             this.gameManager.activePopup.destroy({ children: true });
@@ -578,7 +728,7 @@ class ServerEventManager {
         // For spectators, refresh the view of the current player.
         // The regulator's own UI is updated by `youSwapPlayer`.
         if (this.gameState.myId !== regulator.playerID) {
-            this.uiManager.popUpManager.displayPlayerSwapNotification(regulator, target);
+            this.uiManager.popUpManager.displayPlayerSwapNotification(target);
             this.gameManager.otherPlayerScreenSetup(regulator);
         }
     }
@@ -591,19 +741,22 @@ class ServerEventManager {
         }
 
         await this.gameManager._updateHandFromServer(data.new_cards);
+        
+        const localPlayer = this.gameState.getLocalPlayer();
+        this.uiManager.popUpManager.displayYouSwappedNotification(localPlayer);
+
         this.gameManager.switchToMainPhase();
     }
 
-    async regulatorSwapedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwapedYourCards" }>['data']){ // here
-        console.log("regulatorSwapedYourCards:", data);
+    async regulatorSwappedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwappedYourCards" }>['data']){ 
+        console.log("RegulatorSwappedYourCards:", data);
         
         const localPlayer = this.gameState.getLocalPlayer(); // This is the target player
         const regulatorPlayer = this.gameState.getCurrentPlayer();
 
         if (!localPlayer || !regulatorPlayer) return;
 
-        // On the target's client, `swapedWithPlayer` is skipped, so we handle all state changes here.
-        // 1. Capture our current hand's state. This is what the regulator's hand will become.
+       
         const localPlayerOldHandRepresentation = localPlayer.hand.map(card => card instanceof Asset ? 'Asset' : 'Liability');
         regulatorPlayer.othersHand = localPlayerOldHandRepresentation;
 
@@ -615,7 +768,8 @@ class ServerEventManager {
 
         // 4. Update the UI.
         if (this.gameState.myId !== regulatorPlayer.playerID) {
-            this.uiManager.popUpManager.displayRegulatorSwapNotification(regulatorPlayer);
+            
+            this.uiManager.popUpManager.displayRegulatorSwapNotification(this.gameState.getLocalPlayer());
 
             // The player whose cards were swapped is on the 'elseTurn' screen.
             // Refresh the screen to show the regulator's new hand count.
@@ -642,7 +796,7 @@ class ServerEventManager {
         localPlayer.positionCardsInHand();
     }
 
-    swapedWithDeck(data: Extract<UniqueResponse, { action: "SwapedWithDeck" }>['data']){
+    swappedWithDeck(data: Extract<UniqueResponse, { action: "SwappedWithDeck" }>['data']){
         const currentPlayer = this.gameState.getCurrentPlayer();
         if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
             console.log("Regulator swapped with deck:", data);
@@ -667,10 +821,22 @@ class ServerEventManager {
     gameEnded(data: Extract<UniqueResponse, { action: "GameEnded" }>['data']) {
         
         console.log("Game ended!", data.scores);
+        const player = this.gameState.getLocalPlayer();
+        const marketState = this.gameState.marketState!;
+        const score = data.scores;
+        console.log(player.assetList);
+
+        this.uiManager.displayPurpleCards(player, marketState,
+            (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
+            (index) => { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); },
+            (index,color) => {this.networkManager.sendCommand("ChangeAssetColor",{ asset_idx: index, color: color }); },
+            (index) => {this.networkManager.sendCommand("SilverIntoGold",{asset_idx: index})}
+        );
         
-        this.uiManager.showScreen('results');
+        this.uiManager.popUpManager.displayEndGameScores(data.scores);
+        this.uiManager.showScreen('purpleCards');
         
-        this.uiManager.gameEnded(data.scores);
+        //this.uiManager.gameEnded(data.scores);
     }
 }
 

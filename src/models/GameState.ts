@@ -1,7 +1,6 @@
 import Character, { getAllCharacters } from './Characters.js';
 import type Player from './Player.ts';
-
-
+import type { MarketCard } from '@shared-types';
 
 class GameState {
     players: Player[] = [];
@@ -12,6 +11,7 @@ class GameState {
     characters = getAllCharacters();
     faceUpCharacters: Character[] = [];
     openCharacters: Character[] = [];
+    marketState?: MarketCard;
     currentPhase = 'lobby';
 
     setCurrentPlayerIndex(index: number) {
@@ -38,6 +38,7 @@ class GameState {
         });
         this.faceUpCharacters = [];
     }
+    
 }
 
 export default GameState;

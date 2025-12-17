@@ -31,7 +31,7 @@ class HudManager {
     
         }
 
-    displayAllPlayerStats(players: Player[], container: Container, currentPlayer: Player) { // here
+    displayAllPlayerStats(players: Player[], container: Container, currentPlayer: Player) {  
         
         players.forEach(async (player, playerIndex) => {
             const texture = await Assets.load(player.reveal && player.character ? player.character.iconPath : "./miscellaneous/noneCharacter.png");
@@ -224,7 +224,8 @@ class HudManager {
                 .circle(0, 0, circleRadius)
                 .fill(colorInfo.name.toLowerCase())
                 .stroke({ width: 2, color: 0x000000 });
-            circle.position.set(circleX, circleY); // here
+            circle.position.set(circleX, circleY);
+            circle.label = colorInfo.name;
             marketContainer.addChild(circle);
 
             const statusIndicator = new Text({
@@ -235,7 +236,7 @@ class HudManager {
                 }
             });
             statusIndicator.anchor.set(0.5);
-            statusIndicator.position.set(circleX, circleY); // here
+            statusIndicator.position.set(circleX, circleY); 
 
             if (colorInfo.value === 'down') {
                 statusIndicator.text = '-';
@@ -282,7 +283,7 @@ class HudManager {
         mrpText.position.set(width * (2 / 3) + 20, height * 0.75);
         marketContainer.addChild(mrpText);
     }
-    async displayPlayerCharacter(player: Player, container: Container, onIconClick?: (_: Character) => void) { // here
+    async displayPlayerCharacter(player: Player, container: Container, onIconClick?: (_: Character) => void) { 
         if (!player?.character) return;
 
         const tempContainer = new Container();
@@ -371,5 +372,6 @@ class HudManager {
             index++;
         }
     }
+    
 }
 export default HudManager;

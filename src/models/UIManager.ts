@@ -2,10 +2,11 @@ import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFil
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
+import Asset from "./Asset.js";
 import LiabilityCards from "./LiabilityCards.js";
-import type Player from './Player.js';
+import Player from './Player.js';
 import type Character from './Characters.js';
-import type {  PlayerScore } from '@shared-types';
+import type {  Color, PlayerScore,MarketCard } from '@shared-types';
 import PopUpManager from './UIManager/PopUpManager.js';
 import HudManager from './UIManager/HudManager.js';
 import GameState from './GameState.js';
@@ -30,6 +31,7 @@ class UIManager {
     popupContainer = new Container();
     resultsContainer = new Container();
     marketContainer = new Container();
+    purpleCardsContainer = new Container();
     
     statsText = new Text({
         text: '',
@@ -48,8 +50,8 @@ class UIManager {
 
         this._setupContainers();
 
-        this.popUpManager = new PopUpManager(this.app, this.popupContainer);
         this.hudManager = new HudManager(this.app);
+        this.popUpManager = new PopUpManager(this.app, this.popupContainer, this.hudManager);
     }
 
     async _setupContainers() {
@@ -98,6 +100,7 @@ class UIManager {
             this.statsText,
             this.resultsContainer,
             this.marketContainer,
+            this.purpleCardsContainer,
             this.popupContainer
         );
 
@@ -127,6 +130,7 @@ class UIManager {
         this.mainContainer.visible = screenName === 'main';
         this.pickingContainer.visible = screenName === 'picking';
         this.elseTurnContainer.visible = screenName === 'elseTurn';
+        this.purpleCardsContainer.visible = screenName == 'purpleCards'
         this.resultsContainer.visible = screenName === 'results';
         this.marketContainer.visible = screenName === 'main' || screenName === 'elseTurn';
     }
@@ -357,12 +361,89 @@ class UIManager {
         player.positionTempCards();
     }
 
+    displayPurpleCards(player: Player, marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void,confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
+        this.purpleCardsContainer.removeChildren();
+        player.assetList.filter(card => card.ability)
+        let cards = player.assetList.filter(card => card.ability);
+        const title = new Text({
+            text: 'End Game Abilities',
+            style: { fill: '#ffffff', fontSize: 48, fontFamily: 'MyFont' }
+        });
+        title.anchor.set(0.5);
+        title.position.set(this.app.screen.width /2, 100);
+        this.purpleCardsContainer.addChild(title);
+
+        const spacing = 250;
+        const startX = (this.app.screen.width - ((cards.length - 1) * spacing)) / 2;
+        const y = this.app.screen.height / 2;
+
+        cards.forEach((card, index) => {
+            if (card.sprite) {
+                card.sprite.position.set(startX + index * spacing, y);
+                this.purpleCardsContainer.addChild(card.sprite);
+                if(card.title == "R&D Lab"){
+                    card.sprite.interactive = true;
+                    card.sprite.cursor = 'pointer';
+                    card.sprite.on('mousedown', () => {
+                        this.popUpManager.displayRnDPopup(marketState, minusIntoPlusCall, confirmAssetAbilityCall, player.assetList.indexOf(card));
+                    });
+                }
+                else if( card.title == "Pilot Plant"){
+                    card.sprite.interactive = true;
+                    card.sprite.cursor = 'pointer';
+                    card.sprite.on('mousedown', () => {
+                        this.popUpManager.displayPilotPlantPopup(player,confirmColorChangeCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
+                    });
+                }
+                else if( card.title == "Application Lab"){
+                    card.sprite.interactive = true;
+                    card.sprite.cursor = 'pointer';
+                    card.sprite.on('mousedown', () => {
+                        this.popUpManager.displayApplicationLabPopup(player,silverIntoGoldCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
+                    });
+                }
+
+            }
+        });
+
+    }
+    async createDummyPlayerWithPurpleCards(app: Application) {
+            const player = new Player("Dummy", 1, app); // This line is causing the error
+            const cardsData = [
+                
+                { title: "Application Lab", path: "assets/applicationLab_4-2.webp",ability: "Application" },
+                { title: "Pilot Plant", path: "assets/pilotPlant_5-1.webp",ability: "Pilot" },
+                { title: "R&D Lab", path: "assets/rndLab_3-3.webp",ability: "R&D" },
+                { title: "Water Treatment", path: "assets/waterTreatment_2-2.webp",ability: '' }
+            ];
+    
+            for (const data of cardsData) {
+                const card = new Asset(data.title, "Purple", 0, 0, data.ability, data.path);
+                const texture = await Assets.load(card.texturePath);
+                card.sprite = new Sprite(texture);
+                card.sprite.scale.set(0.25);
+                card.sprite.anchor.set(0.5);
+                player.assetList.push(card);
+            }
+            return player;
+        }
+    async debugPurpleCards(marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
+        let player = await this.createDummyPlayerWithPurpleCards(this.app);
+
+        this.displayPurpleCards(player, marketState, minusIntoPlusCall,confirmAssetAbilityCall, confirmColorChangeCall,silverIntoGoldCall);
+        this.showScreen('purpleCards');
+    }
+
     async gameEnded(scores: PlayerScore[]) {
+        
+
+       
+        
         const container = this.resultsContainer;
     
         // Vertical spacing between lines
         const lineHeight = 30;
-    
+        
         scores.forEach((score, index) => {
             const playerName = new Text({
                 text: `${score.name}: ${score.score}`,
