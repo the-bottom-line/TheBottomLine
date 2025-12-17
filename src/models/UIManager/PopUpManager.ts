@@ -658,15 +658,15 @@ class PopUpManager {
             tempContainer.addChild(faceUpCard);
             
         });    
-
-        this.popupContainer.addChild(tempContainer);
+        this._addPopupCloseButton(tempContainer);
+        this.popupContainer.addChild(tempContainer); // here
     }
     //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
 
     async youCharacterAbility(character: Character, perk: string) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
-        let y = this.app.screen.height / 2-50;
+        let y = this.app.screen.height / 2-200;
 
         const texture = await Assets.load(character.iconPath);
         const characterIcon = new Sprite(texture);
@@ -675,30 +675,47 @@ class PopUpManager {
         characterIcon.width = 200;
         characterIcon.height = 240;
         characterIcon.anchor.set(0.5);
-        y +=100;
+        y +=130;
 
-       
-
-        const chairmanText = new Text({
+        const descriptionText = new Text({
             text: perk,
-            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont', wordWrap: true, wordWrapWidth: 500, align: 'center' }
         });
-        chairmanText.anchor.set(0.5);
-        chairmanText.position.set(x, y);
+        const padding = 30;
+        const bgWidth = descriptionText.width + padding;
 
-        const padding = 20;
-        const textChairmanBackground = new Graphics()
-            .roundRect(0, 0 , chairmanText.width + padding, chairmanText.height + padding, 5)
+        const titleText = new Text({
+            text: `${character.characterType}’s perk`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        let padd = 20;
+
+        const titleBackground = new Graphics()
+            .roundRect(x - bgWidth / 2, y - (titleText.height + padd) / 2 , bgWidth, titleText.height + padd, 5)
             .fill(0x60584C) 
             .stroke({ width: 2, color: 0x000000 });
-        textChairmanBackground.pivot.set(textChairmanBackground.width / 2, textChairmanBackground.height / 2);
-        textChairmanBackground.position.set(x, y);
+        
+        y += 70;
+
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+
+        const descriptionBackground = new Graphics()
+            .roundRect(0, 0 , bgWidth, descriptionText.height + padding, 5)
+            .fill(0x323232) 
+            .stroke({ width: 2, color: 0x000000 });
+        descriptionBackground.pivot.set(descriptionBackground.width / 2, descriptionBackground.height / 2);
+        descriptionBackground.position.set(x, y);
 
         this._addPopupCloseButton(tempContainer);
         
         tempContainer.addChild(characterIcon); 
-        tempContainer.addChild(textChairmanBackground);   
-        tempContainer.addChild(chairmanText);        
+        tempContainer.addChild(titleBackground);   
+        tempContainer.addChild(titleText);        
+        tempContainer.addChild(descriptionBackground);
+        tempContainer.addChild(descriptionText);
 
         this.popupContainer.addChild(tempContainer);
     }
@@ -934,6 +951,8 @@ class PopUpManager {
                 this.popupContainer.removeChild(tempContainer);   
                 this.displaySwapWithDeckPopup(gameState.getLocalPlayer(), (card_idxs) => {
                     onSelectCallback2(card_idxs); 
+                }, () => {
+                    this.youRegulatorOptions(options, perk, gameState, onSelectCallback1, onSelectCallback2);
                 });
             }
         }); 
@@ -947,7 +966,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async displaySwapWithDeckPopup(player: Player, onConfirmCallback: (card_idxs: number[]) => void) {
+    async displaySwapWithDeckPopup(player: Player, onConfirmCallback: (card_idxs: number[]) => void, onBackCallback: () => void) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 250;
@@ -1014,95 +1033,232 @@ class PopUpManager {
                 onConfirmCallback(selectedIndices);
             }
         });
-        okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 100);
+        okButton.view.position.set(this.app.screen.width / 2 - (okButton.view.width / 2), this.app.screen.height - 170);
         tempContainer.addChild(okButton.view);
+
+        const backButton = new FancyButton({
+            text: "Back",
+            width: 200,
+            height: 60,
+            onPress: () => {
+                if (tempContainer.parent) {
+                    tempContainer.parent.removeChild(tempContainer);
+                }
+                onBackCallback();
+            }
+        });
+        backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);
+        tempContainer.addChild(backButton.view);
 
         this.popupContainer.addChild(tempContainer);
         return tempContainer;
     }
 
-    async displayRegulatorSwapNotification(regulatorPlayer: Player) {
+    async displayYouSwappedNotification(localPlayer: Player) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
-        let y = this.app.screen.height / 2 - 150;
+        let y = this.app.screen.height / 2 - 300;
 
         // Regulator Icon
         const texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
         const regulatorIcon = new Sprite(texture);
         regulatorIcon.position.set(x, y);
-        regulatorIcon.width = 200;
-        regulatorIcon.height = 220;
+        regulatorIcon.width = 160;
+        regulatorIcon.height = 180;
         regulatorIcon.anchor.set(0.5);
-        y += 130;
+        tempContainer.addChild(regulatorIcon);
+        y += 90;
 
-        // "The Regulator..." text
+        // Title
+        const titleBackground = new Graphics()
+            .roundRect(x - 150, y - 25, 300, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(titleBackground);
+
         const titleText = new Text({
-            text: `The Regulator (${regulatorPlayer.name})`,
+            text: `Regulator’s perk`,
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         titleText.anchor.set(0.5);
         titleText.position.set(x, y);
-        y += 40;
+        tempContainer.addChild(titleText);
+        y += 70;
 
-        // "...swapped cards with you" text
+        // Info
+        const infoBackground = new Graphics()
+            .roundRect(x - 200, y - 30, 400, 60, 5)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(infoBackground);
+
         const infoText = new Text({
-            text: "has swapped cards with you.",
-            style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' }
+            text: "Trade complete! Your new hand:",
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
         });
         infoText.anchor.set(0.5);
         infoText.position.set(x, y);
+        tempContainer.addChild(infoText);
+        y += 100;
 
-        const background = new Graphics()
-            .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
-            .fill(0x323232)
-            .stroke({ width: 2, color: 0x000000 });
-        background.pivot.set(background.width / 2, 0);
-        background.position.set(x, y - 50);
+        if (localPlayer.hand.length > 0) {
+            const cardScale = 0.25;
+            const cardWidth = 590 * cardScale;
+            const spacing = 20;
+            const totalWidth = (localPlayer.hand.length * cardWidth) + ((localPlayer.hand.length - 1) * spacing);
+            const startX = x - totalWidth / 2 + cardWidth / 2;
 
-        tempContainer.addChild(regulatorIcon, background, titleText, infoText);
+            const backgroundPadding = 30;
+            const cardsBackground = new Graphics()
+                .roundRect(
+                    startX - (cardWidth / 2) - backgroundPadding, 
+                    y - backgroundPadding, 
+                    totalWidth + (backgroundPadding * 2), 
+                    (940 * cardScale) + (backgroundPadding * 2), 
+                    5)
+                .fill(0x323232) 
+                .stroke({ width: 2, color: 0x000000 });
+            tempContainer.addChild(cardsBackground);
+
+            localPlayer.hand.forEach((card, index) => {
+                const cardSprite = new Sprite(card.sprite.texture);
+                cardSprite.scale.set(cardScale);
+                cardSprite.anchor.set(0.5);
+                cardSprite.position.set(startX + index * (cardWidth + spacing), y + (940 * cardScale) / 2);
+                tempContainer.addChild(cardSprite);
+            });
+        }
+
         this._addPopupCloseButton(tempContainer);
         this.popupContainer.addChild(tempContainer);
     }
 
-    async displayPlayerSwapNotification(regulatorPlayer: Player, targetPlayer: Player) {
+    async displayRegulatorSwapNotification( localPlayer: Player) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
-        let y = this.app.screen.height / 2 - 150;
+        let y = this.app.screen.height / 2 - 300;
 
         // Regulator Icon
         const texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
         const regulatorIcon = new Sprite(texture);
         regulatorIcon.position.set(x, y);
-        regulatorIcon.width = 200;
-        regulatorIcon.height = 220;
+        regulatorIcon.width = 160;
+        regulatorIcon.height = 180;
         regulatorIcon.anchor.set(0.5);
-        y += 130;
+        tempContainer.addChild(regulatorIcon);
+        y += 90;
 
-        // "The Regulator..." text
+        // Title
+        const titleBackground = new Graphics()
+            .roundRect(x - 150, y - 25, 300, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(titleBackground);
+
         const titleText = new Text({
-            text: `The Regulator (${regulatorPlayer.name})`,
+            text: `Regulator traded your cards!`,
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         titleText.anchor.set(0.5);
         titleText.position.set(x, y);
-        y += 40;
+        tempContainer.addChild(titleText);
+        y += 70;
 
-        // "...swapped cards with player" text
+        // Info
+        const infoBackground = new Graphics()
+            .roundRect(x - 200, y - 30, 400, 60, 5)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(infoBackground);
+
         const infoText = new Text({
-            text: `has swapped cards with ${targetPlayer.name}.`,
-            style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' }
+            text: "You received the regulator's hand:",
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        infoText.anchor.set(0.5);
+        infoText.position.set(x, y);
+        tempContainer.addChild(infoText);
+        y += 100;
+
+        if (localPlayer.hand.length > 0) {
+            const cardScale = 0.25;
+            const cardWidth = 590 * cardScale;
+            const spacing = 20;
+            const totalWidth = (localPlayer.hand.length * cardWidth) + ((localPlayer.hand.length - 1) * spacing);
+            const startX = x - totalWidth / 2 + cardWidth / 2;
+
+            const backgroundPadding = 30;
+            const cardsBackground = new Graphics()
+                .roundRect(
+                    startX - (cardWidth / 2) - backgroundPadding, 
+                    y - backgroundPadding, 
+                    totalWidth + (backgroundPadding * 2), 
+                    (940 * cardScale) + (backgroundPadding * 2), 
+                    5)
+                .fill(0x323232) 
+                .stroke({ width: 2, color: 0x000000 });
+            tempContainer.addChild(cardsBackground);
+
+            localPlayer.hand.forEach((card, index) => {
+                const cardSprite = new Sprite(card.sprite.texture);
+                cardSprite.scale.set(cardScale);
+                cardSprite.anchor.set(0.5);
+                cardSprite.position.set(startX + index * (cardWidth + spacing), y + (940 * cardScale) / 2);
+                tempContainer.addChild(cardSprite);
+            });
+        }
+
+        this._addPopupCloseButton(tempContainer);
+        this.popupContainer.addChild(tempContainer);
+    }
+
+    async displayPlayerSwapNotification( targetPlayer: Player) { 
+        const tempContainer = this._createPopupBase();
+        const x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 200;
+
+        // Regulator Icon
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png");
+        const regulatorIcon = new Sprite(texture);
+        regulatorIcon.position.set(x, y);
+        regulatorIcon.width = 160;
+        regulatorIcon.height = 180;
+        regulatorIcon.anchor.set(0.5);
+        tempContainer.addChild(regulatorIcon);
+        y += 90;
+
+        // Title
+        const titleBackground = new Graphics()
+            .roundRect(x - 150, y - 25, 300, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(titleBackground);
+
+        const titleText = new Text({
+            text: `The Regulator's perk`,
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        tempContainer.addChild(titleText);
+        y += 70;
+
+        // Info
+        const infoText = new Text({
+            text: `The regulator has swapped their hand with ${targetPlayer.name}.`,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
         });
         infoText.anchor.set(0.5);
         infoText.position.set(x, y);
 
-        const background = new Graphics()
-            .roundRect(0, 0, Math.max(titleText.width, infoText.width) + 40, titleText.height + infoText.height + 50, 10)
+        const infoBackground = new Graphics()
+            .roundRect(x - (infoText.width + 40) / 2, y - 30, infoText.width + 40, 60, 5)
             .fill(0x323232)
             .stroke({ width: 2, color: 0x000000 });
-        background.pivot.set(background.width / 2, 0);
-        background.position.set(x, y - 50);
-
-        tempContainer.addChild(regulatorIcon, background, titleText, infoText);
+        
+        tempContainer.addChild(infoBackground);
+        tempContainer.addChild(infoText);
+        
         this._addPopupCloseButton(tempContainer);
         this.popupContainer.addChild(tempContainer);
     }

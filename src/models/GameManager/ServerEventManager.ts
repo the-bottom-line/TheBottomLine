@@ -30,6 +30,7 @@ class ServerEventManager {
         
         this.gameState.players = []; 
         this.gameState.myId = data.id;
+        this.gameState.marketState = data.initial_market;
         const localPlayer = new Player(this.gameState.username!, data.id,this.app);
         localPlayer.reveal = true;
         localPlayer.cash = data.cash;
@@ -37,6 +38,7 @@ class ServerEventManager {
         this.gameState.players.push(localPlayer);
 
         this.gameManager.initPlayers(data.player_info);
+         this.uiManager.hudManager.showMarket(this.gameState.marketState , this.uiManager.marketContainer);
 
         if (!localPlayer) {
             console.error("Could not find the local player in server data!");
@@ -596,7 +598,7 @@ class ServerEventManager {
             );
     }
 
-    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){
+    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){ // here
         console.log(data);
         const options = data.options;
         const perk = data.perk;
@@ -651,7 +653,7 @@ class ServerEventManager {
         // For spectators, refresh the view of the current player.
         // The regulator's own UI is updated by `youSwapPlayer`.
         if (this.gameState.myId !== regulator.playerID) {
-            this.uiManager.popUpManager.displayPlayerSwapNotification(regulator, target);
+            this.uiManager.popUpManager.displayPlayerSwapNotification(target);
             this.gameManager.otherPlayerScreenSetup(regulator);
         }
     }
@@ -664,6 +666,10 @@ class ServerEventManager {
         }
 
         await this.gameManager._updateHandFromServer(data.new_cards);
+        
+        const localPlayer = this.gameState.getLocalPlayer();
+        this.uiManager.popUpManager.displayYouSwappedNotification(localPlayer);
+
         this.gameManager.switchToMainPhase();
     }
 
@@ -688,7 +694,8 @@ class ServerEventManager {
 
         // 4. Update the UI.
         if (this.gameState.myId !== regulatorPlayer.playerID) {
-            this.uiManager.popUpManager.displayRegulatorSwapNotification(regulatorPlayer);
+            
+            this.uiManager.popUpManager.displayRegulatorSwapNotification(this.gameState.getLocalPlayer());
 
             // The player whose cards were swapped is on the 'elseTurn' screen.
             // Refresh the screen to show the regulator's new hand count.

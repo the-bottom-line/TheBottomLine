@@ -42,20 +42,6 @@ class PlayerActionManager {
 
         this.uiManager.createJoinButton(joinGame);
         
-        const marketData = {
-            title: "Stable Market",
-            rfr: 0,
-            mrp: 0,
-            Yellow: "zero",
-            Blue: "up",
-            Green: "zero",
-            Purple: "zero",
-            Red: "down",
-
-        };
-
-        this.gameState.marketState = marketData as MarketCard;
-
         /*this.uiManager.debugPurpleCards(
             this.gameState.marketState,
             (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
