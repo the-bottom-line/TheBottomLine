@@ -32,6 +32,7 @@ class UIManager {
     resultsContainer = new Container();
     marketContainer = new Container();
     purpleCardsContainer = new Container();
+    errorContainers: Container[] = [];
     
     statsText = new Text({
         text: '',
