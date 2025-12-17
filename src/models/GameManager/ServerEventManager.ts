@@ -756,7 +756,7 @@ class ServerEventManager {
     async youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
         //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
         const characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
-        let perk = data.perk
+        const perk = data.perk
         
             this.uiManager.popUpManager.youAreTerminatingSomeone(
                 characters,
@@ -915,7 +915,7 @@ class ServerEventManager {
         console.log("Game ended!", data.scores);
         const player = this.gameState.getLocalPlayer();
         const marketState = this.gameState.marketState!;
-        const score = data.scores;
+        const _score = data.scores;
         console.log(player.assetList);
 
         this.uiManager.displayPurpleCards(player, marketState,

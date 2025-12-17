@@ -1,15 +1,10 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application, TextStyle } from 'pixi.js';
-import { Input } from '@pixi/ui';
+import { Container, Graphics, Text, Sprite, Assets, Application, TextStyle } from 'pixi.js';
 import { FancyButton } from '../FancyButton.js';
-import AssetCards from "../AssetCards.js";
-import LiabilityCards from "../LiabilityCards.js";
 import type Player from '../Player.js';
 import type Character from '../Characters.js';
 import type Liability from '../Liability.js';
 import type Asset from '../Asset.js';
-import type { CardType, MarketCard, PlayerId, PlayerScore, RegulatorSwapPlayer } from '@shared-types';
-import type GameState from '../GameState.js';
-import type { DivestmentTarget } from '../GameManager.js';
+import type { CardType, MarketCard } from '@shared-types';
 
 class HudManager {
     app: Application;
