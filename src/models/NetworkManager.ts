@@ -38,7 +38,7 @@ class NetworkManager {
     setGameManager(gameManager: GameManager) {
         this.gameManager = gameManager;
         this.commandList = {
-            Error: _ => { },
+            Error: r => this.gameManager!.serverEventManager.error(r.data),
             PlayersInLobby: r => this.gameManager!.serverEventManager.newPlayer(r.data),
             StartGame: r => this.gameManager!.serverEventManager.messageStartGame(r.data),
             SelectingCharacters: r => this.gameManager!.serverEventManager.chairmanSelectCharacter(r.data),

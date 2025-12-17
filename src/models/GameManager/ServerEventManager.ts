@@ -1,8 +1,8 @@
-import type { Application, Container } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle, Ticker, type Application } from 'pixi.js';
 import type GameState from '../GameState.js';
 import type UIManager from '../UIManager.js';
 import type NetworkManager from '../NetworkManager.js';
-import type { DirectResponse, EitherAssetLiability, PlayerInfo, UniqueResponse } from '@shared-types';
+import type { DirectResponse, UniqueResponse } from '@shared-types';
 import Character from '../Characters.js';
 import Player from '../Player.js';
 import Asset from '../Asset.js';
@@ -169,6 +169,96 @@ class ServerEventManager {
             this.gameManager.otherPlayerScreenSetup(currentPlayer);
         }
     }
+    
+    error(data: Extract<DirectResponse, { action: "Error" }>['data']) {
+        const padding = 12;
+        const gap = 8;
+        const fadeDelayMs = 2000;
+        const fadeDurationMs = 500;
+    
+        const popup = new Container();
+        popup.eventMode = 'static';
+        popup.cursor = 'pointer';
+    
+        // === TEXT ===
+        const text = new Text({
+            text: data.message,
+            style: new TextStyle({
+                fill: 0xffffff,
+                fontSize: 14,
+                wordWrap: true,
+                wordWrapWidth: 280,
+            }),
+        });
+    
+        text.position.set(padding, padding);
+    
+        // === BACKGROUND ===
+        const bg = new Graphics()
+            .roundRect(
+                0,
+                0,
+                text.width + padding * 2,
+                text.height + padding * 2,
+                8
+            )
+            .fill(0xcc3333);
+    
+        popup.addChild(bg, text);
+    
+        // === POSITIONING ===
+        const repositionErrors = () => {
+            let y = 16;
+            for (const err of this.uiManager.errorContainers) {
+                err.x = this.app.screen.width - err.width - 16;
+                err.y = y;
+                y += err.height + gap;
+            }
+        };
+    
+        this.uiManager.errorContainers.push(popup);
+        repositionErrors();
+    
+        this.app.stage.addChild(popup);
+    
+        // === DISMISS FUNCTION ===
+        const dismiss = () => {
+            if (!popup.parent) return;
+    
+            const idx = this.uiManager.errorContainers.indexOf(popup);
+            if (idx !== -1) this.uiManager.errorContainers.splice(idx, 1);
+    
+            popup.destroy({ children: true });
+            repositionErrors();
+        };
+    
+        // === CLICK TO DISMISS ===
+        popup.on('pointertap', dismiss);
+    
+        // === FADE OUT ===
+        let elapsed = 0;
+        const ticker = new Ticker();
+    
+        ticker.add(() => {
+            elapsed += ticker.deltaMS;
+    
+            if (elapsed > fadeDelayMs) {
+                const fadeElapsed = elapsed - fadeDelayMs;
+                popup.alpha = Math.max(
+                    0,
+                    1 - fadeElapsed / fadeDurationMs
+                );
+    
+                if (popup.alpha === 0) {
+                    ticker.stop();
+                    ticker.destroy();
+                    dismiss();
+                }
+            }
+        });
+    
+        ticker.start();
+    }
 
     newPlayer(data: Extract<UniqueResponse, { action: "PlayersInLobby" }>['data']) {
         this.uiManager.showScreen('lobby');
@@ -189,7 +279,7 @@ class ServerEventManager {
         this.uiManager.showScreen("character");
         this.gameState.resetForNewRound();
 
-        const localPlayer = this.gameState.getLocalPlayer(); 
+        const localPlayer = this.gameState.getPlayerById(data.chairman_id)!;
         this.uiManager.statsText.text = `${localPlayer.name} is choosing their character`;
         localPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
