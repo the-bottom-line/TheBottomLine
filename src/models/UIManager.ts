@@ -8,6 +8,7 @@ import type Character from './Characters.js';
 import type {  PlayerScore } from '@shared-types';
 import PopUpManager from './UIManager/PopUpManager.js';
 import HudManager from './UIManager/HudManager.js';
+import GameState from './GameState.js';
 
 class UIManager {
     app: Application;
@@ -75,7 +76,7 @@ class UIManager {
 
             backgroundDisplay = bgSprite;
         } catch (err) {
-            console.error("Failed to find BG")
+            console.error("Failed to find lobby Background image")
             backgroundDisplay = new Graphics().rect(0, 0, this.app.screen.width, this.app.screen.height).fill(this.getGradient());
         }
 
@@ -129,7 +130,7 @@ class UIManager {
         this.resultsContainer.visible = screenName === 'results';
         this.marketContainer.visible = screenName === 'main' || screenName === 'elseTurn';
     }
-
+    
     createNameBox() {
         const inputBox = new Input({
             bg: new Graphics().roundRect(0, 0, 300, 80, 10).fill(0xD9D9D9),
@@ -145,6 +146,7 @@ class UIManager {
         this.loginContainer.addChild(inputBox);
         return inputBox;
     }
+
     createChannelBox(){
         const inputBox = new Input({
             bg: new Graphics().roundRect(0, 0, 300, 80, 10).fill(0xD9D9D9),
@@ -160,6 +162,7 @@ class UIManager {
         this.loginContainer.addChild(inputBox);
         return inputBox;
     }
+    
     createJoinButton(onPressCallback: () => void) {
         const joinButton = new FancyButton({
             text: "Join",
@@ -172,6 +175,7 @@ class UIManager {
 
         this.loginContainer.addChild(joinButton.view);
     }
+    
     displayGameName(container: Container){
         container.removeChildren();
 
@@ -201,7 +205,7 @@ class UIManager {
         }//laad nameplate foto
 
         players.forEach((player, index) => {
-            const y = 700 + index ;
+            const y = this.app.screen.height /1.43 + index ;
             const x = this.app.screen.width / 4 + index * 155;
 
             if (nameplateTexture) {
@@ -224,7 +228,7 @@ class UIManager {
             this.lobbyContainer.addChild(playerText);
 
             const lobbycode = new Text({
-                text: "HI",
+                text: "123",
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             })
             lobbycode.anchor.set(0.5);
@@ -242,9 +246,12 @@ class UIManager {
             height: 80,
             onPress: onPressCallback,
         });
-        startGameButton.view.position.set(this.app.screen.width / 2 + (startGameButton.view.width * 2), this.app.screen.height - 150);
+        startGameButton.view.position.set(this.app.screen.width - (startGameButton.view.width) - 50, this.app.screen.height - (this.app.screen.height / 7));
         this.lobbyContainer.addChild(startGameButton.view);
     }
+
+
+    //-------------------------------------------------------------------------------------------------------------------
 
     async createAssetDeck(onPressCallback: () => void) {
         const assetDeck = new AssetCards();
@@ -262,9 +269,11 @@ class UIManager {
         this.decksContainer.addChild(liabilityDeckSprite);
     }
 
+    //-----------------------------------------------------------------------------------------------------------------------
+
     async displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter?: Character) {
         this.characterCardsContainer.removeChildren();
-        const spacing = 200;
+        const spacing = 100;
         const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
         const grayscaleFilter = new ColorMatrixFilter();
         grayscaleFilter.grayscale(0.2, true);
@@ -281,8 +290,6 @@ class UIManager {
             this.characterCardsContainer.addChild(closedCard);
         }
         
-            
-            
 
         faceUpCharacters.forEach(async (character, index) => {
             const texture = await Assets.load(character.texturePath);
@@ -290,10 +297,17 @@ class UIManager {
             faceUpCard.interactive = true;
             faceUpCard.scale.set(0.3);
             faceUpCard.anchor.set(0.5);
+            faceUpCard.rotation = (Math.PI / -2) * 0.3+ (index * (Math.PI / (faceUpCharacters.length - 1)))* 0.3;
+            faceUpCard.zIndex = index;
+
             
             faceUpCard.x = startX + index * spacing;
-            faceUpCard.y = this.app.screen.height / 2;
-            faceUpCard.on('mousedown', () => onSelectCallback(character)); // here
+            const midIndex = (faceUpCharacters.length - 1) / 2;
+            const distanceFromMid = Math.abs(index - midIndex);
+            const maxDistance = midIndex;
+            const yOffset = -Math.pow(distanceFromMid / maxDistance, 2) * -50; // Adjust for height difference at the sides
+            faceUpCard.y = this.app.screen.height / 2 + yOffset;
+            faceUpCard.on('mousedown', () => onSelectCallback(character)); 
             this.characterCardsContainer.addChild(faceUpCard);
             
         });
@@ -313,6 +327,8 @@ class UIManager {
             this.characterCardsContainer.addChild(openCard);
         });
     }
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------
 
     displayTempCards(player: Player) {
         this.tempCardsContainer.removeChildren();
