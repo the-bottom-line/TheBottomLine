@@ -41,17 +41,19 @@ class HudManager {
             characterIcon.width = 50;
             characterIcon.height = 55.7;
             characterIcon.anchor.set(0.5);
+            characterIcon.eventMode = 'static'; // Make interactive
+            characterIcon.cursor = 'pointer'; // make it look clickable by changing cursor
             container.addChild(characterIcon);
-
 
             if (player === currentPlayer) {
                 const outline = new Graphics()
                     .circle(0, 0, 27)
                     .stroke({ width: 5, color: 0xCBC28E });
-                outline.position.set(x,32.5);
+                outline.position.set(x, 32.5);
                 container.addChild(outline);
                 container.addChild(characterIcon); // ensure icon is on top of outline
             }
+
             const playerName = new Text({
                 text: player.name,
                 style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
@@ -60,45 +62,58 @@ class HudManager {
             playerName.position.set(x, 70);
             container.addChild(playerName);
 
+            
+            const statsContainer = new Container();
+            statsContainer.visible = false; // Hidden by default only active when you hover over the character icon
+            container.addChild(statsContainer);
 
-            const colors = ["blue","green","purple","red","yellow"];
 
-            colors.forEach((color, index) =>{
-                 const type = new Graphics()
-                    .roundRect(x - 30, 80 + index * 30, 20, 20)
+            const colors = ["blue", "green", "purple", "red", "yellow"];
+
+            colors.forEach((color, index) => {
+                const type = new Graphics()
+                    .roundRect(x - 30 + index * 30, 80, 20, 20)
                     .fill(color);
-                container.addChild(type);
+                statsContainer.addChild(type);
 
                 const assetsOfColor = player.assetList.filter(asset => asset.color.toLowerCase() === color);
                 const totalGold = assetsOfColor.reduce((sum, asset) => sum + asset.gold, 0);
                 const totalSilver = assetsOfColor.reduce((sum, asset) => sum + asset.silver, 0);
 
                 const gold = new Graphics()
-                    .roundRect(x - 10, 80 + index * 30+2.5, 15, 15)
+                    .roundRect(x - 27 + index * 30, 100 + 2.5, 15, 15)
                     .fill("gold");
-                container.addChild(gold);
+                statsContainer.addChild(gold);
 
                 const playerGold = new Text({
-                        text: totalGold.toString(),
-                        style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
-                    });
+                    text: totalGold.toString(),
+                    style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
+                });
                 playerGold.anchor.set(0.5);
-                playerGold.position.set(x-10+7.5, 80 + index * 30+10);
-                container.addChild(playerGold);
+                playerGold.position.set(x - 27  + index * 30+ 7.5, 100 + 10);
+                statsContainer.addChild(playerGold);
 
                 const silver = new Graphics()
-                    .roundRect(x + 5, 80 + index * 30+2.5, 15, 15)
-                    .fill("silver")
-                container.addChild(silver);
+                    .roundRect(x -27 + index * 30, 120 + 2.5, 15, 15)
+                    .fill("silver");
+                statsContainer.addChild(silver);
 
-                const playersilver = new Text({
-                        text: totalSilver.toString(),
-                        style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
-                    });
-                playersilver.anchor.set(0.5);
-                playersilver.position.set(x + 5 + 7.5, 80 + index * 30+10);
-                container.addChild(playersilver);
+                const playerSilver = new Text({
+                    text: totalSilver.toString(),
+                    style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
+                });
+                playerSilver.anchor.set(0.5);
+                playerSilver.position.set(x - 27 + index * 30 + 7.5, 120 + 10);
+                statsContainer.addChild(playerSilver);
+            });
 
+            
+            characterIcon.on('pointerover', () => {
+                statsContainer.visible = true;
+            });// when you hover over the character icon the container becomes visible
+
+            characterIcon.on('pointerout', () => {
+                statsContainer.visible = false;
             });
             
             /*player.assetList.forEach((card, cardIndex) => {
@@ -345,6 +360,7 @@ class HudManager {
             }
         });
        
+        /*
         let index = 0;
         for (const player of sortedPlayerList) {
             let texturePath;
@@ -370,6 +386,7 @@ class HudManager {
 
             index++;
         }
+        */
     }
 }
 export default HudManager;

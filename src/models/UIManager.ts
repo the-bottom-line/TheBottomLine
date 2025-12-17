@@ -44,7 +44,7 @@ class UIManager {
         this.app = app;
 
         this.statsText.anchor.set(0.5);
-        this.statsText.position.set(this.app.screen.width / 2, 30);
+        this.statsText.position.set(this.app.screen.width / 2, 200);
 
         this._setupContainers();
 
@@ -202,7 +202,7 @@ class UIManager {
             nameplateTexture = await Assets.load('./miscellaneous/nameplate.svg');
         } catch (err) {
             nameplateTexture = null;
-        }//laad nameplate foto
+        }
 
         players.forEach((player, index) => {
             const y = this.app.screen.height /1.43 + index ;
@@ -302,10 +302,9 @@ class UIManager {
 
             
             faceUpCard.x = startX + index * spacing;
-            const midIndex = (faceUpCharacters.length - 1) / 2;
-            const distanceFromMid = Math.abs(index - midIndex);
-            const maxDistance = midIndex;
-            const yOffset = -Math.pow(distanceFromMid / maxDistance, 2) * -50; // Adjust for height difference at the sides
+            const midIndex = (faceUpCharacters.length - 1) / 2;//half the amount of cards
+            const distanceFromMid = Math.abs(index - midIndex);//distance from the middle card
+            const yOffset = -Math.pow(distanceFromMid / midIndex, 2) * -50; // Adjust for height difference at the sides
             faceUpCard.y = this.app.screen.height / 2 + yOffset;
             faceUpCard.on('mousedown', () => onSelectCallback(character)); 
             this.characterCardsContainer.addChild(faceUpCard);
