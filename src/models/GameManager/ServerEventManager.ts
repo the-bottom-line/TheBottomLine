@@ -119,7 +119,7 @@ class ServerEventManager {
                     this.uiManager.tempCardsContainer.removeChild(card.discardButton);
                 }
             });
-            // After moving cards, if there are no more to draw, switch to the main phase.
+          
             if (currentPlayer.drawableCards === 0) {
                 this.gameManager.switchToMainPhase();
             }
@@ -506,6 +506,7 @@ class ServerEventManager {
     youPaidBanker(data: Extract<DirectResponse, { action: "YouPaidBanker" }>['data']) {
         const localPlayer = this.gameState.getLocalPlayer();
         const banker = this.gameState.getPlayerById(data.banker_id);
+        const amountPaid = banker ? data.new_banker_cash - banker.cash : 0; // here same fix
 
         if (localPlayer) {
             localPlayer.cash = data.your_new_cash;
@@ -553,13 +554,15 @@ class ServerEventManager {
         this.gameManager.updateUI();
 
         if (banker) {
-             this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker);
+             this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker, amountPaid, (data as any).selected_cards, banker.playerID === this.gameState.myId, true);
         }
     }
 
     playerPayedBanker(data: Extract<UniqueResponse, { action: "PlayerPayedBanker" }>['data']) {
         const targetPlayer = this.gameState.getPlayerById(data.player_id);
         const banker = this.gameState.getPlayerById(data.banker_id);
+        const amountPaid = 0; // fix this <- here 
+        // need an amout paid value
 
         if (targetPlayer) {
             targetPlayer.cash = data.new_target_cash;
@@ -589,6 +592,7 @@ class ServerEventManager {
                         const handIndex = targetPlayer.othersHand.indexOf('Liability');
                         if (handIndex !== -1) {
                             targetPlayer.othersHand.splice(handIndex, 1);
+                            // here need the actual liablity to display 
                         }
                     });
                     this.gameManager.otherCards();
@@ -602,7 +606,7 @@ class ServerEventManager {
         this.gameManager.updateUI();
 
         if (targetPlayer && banker) {
-            this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker);
+            this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker, amountPaid, (data as any).selected_cards, banker.playerID === this.gameState.myId, targetPlayer.playerID === this.gameState.myId);
         }
     }
 
@@ -642,7 +646,7 @@ class ServerEventManager {
             divestmentTargets,
             (playerID,cardID) => {
                     this.networkManager.sendCommand("DivestAsset", { "target_player_id": playerID,"card_idx":cardID });
-                    console.log("Here")
+                  
                 }
         );
     }
@@ -668,7 +672,7 @@ class ServerEventManager {
             );
     }
 
-    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){ // here
+    youRegulatorOptions(data: Extract<DirectResponse, { action: "YouRegulatorOptions" }>['data']){ 
         console.log(data);
         const options = data.options;
         const perk = data.perk;
@@ -743,7 +747,7 @@ class ServerEventManager {
         this.gameManager.switchToMainPhase();
     }
 
-    async regulatorSwapedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwapedYourCards" }>['data']){ // here
+    async regulatorSwapedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwapedYourCards" }>['data']){ 
         console.log("regulatorSwapedYourCards:", data);
         
         const localPlayer = this.gameState.getLocalPlayer(); // This is the target player
@@ -751,8 +755,7 @@ class ServerEventManager {
 
         if (!localPlayer || !regulatorPlayer) return;
 
-        // On the target's client, `swapedWithPlayer` is skipped, so we handle all state changes here.
-        // 1. Capture our current hand's state. This is what the regulator's hand will become.
+       
         const localPlayerOldHandRepresentation = localPlayer.hand.map(card => card instanceof Asset ? 'Asset' : 'Liability');
         regulatorPlayer.othersHand = localPlayerOldHandRepresentation;
 

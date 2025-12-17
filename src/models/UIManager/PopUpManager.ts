@@ -95,7 +95,7 @@ class PopUpManager {
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-300;
 
-        const texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/ShareholderIcon.png"); 
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -111,7 +111,7 @@ class PopUpManager {
 
         
         const perkText = new Text({
-            text: 'Shareholder’s perk', // here
+            text: 'Shareholder’s perk', 
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         perkText.anchor.set(0.5);
@@ -124,7 +124,7 @@ class PopUpManager {
         .stroke({ width: 2, color: 0x000000 });
 
         const descriptionText = new Text({
-            text: 'Please select a character you want to fire this round', // here
+            text: 'Please select a character you want to fire this round', 
             style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
         });
         descriptionText.anchor.set(0.5);
@@ -465,35 +465,77 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async displayBankerPaymentNotification(payer: Player, banker: Player) {
+    async displayBankerPaymentNotification(payer: Player, banker: Player, amountPaid: number, paymentDetails: { assets?: Record<string, number>, liabilities?: Record<string, number> }, isLocalBanker: boolean, isLocalPayer: boolean) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
-        let y = this.app.screen.height / 2 - 150;
+        let y = this.app.screen.height / 2 - 250;
 
         let texture = await Assets.load("./miscellaneous/BankerIcon.png");
         const bankerIcon = new Sprite(texture);
         bankerIcon.position.set(x, y);
-        bankerIcon.width = 200;
-        bankerIcon.height = 240;
+        bankerIcon.width = 160;
+        bankerIcon.height = 180;
         bankerIcon.anchor.set(0.5);
-        y += 140;
+        tempContainer.addChild(bankerIcon);
+        y += 90;
 
-        const text = new Text({
-            text: `${payer.name} has paid their debt to the Banker.`,
-            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont', align: 'center', wordWrap: true, wordWrapWidth: 500 }
+        const titleBackground = new Graphics()
+            .roundRect(x - 120, y - 25, 240, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(titleBackground);
+
+        const titleText = new Text({
+            text: "Banker's perk",
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
-        text.anchor.set(0.5);
-        text.position.set(x, y);
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        tempContainer.addChild(titleText);
+        y += 100;
 
-        const bgPadding = 20;
-        const textBg = new Graphics()
-            .roundRect(x - text.width/2 - bgPadding, y - text.height/2 - bgPadding, text.width + bgPadding*2, text.height + bgPadding*2, 10)
+        let descriptionStr = "";
+        if (isLocalBanker) {
+            descriptionStr = `${payer.name} has paid you ${amountPaid} Gold.`;
+        } else if (isLocalPayer) {
+            descriptionStr = `You have paid ${banker.name} ${amountPaid} Gold.`;
+        } else {
+            descriptionStr = `${payer.name} has paid ${banker.name} ${amountPaid} Gold.`;
+        }
+
+        const actions: string[] = [];
+        if (paymentDetails?.assets && Object.keys(paymentDetails.assets).length > 0) {
+            const count = Object.keys(paymentDetails.assets).length;
+            actions.push(`Sold ${count} asset${count > 1 ? 's' : ''}`);
+        }
+        if (paymentDetails?.liabilities && Object.keys(paymentDetails.liabilities).length > 0) {
+            const count = Object.keys(paymentDetails.liabilities).length;
+            actions.push(`Issued ${count} liability${count > 1 ? 'ies' : ''}`); // English pluralization
+        }
+
+        if (actions.length > 0) {
+            if (isLocalPayer) {
+                descriptionStr += `\n\nTo do this, you:\n` + actions.join('\n');
+            }else{
+                descriptionStr += `\n\nTo do this, they:\n` + actions.join('\n');
+            }
+            
+        }
+
+        const descriptionText = new Text({
+            text: descriptionStr,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont', align: 'center', wordWrap: true, wordWrapWidth: 380 }
+        });
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+
+        const descriptionBackground = new Graphics()
+            .roundRect(x - 200, y - descriptionText.height/2 - 20, 400, descriptionText.height + 40, 5)
             .fill(0x323232)
             .stroke({ width: 2, color: 0x000000 });
         
-        tempContainer.addChild(bankerIcon);
-        tempContainer.addChild(textBg);
-        tempContainer.addChild(text);
+        tempContainer.addChild(descriptionBackground);
+        tempContainer.addChild(descriptionText);
 
         this._addPopupCloseButton(tempContainer);
         this.popupContainer.addChild(tempContainer);
@@ -650,7 +692,7 @@ class PopUpManager {
         backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);
         tempContainer.addChild(backButton.view);
         this.popupContainer.addChild(tempContainer);
-    }
+    }    
 
     async displayBankerIssueLiabilities(targetPlayer: Player, cashDue: number, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnselectCallback: (index: number) => void, onSelectLiablityCallback: (index: number) => void, onUnselectLiablityCallback: (index: number) => void) {
         const tempContainer = this._createPopupBase();
@@ -813,7 +855,7 @@ class PopUpManager {
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-300;
 
-        const texture = await Assets.load("./miscellaneous/BankerIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/BankerIcon.png");
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -837,7 +879,7 @@ class PopUpManager {
         y+= 70;
 
         const descriptionText = new Text({
-            text: perk, // here
+            text: perk, 
             style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
         });
         descriptionText.anchor.set(0.5);
@@ -893,7 +935,7 @@ class PopUpManager {
             
         });    
         this._addPopupCloseButton(tempContainer);
-        this.popupContainer.addChild(tempContainer); // here
+        this.popupContainer.addChild(tempContainer); 
     }
     //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
 
@@ -961,7 +1003,7 @@ class PopUpManager {
 
 
 
-        const texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/StakeholderIcon.png"); 
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -977,7 +1019,7 @@ class PopUpManager {
 
         
         const perkText = new Text({
-            text: 'Stakeholder’s perk', // here
+            text: 'Stakeholder’s perk', 
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         perkText.anchor.set(0.5);
@@ -989,7 +1031,7 @@ class PopUpManager {
         .stroke({ width: 2, color: 0x000000 });
 
         const descriptionText = new Text({
-            text: 'Please select a player you want to force to divest', // here
+            text: 'Please select a player you want to force to divest', 
             style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
         });
         descriptionText.anchor.set(0.5);
@@ -1059,7 +1101,7 @@ class PopUpManager {
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2-250;
 
-        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); // here
+        const texture = await Assets.load("./miscellaneous/RegulatorIcon.png"); 
         const characterIcon = new Sprite(texture);
         characterIcon.position.set(x, y);
         characterIcon.width = 160;
@@ -1075,7 +1117,7 @@ class PopUpManager {
 
         
         const perkText = new Text({
-            text: 'Regulators’s perk', // here
+            text: 'Regulators’s perk', 
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         perkText.anchor.set(0.5);
@@ -1084,7 +1126,7 @@ class PopUpManager {
       
 
         const descriptionText = new Text({
-            text: perk, // here
+            text: perk, 
             style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
         });
         descriptionText.anchor.set(0.5);
@@ -1550,7 +1592,7 @@ class PopUpManager {
                 }
             });
             statusIndicator.anchor.set(0.5);
-            statusIndicator.position.set(circleX, circleY); // here
+            statusIndicator.position.set(circleX, circleY); 
 
             if (colorInfo.value === 'down') {
                 statusIndicator.text = '-';

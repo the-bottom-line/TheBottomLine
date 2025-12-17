@@ -236,7 +236,7 @@ class UIManager {
             
             faceUpCard.x = startX + index * spacing;
             faceUpCard.y = this.app.screen.height / 2;
-            faceUpCard.on('mousedown', () => onSelectCallback(character)); // here
+            faceUpCard.on('mousedown', () => onSelectCallback(character)); 
             this.characterCardsContainer.addChild(faceUpCard);
             
         });
