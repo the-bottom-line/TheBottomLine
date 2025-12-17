@@ -171,7 +171,7 @@ class PopUpManager {
             tempContainer.addChild(faceUpCard);
             
         });
-    
+        this._addPopupCloseButton(tempContainer);
 
         this.popupContainer.addChild(tempContainer);
         return tempContainer;
@@ -1268,7 +1268,7 @@ class PopUpManager {
 
         const deckButton = new FancyButton({
             text: "SWAP WITH DECK",
-            width: 250,
+            width: 300,
             height: 60,
             onPress: () => {
                 // Close the current popup and open the deck swap one

@@ -6,6 +6,7 @@ export interface FancyButtonOptions {
     text: string;
     width?: number;
     height?: number;
+    fontSize?: number; // Added fontSize to the interface
     onPress?: () => void;
 }
 
@@ -29,8 +30,8 @@ export class FancyButton extends Button {
             })
         ];
         const buttonText = new Text({
-            text: options.text,
-            style: { fill: '#f2e8d5', fontSize: 48, fontFamily: 'MyFont' }
+            text:  options.text,
+            style: { fill: '#f2e8d5', fontSize:  options.fontSize || 32, fontFamily: 'MyFont' }
         });
         buttonText.anchor.set(0.5);
         buttonText.position.set(width / 2, height / 2);

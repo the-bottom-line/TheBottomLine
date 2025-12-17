@@ -89,11 +89,17 @@ class GameManager {
 
         this.otherCards();
 
-        this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, player);
+        this.updateAllPlayerStats();
         this.uiManager.hudManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, () => {
             //this.networkManager.sendCommand("UseAbility");
         });
         this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
+    }
+    updateAllPlayerStats(){
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        const localPlayer = this.gameState.getLocalPlayer();
+        const container = currentPlayer.playerID === this.gameState.myId ? this.uiManager.mainContainer : this.uiManager.elseTurnContainer;
+        this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, container, currentPlayer,localPlayer);
     }
     switchToMainPhase() {
         this.uiManager.showScreen('main');
@@ -103,7 +109,8 @@ class GameManager {
         this.uiManager.playedCardsContainer.removeChildren();
 
         this.uiManager.hudManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"), this.uiManager.mainContainer);
-        this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer());
+        this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer(),this.gameState.getLocalPlayer());
+        
 
         this.uiManager.hudManager.displayPlayerCharacter(
             this.gameState.getCurrentPlayer(),
@@ -122,7 +129,7 @@ class GameManager {
 
         this.playerActionManager.updateHandPlayability();
         
-        this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
+        //this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         this.uiManager.handContainer.sortChildren();
         this.uiManager.hudManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList, this.uiManager.playedCardsContainer);
 
@@ -150,7 +157,9 @@ class GameManager {
                 if (card.sprite) card.sprite.visible = true;
             });
         }
+       
     }
+
     
     async otherCards() {
         const currentPlayer = this.gameState.getCurrentPlayer();
