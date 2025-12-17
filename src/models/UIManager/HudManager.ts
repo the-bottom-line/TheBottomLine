@@ -62,17 +62,22 @@ class HudManager {
             playerName.position.set(x, 70);
             container.addChild(playerName);
 
-            
             const statsContainer = new Container();
             statsContainer.visible = false; // Hidden by default only active when you hover over the character icon
             container.addChild(statsContainer);
 
-
             const colors = ["blue", "green", "purple", "red", "yellow"];
+            const statsBackground = new Sprite(await Assets.load("./miscellaneous/statsbg.svg"));
+
+            
+            statsBackground.position.set(20, 120);
+            statsContainer.addChild(statsBackground);
 
             colors.forEach((color, index) => {
+
+
                 const type = new Graphics()
-                    .roundRect(x - 30 + index * 30, 80, 20, 20)
+                    .roundRect(150 - 30 + index * 50, 230, 30, 30)
                     .fill(color);
                 statsContainer.addChild(type);
 
@@ -81,30 +86,38 @@ class HudManager {
                 const totalSilver = assetsOfColor.reduce((sum, asset) => sum + asset.silver, 0);
 
                 const gold = new Graphics()
-                    .roundRect(x - 27 + index * 30, 100 + 2.5, 15, 15)
+                    .roundRect(150 - 30 + index * 50, 270 + 2.5, 25, 25)
                     .fill("gold");
                 statsContainer.addChild(gold);
 
                 const playerGold = new Text({
                     text: totalGold.toString(),
-                    style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
+                    style: { fill: '#000000ff', fontSize: 24, fontFamily: 'MyFont' }
                 });
                 playerGold.anchor.set(0.5);
-                playerGold.position.set(x - 27  + index * 30+ 7.5, 100 + 10);
+                playerGold.position.set(150 - 30 + index * 50 + 12.5, 270 + 15);
                 statsContainer.addChild(playerGold);
 
                 const silver = new Graphics()
-                    .roundRect(x -27 + index * 30, 120 + 2.5, 15, 15)
+                    .roundRect(150 - 30 + index * 50, 310 + 2.5, 25, 25)
                     .fill("silver");
                 statsContainer.addChild(silver);
 
                 const playerSilver = new Text({
                     text: totalSilver.toString(),
-                    style: { fill: '#000000ff', fontSize: 12, fontFamily: 'MyFont' }
+                    style: { fill: '#000000ff', fontSize: 24, fontFamily: 'MyFont' }
                 });
                 playerSilver.anchor.set(0.5);
-                playerSilver.position.set(x - 27 + index * 30 + 7.5, 120 + 10);
+                playerSilver.position.set(150 - 30 + index * 50 + 12.5, 310 + 15);
                 statsContainer.addChild(playerSilver);
+
+                const playerCash = new Text({
+                    text: player.cash.toString(),
+                    style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
+                });
+                playerCash.anchor.set(0.5);
+                playerCash.position.set(150 - 25, 405);
+                statsContainer.addChild(playerCash);
             });
 
             
