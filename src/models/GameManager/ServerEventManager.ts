@@ -499,53 +499,46 @@ class ServerEventManager {
         }
     }
 
-    youSelectCardBankerTarget(data: any) {
+    youSelectCardBankerTarget(data: Extract<DirectResponse, {action: "YouSelectCardBankerTarget"}>['data']) {
         this.uiManager.popUpManager.updateBankerSellAssets(data);
     }
 
     youPaidBanker(data: Extract<DirectResponse, { action: "YouPaidBanker" }>['data']) {
         const localPlayer = this.gameState.getLocalPlayer();
         const banker = this.gameState.getPlayerById(data.banker_id);
-        const amountPaid = banker ? data.new_banker_cash - banker.cash : 0; // here same fix
+        const amountPaid = data.paid_amount; // here same fix
 
         if (localPlayer) {
             localPlayer.cash = data.your_new_cash;
-
-            const paymentData = data as any;
-            if (paymentData.selected_cards) {
-                if (paymentData.selected_cards.assets) {
-                    const assetIndices = Object.keys(paymentData.selected_cards.assets)
-                        .map(Number)
-                        .sort((a, b) => b - a);
-                    
-                    assetIndices.forEach(index => {
-                        if (index >= 0 && index < localPlayer.assetList.length) {
-                            localPlayer.assetList.splice(index, 1);
-                        }
-                    });
-                    localPlayer.positionAssetsToPile();
+            
+            data.sold_assets.forEach(item => {
+                if (item.asset_idx >= 0 && item.asset_idx < localPlayer.assetList.length) {
+                    localPlayer.assetList.splice(item.asset_idx, 1);
                 }
+            });
+            localPlayer.positionAssetsToPile();
 
-                if (paymentData.selected_cards.liabilities) {
-                    const liabilityIndices = Object.keys(paymentData.selected_cards.liabilities)
-                        .map(Number)
-                        .sort((a, b) => b - a);
-                    
-                    liabilityIndices.forEach(index => {
-                        if (index >= 0 && index < localPlayer.hand.length) {
-                            const card = localPlayer.hand[index];
-                            if (card instanceof Liability) {
-                                localPlayer.liabilityList.push(card);
-                                localPlayer.hand.splice(index, 1);
-                                this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
-                            }
-                        }
-                    });
-                    localPlayer.positionCardsInHand();
-                    localPlayer.positionLiabilitiesToPile();
+            data.issued_liabilities.forEach(item => {
+                if (item.card_idx >= 0 && item.card_idx < localPlayer.hand.length) {
+                    // Create a new Liability object from the LiabilityCard data
+                    const newLiability = new Liability(
+                        item.liability.rfr_type,
+                        item.liability.value,
+                        item.liability.image_front_url
+                    );
+                    // Initialize its sprite
+                    newLiability.initializeSprite();
+
+                    // Add to player's liability list
+                    localPlayer.liabilityList.push(newLiability);
+                    // Remove from player's hand (assuming it was in hand to be issued)
+                    localPlayer.hand.splice(item.card_idx, 1);
+                    // Add to played cards container
+                    this.uiManager.hudManager.addCardToPlayedContainer(newLiability, this.uiManager.playedCardsContainer);
                 }
+            });
             }
-        }
+        
         if (banker) {
             banker.cash = data.new_banker_cash;
         }
@@ -554,50 +547,49 @@ class ServerEventManager {
         this.gameManager.updateUI();
 
         if (banker) {
-             this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker, amountPaid, (data as any).selected_cards, banker.playerID === this.gameState.myId, true);
+            this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker, amountPaid, banker.playerID === this.gameState.myId, true, data.sold_assets, data.issued_liabilities);
         }
     }
 
-    playerPayedBanker(data: Extract<UniqueResponse, { action: "PlayerPayedBanker" }>['data']) {
+    async playerPaidBanker(data: Extract<UniqueResponse, { action: "PlayerPaidBanker" }>['data']) {
         const targetPlayer = this.gameState.getPlayerById(data.player_id);
         const banker = this.gameState.getPlayerById(data.banker_id);
-        const amountPaid = 0; // fix this <- here 
-        // need an amout paid value
+        const amountPaid = data.paid_amount;
+        
 
         if (targetPlayer) {
             targetPlayer.cash = data.new_target_cash;
 
-            const paymentData = data as any;
-            if (paymentData.selected_cards) {
-                if (paymentData.selected_cards.assets) {
-                    const assetIndices = Object.keys(paymentData.selected_cards.assets)
-                        .map(Number)
-                        .sort((a, b) => b - a);
+            const soldAssets = data.sold_assets;
+            const issuedLiabilities = data.issued_liabilities;
                     
-                    assetIndices.forEach(index => {
-                        if (index >= 0 && index < targetPlayer.assetList.length) {
-                            targetPlayer.assetList.splice(index, 1);
-                        }
-                    });
-                    targetPlayer.positionAssetsToPile();
+            soldAssets.forEach((asset) => {
+                if (asset.asset_idx >= 0 && asset.asset_idx < targetPlayer.assetList.length) {
+                    targetPlayer.assetList.splice(asset.asset_idx, 1);
                 }
+            });
+            targetPlayer.positionAssetsToPile();
+                
+            for (const item of issuedLiabilities) {
+                const cardData = item.liability;
+                const newCard = new Liability(
+                    cardData.rfr_type,
+                    cardData.value,
+                    cardData.image_front_url
+                );
+                await newCard.initializeSprite();
+                targetPlayer.liabilityList.push(newCard);
 
-                if (paymentData.selected_cards.liabilities) {
-                    const liabilityIndices = Object.keys(paymentData.selected_cards.liabilities)
-                        .map(Number)
-                        .sort((a, b) => b - a);
-                    
-                    // For remote players, we remove the liability from their abstract hand count
-                    liabilityIndices.forEach(_ => {
-                        const handIndex = targetPlayer.othersHand.indexOf('Liability');
-                        if (handIndex !== -1) {
-                            targetPlayer.othersHand.splice(handIndex, 1);
-                            // here need the actual liablity to display 
-                        }
-                    });
-                    this.gameManager.otherCards();
+                const liabilityIndex = targetPlayer.othersHand.indexOf('Liability');
+                if (liabilityIndex > -1) {
+                    targetPlayer.othersHand.splice(liabilityIndex, 1);
                 }
             }
+            targetPlayer.positionLiabilitiesToPile();
+            // For remote players, we remove the liability from their abstract hand count
+            this.gameManager.otherCards();
+                
+            
         }
         if (banker) {
             banker.cash = data.new_banker_cash;
@@ -606,7 +598,17 @@ class ServerEventManager {
         this.gameManager.updateUI();
 
         if (targetPlayer && banker) {
-            this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker, amountPaid, (data as any).selected_cards, banker.playerID === this.gameState.myId, targetPlayer.playerID === this.gameState.myId);
+            this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker, amountPaid, banker.playerID === this.gameState.myId, targetPlayer.playerID === this.gameState.myId,data.sold_assets,data.issued_liabilities,);
+        }
+    }
+
+    youMinusedIntoPlus(data: Extract<DirectResponse, { action: "YouMinusedIntoPlus" }>['data']) {
+        this.gameState.marketState = data.new_market;
+        this.uiManager.popUpManager.updateRnDMarket(data.new_market);
+        
+        const localPlayer = this.gameState.getLocalPlayer();
+        if (localPlayer) {
+            this.uiManager.popUpManager.updateEndGameScore(localPlayer.name, data.new_score);
         }
     }
 
@@ -656,7 +658,6 @@ class ServerEventManager {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;
         }
-
         this.gameManager.switchToMainPhase();
     }
 
@@ -704,7 +705,7 @@ class ServerEventManager {
         
     }
 
-    async swapedWithPlayer(data: Extract<UniqueResponse, { action: "SwapedWithPlayer" }>['data']){
+    async swappedWithPlayer(data: Extract<UniqueResponse, { action: "SwappedWithPlayer" }>['data']){
         console.log("swapedWithPlayer:", data);
         if (this.gameManager.activePopup) {
             this.gameManager.activePopup.destroy({ children: true });
@@ -747,8 +748,8 @@ class ServerEventManager {
         this.gameManager.switchToMainPhase();
     }
 
-    async regulatorSwapedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwapedYourCards" }>['data']){ 
-        console.log("regulatorSwapedYourCards:", data);
+    async regulatorSwappedYourCards(data: Extract<UniqueResponse, { action: "RegulatorSwappedYourCards" }>['data']){ 
+        console.log("RegulatorSwappedYourCards:", data);
         
         const localPlayer = this.gameState.getLocalPlayer(); // This is the target player
         const regulatorPlayer = this.gameState.getCurrentPlayer();
@@ -795,7 +796,7 @@ class ServerEventManager {
         localPlayer.positionCardsInHand();
     }
 
-    swapedWithDeck(data: Extract<UniqueResponse, { action: "SwapedWithDeck" }>['data']){
+    swappedWithDeck(data: Extract<UniqueResponse, { action: "SwappedWithDeck" }>['data']){
         const currentPlayer = this.gameState.getCurrentPlayer();
         if (currentPlayer && currentPlayer.playerID !== this.gameState.myId) {
             console.log("Regulator swapped with deck:", data);
@@ -822,6 +823,7 @@ class ServerEventManager {
         console.log("Game ended!", data.scores);
         const player = this.gameState.getLocalPlayer();
         const marketState = this.gameState.marketState!;
+        const score = data.scores;
         console.log(player.assetList);
 
         this.uiManager.displayPurpleCards(player, marketState,
@@ -831,6 +833,7 @@ class ServerEventManager {
             (index) => {this.networkManager.sendCommand("SilverIntoGold",{asset_idx: index})}
         );
         
+        this.uiManager.popUpManager.displayEndGameScores(data.scores);
         this.uiManager.showScreen('purpleCards');
         
         //this.uiManager.gameEnded(data.scores);

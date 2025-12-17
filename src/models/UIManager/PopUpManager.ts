@@ -2,7 +2,7 @@ import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application,Te
 import { FancyButton } from '../FancyButton.js';
 import type Player from '../Player.js';
 import type Character from '../Characters.js';
-import type { Color, PlayerId, RegulatorSwapPlayer } from '@shared-types';
+import type { Color, IssuedLiabilityToPayBanker, PlayerId, RegulatorSwapPlayer, SoldAssetToPayBanker } from '@shared-types';
 import type GameState from '../GameState.js'; 
 import type { MarketCard } from '@shared-types';
 import type { DivestmentTarget } from '../GameManager.js';
@@ -13,7 +13,10 @@ class PopUpManager {
     app: Application;
     popupContainer: Container;
     hudManager: HudManager;
-    private updateBankerSellTable?: (data: any) => void;
+    private updateBankerSellTable?: (data: { assets: Array<SoldAssetToPayBanker>; liabilities: Array<IssuedLiabilityToPayBanker>; }) => void;
+    private updateRnDMarketCallback?: (market: MarketCard) => void;
+    private updateEndGameScoreCallback?: (name: string, score: number) => void;
+    private endGameScoresContainer?: Container;
 
     constructor(app: Application, popupContainer: Container, hudManager: HudManager) {
         this.app = app;
@@ -318,7 +321,7 @@ class PopUpManager {
     async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnelectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
         const tempContainer = this._createPopupBase();
         let x = this.app.screen.width / 2;
-        let y = this.app.screen.height / 2 - 200;
+        let y = this.app.screen.height / 2 - 300;
 
         let texture = await Assets.load("./miscellaneous/BankerIcon.png");
         const bankerIcon = new Sprite(texture);
@@ -327,15 +330,42 @@ class PopUpManager {
         bankerIcon.width = 200;
         bankerIcon.height = 240;
         bankerIcon.anchor.set(0.5);
+        tempContainer.addChild(bankerIcon);
         y += 140;
 
-        const titleText = new Text({
+        const descriptionText = new Text({
             text: isSelf ? "The Banker has TERMINATED you" : `The Banker has TERMINATED ${targetPlayer.character?.name ?? targetPlayer.name}`,
-            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont', align: 'center' }
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont', align: 'center' }
+        });
+        const padding = 40;
+        const contentWidth = Math.max(descriptionText.width + padding, 300);
+
+        const titleBackground = new Graphics()
+            .roundRect(x - contentWidth / 2, y - 25, contentWidth, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+        tempContainer.addChild(titleBackground);
+
+        const titleText = new Text({
+            text: "Banker's perk",
+            style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         titleText.anchor.set(0.5);
         titleText.position.set(x, y);
-        y += 40;
+        tempContainer.addChild(titleText);
+        y += 70;
+
+        descriptionText.anchor.set(0.5);
+        descriptionText.position.set(x, y);
+
+        const descriptionBackground = new Graphics()
+            .roundRect(x - contentWidth / 2, y - 30, contentWidth, 60, 5)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+
+        tempContainer.addChild(descriptionBackground);
+        tempContainer.addChild(descriptionText);
+        y += 80;
 
         // Breakdown
         const assetCounts: Record<string, number> = {};
@@ -346,6 +376,8 @@ class PopUpManager {
 
         const breakdownContainer = new Container();
         let rowY = 0;
+        const bgPadding = 20;
+        const tableInnerWidth = contentWidth - (bgPadding * 2);
         
         const addRow = (parts: {text: string, color: string, bold?: boolean}[], value: string) => {
             let currentX = 0;
@@ -366,7 +398,7 @@ class PopUpManager {
 
             const v = new Text({ text: value, style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' } });
             v.anchor.set(1, 0);
-            v.position.set(250, rowY);
+            v.position.set(tableInnerWidth, rowY);
             breakdownContainer.addChild(v);
             rowY += 30;
         };
@@ -379,22 +411,21 @@ class PopUpManager {
             ], `+1 Gold`);
         }
         
-        const line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
+        const line = new Graphics().moveTo(0, rowY).lineTo(tableInnerWidth, rowY).stroke({ width: 2, color: 0xffffff });
         breakdownContainer.addChild(line);
         rowY += 10;
 
         addRow([{text: "Total Due", color: "#cccccc"}], `${cashDue} Gold`);
 
-        breakdownContainer.x = x - 125;
+        breakdownContainer.x = x - tableInnerWidth / 2;
         breakdownContainer.y = y;
         
-        const bgPadding = 20;
         const breakdownBg = new Graphics()
-            .roundRect(breakdownContainer.x - bgPadding, breakdownContainer.y - bgPadding, 250 + bgPadding*2, rowY + bgPadding*2, 10)
+            .roundRect(breakdownContainer.x - bgPadding, breakdownContainer.y - bgPadding, contentWidth, rowY + bgPadding*2, 10)
             .fill(0x323232)
             .stroke({ width: 2, color: 0x000000 });
 
-        tempContainer.addChild(bankerIcon);
+        
         tempContainer.addChild(titleText);
         tempContainer.addChild(breakdownBg);
         tempContainer.addChild(breakdownContainer);
@@ -465,7 +496,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async displayBankerPaymentNotification(payer: Player, banker: Player, amountPaid: number, paymentDetails: { assets?: Record<string, number>, liabilities?: Record<string, number> }, isLocalBanker: boolean, isLocalPayer: boolean) {
+    async displayBankerPaymentNotification(payer: Player, banker: Player, amountPaid: number, isLocalBanker: boolean, isLocalPayer: boolean, assets?: {asset_idx: number; market_value: number}[], liabilities?: any[]) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 250;
@@ -504,12 +535,12 @@ class PopUpManager {
         }
 
         const actions: string[] = [];
-        if (paymentDetails?.assets && Object.keys(paymentDetails.assets).length > 0) {
-            const count = Object.keys(paymentDetails.assets).length;
+        if (assets && assets.length > 0) {
+            const count = assets.length;
             actions.push(`Sold ${count} asset${count > 1 ? 's' : ''}`);
         }
-        if (paymentDetails?.liabilities && Object.keys(paymentDetails.liabilities).length > 0) {
-            const count = Object.keys(paymentDetails.liabilities).length;
+        if (liabilities && liabilities.length > 0) {
+            const count = liabilities.length;
             actions.push(`Issued ${count} liability${count > 1 ? 'ies' : ''}`); // English pluralization
         }
 
@@ -541,7 +572,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    updateBankerSellAssets(data: any) {
+    updateBankerSellAssets(data: { assets: Array<SoldAssetToPayBanker>; liabilities: Array<IssuedLiabilityToPayBanker>; }) {
         if (this.updateBankerSellTable) {
             this.updateBankerSellTable(data);
         }
@@ -573,12 +604,18 @@ class PopUpManager {
         };
 
         addRow("Amount Due", `${cashDue} Gold`);
+        let line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
+        breakdownContainer.addChild(line);
+        rowY += 10;
         addRow("Current Cash", `${targetPlayer.cash} Gold`);
         
         const assetsValueRef: { text: Text } = { text: null as any };
         addRow("Assets Value", "0 Gold", assetsValueRef);
+
+        const liabilitiesValueRef: { text: Text } = { text: null as any };
+        addRow("Liabilities Value", "0 Gold", liabilitiesValueRef);
         
-        const line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
+        line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
         breakdownContainer.addChild(line);
         rowY += 10;
         
@@ -597,17 +634,21 @@ class PopUpManager {
         tableContainer.position.set(40, 40);
         tempContainer.addChild(tableContainer);
 
-        this.updateBankerSellTable = (data: { assets: Record<string, number> }) => {
-            let totalValue = 0;
+        this.updateBankerSellTable = (data) => {
+            let assetValue = 0;
+            let liablityValue = 0;
             if (data.assets) {
-                Object.values(data.assets).forEach((v: number) => totalValue += v);
+                data.assets.forEach((item) => assetValue += item.market_value);
             }
-            if (assetsValueRef.text) assetsValueRef.text.text = `${totalValue} Gold`;
-            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + totalValue - cashDue} Gold`;
+            if (data.liabilities) {
+                data.liabilities.forEach((item) => liablityValue += item.liability.value);
+            }
+            if (assetsValueRef.text) assetsValueRef.text.text = `${assetValue} Gold`;
+            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + assetValue + liablityValue - cashDue} Gold`;
         };
 
         const titleText = new Text({
-            text: `Sell Assets (Due: ${cashDue} Gold)`,
+            text: `Select Assets to sell for market value`,
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         titleText.anchor.set(0.5);
@@ -722,6 +763,9 @@ class PopUpManager {
         addRow("Amount Due", `${cashDue} Gold`);
         addRow("Current Cash", `${targetPlayer.cash} Gold`);
         
+        const assetsValueRef: { text: Text } = { text: null as any };
+        addRow("Assets Value", "0 Gold", assetsValueRef);
+
         const liabilitiesValueRef: { text: Text } = { text: null as any };
         addRow("Liabilities Value", "0 Gold", liabilitiesValueRef);
         
@@ -744,13 +788,17 @@ class PopUpManager {
         tableContainer.position.set(40, 40);
         tempContainer.addChild(tableContainer);
 
-        this.updateBankerSellTable = (data: { liabilities: Record<string, number> }) => {
-            let totalValue = 0;
-            if (data.liabilities) {
-                Object.values(data.liabilities).forEach((v: number) => totalValue += v);
+        this.updateBankerSellTable = (data) => {
+            let assetValue = 0;
+            let liablityValue = 0;
+            if (data.assets) {
+                data.assets.forEach((item) => assetValue += item.market_value);
             }
-            if (liabilitiesValueRef.text) liabilitiesValueRef.text.text = `${totalValue} Gold`;
-            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + totalValue - cashDue} Gold`;
+            if (data.liabilities) {
+                data.liabilities.forEach((item) => liablityValue += item.liability.value);
+            }
+            if (liabilitiesValueRef.text) liabilitiesValueRef.text.text = `${liablityValue} Gold`;
+            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + assetValue + liablityValue - cashDue} Gold`;
         };
 
         const titleText = new Text({
@@ -1539,6 +1587,14 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
     
+    updateRnDMarket(market: MarketCard) {
+        if (this.updateRnDMarketCallback) this.updateRnDMarketCallback(market);
+    }
+
+    updateEndGameScore(name: string, score: number) {
+        if (this.updateEndGameScoreCallback) this.updateEndGameScoreCallback(name, score);
+    }
+
     displayRnDPopup(marketState: MarketCard, onSelectCallback: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, cardIndex: number) {
         const tempContainer = this._createPopupBase();
         
@@ -1569,6 +1625,7 @@ class PopUpManager {
         const totalCircleWidth = (colors.length - 1) * spacing;
         const startX = (width - totalCircleWidth) / 2;
 
+        const statusIndicators: Record<string, Text> = {};
         colors.forEach((colorInfo, index) => {
             const circleX = startX + index * spacing;
             const circle = new Graphics()
@@ -1604,7 +1661,27 @@ class PopUpManager {
                 statusIndicator.text = '0';
             }
             marketContent.addChild(statusIndicator);
+            statusIndicators[colorInfo.name] = statusIndicator;
         });
+
+        this.updateRnDMarketCallback = (newMarket: MarketCard) => {
+            if (!tempContainer.parent) return; // Popup closed
+            const newColors = [
+                { name: 'Yellow', value: newMarket.Yellow },
+                { name: 'Blue', value: newMarket.Blue },
+                { name: 'Green', value: newMarket.Green },
+                { name: 'Purple', value: newMarket.Purple },
+                { name: 'Red', value: newMarket.Red }
+            ];
+            newColors.forEach(c => {
+                const indicator = statusIndicators[c.name];
+                if (indicator) {
+                    if (c.value === 'down') indicator.text = '-';
+                    else if (c.value === 'up') indicator.text = '+';
+                    else if (c.value === 'zero') indicator.text = '0';
+                }
+            });
+        };
 
         const confirmButton = new FancyButton({
             text: "Confirm",
@@ -1811,9 +1888,48 @@ class PopUpManager {
         
         this.popupContainer.addChild(tempContainer);
     }
+
+    displayEndGameScores(scores: {name: string, score: number}[]) {
+        this.popupContainer.removeChildren();
+        this.endGameScoresContainer = new Container();
+        
+        const x = 20;
+        let y = 20;
+        
+        const bg = new Graphics();
+        this.endGameScoresContainer.addChild(bg);
+        
+        const scoreTexts: Record<string, Text> = {};
+
+        scores.forEach(s => {
+            const nameText = new Text({ text: s.name, style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' } });
+            nameText.position.set(x, y);
+            this.endGameScoresContainer!.addChild(nameText);
+            
+            const scoreText = new Text({ text: s.score.toFixed(2), style: { fill: '#CBC28E', fontSize: 20, fontFamily: 'MyFont' } });
+            scoreText.position.set(x + 150, y);
+            this.endGameScoresContainer!.addChild(scoreText);
+            
+            scoreTexts[s.name] = scoreText;
+            y += 30;
+        });
+
+        bg.roundRect(10, 10, 250, y, 10).fill(0x000000).stroke({width:2, color:0xffffff}).alpha = 0.5;
+        
+        this.popupContainer.addChild(this.endGameScoresContainer);
+
+        this.updateEndGameScoreCallback = (name, newScore) => {
+            if (scoreTexts[name]) {
+                scoreTexts[name].text = newScore.toFixed(2);
+            }
+        };
+    }
+
     _createPopupBase() {
         this.popupContainer.removeChildren();
-
+        if (this.endGameScoresContainer) {
+            this.popupContainer.addChild(this.endGameScoresContainer);
+        }
         const tempContainer = new Container();
         const gradient = new FillGradient({
             type: 'radial',

@@ -45,7 +45,7 @@ image_back_url: string, };
  */
 export type AssetPowerup = "At the end of the game, for one color, turn - into 0 or 0 into +" | "At the end of the game, turn silver into gold on one asset card" | "At the end of the game, count one of your assets as any color";
 
-export type BankerTargetSelectError = "AssetValueToLow" | "AssetAlreadySelected" | "AssetNotSelected" | "InvalidAssetId" | "InvalidLiabilityId" | "LiabilityNotSelected" | "LiabilityAlreadySelected" | "NotCFO" | "AlreadySelected3Liabilities";
+export type BankerTargetSelectError = "AssetValueToLow" | "AssetAlreadySelected" | "AssetNotSelected" | "InvalidAssetId" | { "InvalidLiabilityId": number } | "LiabilityNotSelected" | "LiabilityAlreadySelected" | "NotCFO" | "AlreadySelected3Liabilities";
 
 /**
  * A card type used in relation to actions taken with player's hands. Can either be `Asset` or
@@ -95,7 +95,15 @@ channel: string, } };
  * a confirmation that the action was succesful, including the data needed to update the UI
  * accordingly.
  */
-export type DirectResponse = { "action": "Error", "data": ResponseError } | { "action": "YouStartedGame" } | { "action": "YouSelectedCharacter", "data": { 
+export type DirectResponse = { "action": "Error", "data": { 
+/**
+ * The error message.
+ */
+message: string, 
+/**
+ * The error type.
+ */
+source: ResponseError, } } | { "action": "YouStartedGame" } | { "action": "YouSelectedCharacter", "data": { 
 /**
  * The character this player selected.
  */
@@ -111,7 +119,7 @@ character: CharacterType, } } | { "action": "YouPaidBanker", "data": {
 /**
  * The amount of gold paid
  */
-banker_id: PlayerId, new_banker_cash: number, your_new_cash: number, selected_cards: SelectedAssetsAndLiabilities, } } | { "action": "YouSelectCardBankerTarget", "data": { assets: { [key in number]?: number }, liabilities: { [key in number]?: number }, } } | { "action": "YouRegulatorOptions", "data": { 
+banker_id: PlayerId, new_banker_cash: number, your_new_cash: number, paid_amount: number, sold_assets: Array<SoldAssetToPayBanker>, issued_liabilities: Array<IssuedLiabilityToPayBanker>, } } | { "action": "YouSelectCardBankerTarget", "data": { assets: Array<SoldAssetToPayBanker>, liabilities: Array<IssuedLiabilityToPayBanker>, } } | { "action": "YouRegulatorOptions", "data": { 
 /**
  * The options this player has to swap with other players.
  */
@@ -423,12 +431,14 @@ asset_idx: number, } };
 /**
  * The main error enum used by the game logic.
  */
-export type GameError = { "Lobby": LobbyError } | { "SelectingCharacters": SelectingCharactersError } | { "PlayCard": PlayCardError } | { "RedeemLiability": RedeemLiabilityError } | { "GiveBackCard": GiveBackCardError } | { "DrawCard": DrawCardError } | { "FireCharacter": FireCharacterError } | { "PayBanker": PayBankerError } | { "BankerTargetSelect": BankerTargetSelectError } | { "TerminateCreditCharacter": TerminateCreditCharacterError } | { "Swap": SwapError } | { "DivestAsset": DivestAssetError } | { "CardAbility": AssetAbilityError } | { "InvalidAssetIndex": number } | { "InvalidPlayerCount": number } | { "InvalidPlayerIndex": number } | { "InvalidPlayerName": string } | "PlayerMissingCharacter" | "NotPlayersTurn" | "PlayerShouldGiveBackCard" | "NotLobbyState" | "NotSelectingCharactersState" | "NotRoundState" | "NotbankerTargetState" | "NotResultsState" | "NotAvailableInLobbyState" | "NotAvailableInBankerTargetState" | "NotAvailableInResultsState";
+export type GameError = { "Lobby": LobbyError } | { "SelectingCharacters": SelectingCharactersError } | { "PlayCard": PlayCardError } | { "RedeemLiability": RedeemLiabilityError } | { "GiveBackCard": GiveBackCardError } | { "DrawCard": DrawCardError } | { "FireCharacter": FireCharacterError } | { "PayBanker": PayBankerError } | { "BankerTargetSelect": BankerTargetSelectError } | { "TerminateCreditCharacter": TerminateCreditCharacterError } | { "Swap": SwapError } | { "DivestAsset": DivestAssetError } | { "CardAbility": AssetAbilityError } | { "InvalidAssetIndex": number } | { "InvalidPlayerCount": number } | { "InvalidPlayerIndex": number } | { "InvalidPlayerName": string } | "PlayerMissingCharacter" | "NotPlayersTurn" | "PlayerShouldGiveBackCard" | "NotLobbyState" | "NotSelectingCharactersState" | "NotRoundState" | "NotBankerTargetState" | "NotResultsState" | "NotAvailableInLobbyState" | "NotAvailableInBankerTargetState" | "NotAvailableInResultsState";
 
 /**
  * Errors that can happen when a player must give back a card.
  */
 export type GiveBackCardError = { "InvalidCardIndex": number } | "Unnecessary";
+
+export type IssuedLiabilityToPayBanker = { card_idx: number, liability: LiabilityCard, };
 
 /**
  * Representation of a liability card. Each liability has an associated gold value as well as a
@@ -504,7 +514,7 @@ Red: MarketCondition, };
  */
 export type MarketChange = { 
 /**
- * A list of events encountered in search for a market card
+ * A list of evenOts encountered in search for a market card
  */
 events: Array<EventCard>, 
 /**
@@ -525,7 +535,15 @@ export type MarketCondition = "up" | "down" | "zero";
 /**
  * Errors related to paying the banker on the targets turn
  */
-export type PayBankerError = "NotEnoughCash" | "NoBankerPlayer" | "NotRightCashAmount";
+export type PayBankerError = "NotEnoughCash" | "NoBankerPlayer" | { "NotRightCashAmount": { 
+/**
+ * Amount of cash expected to be paid.
+ */
+expected: number, 
+/**
+ * Amount of cash that the player tried to pay
+ */
+got: number, } };
 
 /**
  * Errors that can happen when someone plays a card.
@@ -636,8 +654,6 @@ liability_count: number, };
  */
 export type ResponseError = { "Game": GameError } | "GameNotYetStarted" | "GameAlreadyStarted" | "InvalidData";
 
-export type SelectedAssetsAndLiabilities = { assets: { [key in number]?: number }, liabilities: { [key in number]?: number }, };
-
 /**
  * Errors that can happen while selecting characters.
  */
@@ -660,6 +676,8 @@ gold_value: number,
  * The silver value of the asset in question.
  */
 silver_value: number, };
+
+export type SoldAssetToPayBanker = { asset_idx: number, market_value: number, };
 
 /**
  * Errors related to swapping hands/cards.
@@ -775,7 +793,11 @@ player_turn: PlayerId,
 /**
  * Amount of Cash to be paid to Banker
  */
-cash_to_be_paid: number, } } | { "action": "SelectedCardsBankerTarget", "data": { assets: { [key in number]?: number }, liability_count: number, } } | { "action": "DrewCard", "data": { 
+cash_to_be_paid: number, 
+/**
+ * Amount of Cash to be paid to Banker
+ */
+is_possible_to_pay_banker: boolean, } } | { "action": "SelectedCardsBankerTarget", "data": { assets: Array<SoldAssetToPayBanker>, liability_count: number, } } | { "action": "DrewCard", "data": { 
 /**
  * The id of the player who drew a card.
  */
@@ -836,11 +858,11 @@ player_id: PlayerId,
 /**
  * The character who's credit line was terminated.
  */
-character: CharacterType, } } | { "action": "PlayerPayedBanker", "data": { banker_id: PlayerId, player_id: PlayerId, new_banker_cash: number, new_target_cash: number, selected_cards: SelectedAssetsAndLiabilities, } } | { "action": "RegulatorSwapedYourCards", "data": { 
+character: CharacterType, } } | { "action": "PlayerPaidBanker", "data": { banker_id: PlayerId, player_id: PlayerId, new_banker_cash: number, new_target_cash: number, paid_amount: number, sold_assets: Array<SoldAssetToPayBanker>, issued_liabilities: Array<IssuedLiabilityToPayBanker>, } } | { "action": "RegulatorSwappedYourCards", "data": { 
 /**
  * This player's new hand.
  */
-new_cards: Array<EitherAssetLiability>, } } | { "action": "SwapedWithPlayer", "data": { 
+new_cards: Array<EitherAssetLiability>, } } | { "action": "SwappedWithPlayer", "data": { 
 /**
  * The id of the regulator.
  */
@@ -848,7 +870,7 @@ regulator_id: PlayerId,
 /**
  * The id of the player the regulator swapped their hands with.
  */
-target_id: PlayerId, } } | { "action": "SwapedWithDeck", "data": { 
+target_id: PlayerId, } } | { "action": "SwappedWithDeck", "data": { 
 /**
  * The amount of assets the regulator drew from the deck.
  */

@@ -36,9 +36,9 @@ class NetworkManager {
     }
 
     setGameManager(gameManager: GameManager) {
-        this.gameManager = gameManager;
+        this.gameManager = gameManager!;
         this.commandList = {
-            Error: _ => { },
+            Error: () => { },
             PlayersInLobby: r => this.gameManager!.serverEventManager.newPlayer(r.data),
             StartGame: r => this.gameManager!.serverEventManager.messageStartGame(r.data),
             SelectingCharacters: r => this.gameManager!.serverEventManager.chairmanSelectCharacter(r.data),
@@ -51,17 +51,17 @@ class NetworkManager {
             RedeemedLiability: r => this.gameManager!.serverEventManager.redeemedLiability(r.data),
             ShareholderIsFiring: _ => { }, // TODO: implement
             FiredCharacter: r => this.gameManager!.serverEventManager.firedCharacter(r.data),
-            RegulatorSwapedYourCards: r => this.gameManager!.serverEventManager.regulatorSwapedYourCards(r.data),
-            SwapedWithPlayer: r => this.gameManager!.serverEventManager.swapedWithPlayer(r.data),
-            SwapedWithDeck: r => this.gameManager!.serverEventManager.swapedWithDeck(r.data),
+            RegulatorSwappedYourCards: r => this.gameManager!.serverEventManager.regulatorSwappedYourCards(r.data),
+            SwappedWithPlayer: r => this.gameManager!.serverEventManager.swappedWithPlayer(r.data),
+            SwappedWithDeck: r => this.gameManager!.serverEventManager.swappedWithDeck(r.data),
             AssetDivested: _ => { }, // TODO: handle
-            TurnEnded: _ => { }, // TODO: handle
+            TurnEnded: () => { }, // TODO: handle
             GameEnded: r => this.gameManager!.serverEventManager.gameEnded(r.data),
-            YouStartedGame: _ => { }, // TODO: handle
+            YouStartedGame: () => { }, // TODO: handle
             YouSelectedCharacter: r => this.gameManager!.serverEventManager.youSelectedCharacter(r.data),
             YouFiredCharacter: r => this.gameManager!.serverEventManager.youFiredCharacter(r.data),
             YouRegulatorOptions: r => this.gameManager!.serverEventManager.youRegulatorOptions(r.data),
-            YouSwapDeck: r => this.gameManager!.serverEventManager.youSwapDeck(r.data),
+            YouSwapDeck: r => this.gameManager!.serverEventManager.youSwapDeck(r.data), // Fix: Added '!' for definite assignment
             YouSwapPlayer: r => this.gameManager!.serverEventManager.youSwapPlayer(r.data),
             YouAreDivesting: r => this.gameManager!.serverEventManager.youAreDivesting(r.data),
             YouDrewCard: r => this.gameManager!.serverEventManager.youDrewCard(r.data),
@@ -71,14 +71,14 @@ class NetworkManager {
             YouIssuedLiability: r => this.gameManager!.serverEventManager.youIssuedLiability(r.data),
             YouAreFiringSomeone: r => this.gameManager!.serverEventManager.youAreFiringSomeone(r.data),
             YouDivestedAnAsset: r => this.gameManager!.serverEventManager.youDivestedAnAsset(r.data),
-            YouAreTerminatingSomeone: r => this.gameManager!.serverEventManager.youAreTerminatingSomeone(r.data),
+            YouAreTerminatingSomeone: r => this.gameManager!.serverEventManager.youAreTerminatingSomeone(r.data), // Fix: Added '!' for definite assignment
             YouRedeemedLiability: r => this.gameManager!.serverEventManager.youRedeemedLiability(r.data),
             YouEndedTurn: _ => this.gameManager!.playerActionManager.youEndedTurn(),
-            YouMinusedIntoPlus: _ => { }, // TODO: handle
-            YouSilveredIntoGold: _ => { }, // TODO: handle
-            YouChangedAssetColor: _ => { }, // TODO: handle
-            YouConfirmedAssetAbility: _ => { }, // TODO: handle
-            MinusedIntoPlus: _ => { }, // TODO: handle
+            YouMinusedIntoPlus: r => this.gameManager!.serverEventManager.youMinusedIntoPlus(r.data),
+            YouSilveredIntoGold: () => { }, // TODO: handle
+            YouChangedAssetColor: () => { }, // TODO: handle
+            YouConfirmedAssetAbility: () => { }, // TODO: handle
+            MinusedIntoPlus: () => { }, // TODO: handle
             SilveredIntoGold: _ => { }, // TODO: handle
             ChangedAssetColor: _ => { }, // TODO: handle 
             ConfirmedAssetAbility: _ => { }, // TODO: handle
@@ -88,7 +88,7 @@ class NetworkManager {
             TerminatedCreditCharacter: r => this.gameManager!.serverEventManager.terminatedCreditCharacter(r.data),
             PlayerTargetedByBanker: r => this.gameManager!.serverEventManager.playerTargetedByBanker(r.data),
             YouPaidBanker: r => this.gameManager!.serverEventManager.youPaidBanker(r.data),
-            PlayerPayedBanker: r => this.gameManager!.serverEventManager.playerPayedBanker(r.data),
+            PlayerPaidBanker: r => this.gameManager!.serverEventManager.playerPaidBanker(r.data),
 
         };
     }
