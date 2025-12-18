@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application,TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application, ColorMatrixFilter } from 'pixi.js';
 import { FancyButton } from '../FancyButton.js';
 import type Player from '../Player.js';
 import type Character from '../Characters.js';
@@ -378,10 +378,10 @@ class PopUpManager {
 
     async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnelectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
         const tempContainer = this._createPopupBase();
-        let x = this.app.screen.width / 2;
+        const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 300;
 
-        let texture = await Assets.load("./miscellaneous/BankerIcon.png");
+        const texture = await Assets.load("./miscellaneous/BankerIcon.png");
         const bankerIcon = new Sprite(texture);
         
         bankerIcon.position.set(x, y);
@@ -554,12 +554,12 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async displayBankerPaymentNotification(payer: Player, banker: Player, amountPaid: number, isLocalBanker: boolean, isLocalPayer: boolean, assets?: {asset_idx: number; market_value: number}[], liabilities?: any[]) {
+    async displayBankerPaymentNotification(payer: Player, banker: Player, amountPaid: number, isLocalBanker: boolean, isLocalPayer: boolean, assets: SoldAssetToPayBanker[], liabilities: IssuedLiabilityToPayBanker[]) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 250;
 
-        let texture = await Assets.load("./miscellaneous/BankerIcon.png");
+        const texture = await Assets.load("./miscellaneous/BankerIcon.png");
         const bankerIcon = new Sprite(texture);
         bankerIcon.position.set(x, y);
         bankerIcon.width = 160;
@@ -643,7 +643,7 @@ class PopUpManager {
         const breakdownContainer = new Container();
         let rowY = 0;
         
-        const addRow = (label: string, value: string, updateRef?: { text: Text }) => {
+        const addRow = (label: string, value: string, updateRef?: { text?: Text }) => {
             const t = new Text({ 
                 text: label, 
                 style: { fill: '#cccccc', fontSize: 20, fontFamily: 'MyFont' } 
@@ -667,17 +667,17 @@ class PopUpManager {
         rowY += 10;
         addRow("Current Cash", `${targetPlayer.cash} Gold`);
         
-        const assetsValueRef: { text: Text } = { text: null as any };
+        const assetsValueRef: { text?: Text } = { };
         addRow("Assets Value", "0 Gold", assetsValueRef);
 
-        const liabilitiesValueRef: { text: Text } = { text: null as any };
+        const liabilitiesValueRef: { text?: Text } = { };
         addRow("Liabilities Value", "0 Gold", liabilitiesValueRef);
         
         line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
         breakdownContainer.addChild(line);
         rowY += 10;
         
-        const resultingCashRef: { text: Text } = { text: null as any };
+        const resultingCashRef: { text?: Text } = { };
         addRow("Resulting Cash", `${targetPlayer.cash - cashDue} Gold`, resultingCashRef);
 
         const bgPadding = 20;
@@ -800,7 +800,7 @@ class PopUpManager {
         const breakdownContainer = new Container();
         let rowY = 0;
         
-        const addRow = (label: string, value: string, updateRef?: { text: Text }) => {
+        const addRow = (label: string, value: string, updateRef?: { text?: Text }) => {
             const t = new Text({ 
                 text: label, 
                 style: { fill: '#cccccc', fontSize: 20, fontFamily: 'MyFont' } 
@@ -821,17 +821,17 @@ class PopUpManager {
         addRow("Amount Due", `${cashDue} Gold`);
         addRow("Current Cash", `${targetPlayer.cash} Gold`);
         
-        const assetsValueRef: { text: Text } = { text: null as any };
+        const assetsValueRef: { text?: Text } = { };
         addRow("Assets Value", "0 Gold", assetsValueRef);
 
-        const liabilitiesValueRef: { text: Text } = { text: null as any };
+        const liabilitiesValueRef: { text?: Text } = { };
         addRow("Liabilities Value", "0 Gold", liabilitiesValueRef);
         
         const line = new Graphics().moveTo(0, rowY).lineTo(250, rowY).stroke({ width: 2, color: 0xffffff });
         breakdownContainer.addChild(line);
         rowY += 10;
         
-        const resultingCashRef: { text: Text } = { text: null as any };
+        const resultingCashRef: { text?: Text } = { };
         addRow("Resulting Cash", `${targetPlayer.cash - cashDue} Gold`, resultingCashRef);
 
         const bgPadding = 20;
@@ -1072,7 +1072,7 @@ class PopUpManager {
         });
         titleText.anchor.set(0.5);
         titleText.position.set(x, y);
-        let padd = 20;
+        const padd = 20;
 
         const titleBackground = new Graphics()
             .roundRect(x - bgWidth / 2, y - (titleText.height + padd) / 2 , bgWidth, titleText.height + padd, 5)
@@ -1177,12 +1177,18 @@ class PopUpManager {
             const totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
             let cardStartX = playerX - totalWidth / 2;
 
+            const grayscaleFilter = new ColorMatrixFilter();
+            grayscaleFilter.grayscale(0.2, true);
+
             for(const card of target.assets){
                 const tex = await Assets.load(card.asset.texturePath);
                 const sprite = new Sprite(tex);
                 sprite.scale.set(cardScale);
                 sprite.anchor.set(0.5);
                 sprite.interactive = true;
+                if (!card.isDivestable) {
+                    sprite.filters = [grayscaleFilter];
+                }
                 sprite.position.set(cardStartX + cardWidth / 2, playerY + cardHeight/2);
                 sprite.on('mousedown', () => onSelectCallback(target.player.playerID, target.player.assetList.indexOf(card.asset)));
                 tempContainer.addChild(sprite);
@@ -1769,10 +1775,10 @@ class PopUpManager {
         const cardOutlines: Graphics[] = [];
 
         const totalAssetsWidth = (localPlayer.assetList.length) * 200;
-        let startX = (window.innerWidth - totalAssetsWidth) /2;
-        let startY = window.innerHeight /2;
+        const startX = (window.innerWidth - totalAssetsWidth) /2;
+        const startY = window.innerHeight /2;
         localPlayer.assetList.forEach(async (asset, index) =>{
-            let texture = await Assets.load(asset.texturePath);
+            const texture = await Assets.load(asset.texturePath);
             const card = new Sprite(texture);
             card.scale.set(0.25);
             card.anchor.set(0.5);
@@ -1828,7 +1834,7 @@ class PopUpManager {
                 .moveTo(centerX, centerY)
                 .arc(centerX, centerY, radius, startAngle, endAngle)
                 .closePath()
-                .fill(colors[index]?.color!);
+                .fill(colors[index]!.color!);
             
             if (isSelected) {
                 g.stroke({ width: 5, color: 0xFFFFFF });
@@ -1893,14 +1899,14 @@ class PopUpManager {
     displayApplicationLabPopup(localPlayer: Player, silverIntoGoldCall: (index: number) => void,confirmAssetAbilityCall: (index: number) => void,cardIndex: number){
         const tempContainer = this._createPopupBase();
 
-        let selectedCardIndex = -1;
+        const selectedCardIndex = -1;
         const cardOutlines: Graphics[] = [];
 
         const totalAssetsWidth = (localPlayer.assetList.length - 1) * 200;
-        let startX = (window.innerWidth - totalAssetsWidth) /2;
-        let startY = window.innerHeight /2;
+        const startX = (window.innerWidth - totalAssetsWidth) /2;
+        const startY = window.innerHeight /2;
         localPlayer.assetList.forEach(async (asset, index) =>{
-            let texture = await Assets.load(asset.texturePath);
+            const texture = await Assets.load(asset.texturePath);
             const card = new Sprite(texture);
             card.scale.set(0.25);
             card.anchor.set(0.5);
