@@ -407,11 +407,9 @@ class ServerEventManager {
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
 
-        const card = player.hand.filter(c => c instanceof Asset).find(c => c.title === data.asset.title && c.gold === data.asset.gold_value && c.silver === data.asset.silver_value);
-        if (!card) return;
+        const card = player.hand.at(data.card_idx);
+        if (!card || card instanceof Liability) return; // TODO: handle desync. Should not happen
 
-        const cardIndex = player.hand.indexOf(card);
-        if (cardIndex === -1) return;
         if (data.market_change) {
             this.uiManager.hudManager.showMarket(data.market_change.new_market, this.uiManager.marketContainer);
         }
@@ -420,7 +418,7 @@ class ServerEventManager {
         player.gold += card.gold;
         player.silver += card.silver;
         player.assetList.push(card);
-        player.hand.splice(cardIndex, 1);
+        player.hand.splice(data.card_idx, 1);
         player.playableAssets--;
 
         player.positionCardsInHand();
@@ -468,15 +466,12 @@ class ServerEventManager {
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
 
-        const card = player.hand.filter(c => c instanceof Liability).find(c => c.title === data.liability.rfr_type && c.gold === data.liability.value);
-        if (!card) return;
-
-        const cardIndex = player.hand.indexOf(card);
-        if (cardIndex === -1) return;
+        const card = player.hand.at(data.card_idx);
+        if (!card || card instanceof Asset) return; // TODO: handle desync. Should not happen tho
 
         player.cash += card.gold;
         player.liabilityList.push(card);
-        player.hand.splice(cardIndex, 1);
+        player.hand.splice(data.card_idx, 1);
         player.playableLiabilities--;
 
         player.positionCardsInHand();
