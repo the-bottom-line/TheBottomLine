@@ -5,6 +5,8 @@ import type Character from '../Characters.js';
 import Liability from '../Liability.js';
 import Asset from '../Asset.js';
 import type { CardType, MarketCard } from '@shared-types';
+import { GlowFilter } from 'pixi-filters';
+
 
 
 class HudManager {
@@ -538,7 +540,17 @@ class HudManager {
                 onIconClick(player.character!)
             });
         }
-        characterIcon.scale.set(0.25);
+
+        characterIcon.filters =[
+            
+            new GlowFilter({
+                distance: 40,
+                outerStrength: 1,
+                innerStrength: 0,
+                color: 0xf2e8d9, 
+            })
+        ];
+        characterIcon.scale.set(0.3);
         characterIcon.anchor.set(0.5, 1);
         
 
@@ -558,6 +570,17 @@ class HudManager {
         const nameBackground = new Graphics()
             .roundRect(0, 0, nameText.width + 20, nameText.height + 15, 10)
             .fill(0x60594C); 
+
+        
+        nameBackground.filters =[
+            
+            new GlowFilter({
+                distance: 40,
+                outerStrength: 1,
+                innerStrength: 0,
+                color: 0xf2e8d9, 
+            })
+        ];
         nameBackground.pivot.set(nameBackground.width / 2, 0);
         nameBackground.position.set(0, 5);
 
