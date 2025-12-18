@@ -54,7 +54,7 @@ class NetworkManager {
             RegulatorSwappedYourCards: r => this.gameManager!.serverEventManager.regulatorSwappedYourCards(r.data),
             SwappedWithPlayer: r => this.gameManager!.serverEventManager.swappedWithPlayer(r.data),
             SwappedWithDeck: r => this.gameManager!.serverEventManager.swappedWithDeck(r.data),
-            AssetDivested: _ => { }, // TODO: handle
+            AssetDivested: r => this.gameManager!.serverEventManager.assetDivested(r.data),
             TurnEnded: () => { }, // TODO: handle
             GameEnded: r => this.gameManager!.serverEventManager.gameEnded(r.data),
             YouStartedGame: () => { }, // TODO: handle

@@ -1128,7 +1128,7 @@ class PopUpManager {
                 sprite.scale.set(cardScale);
                 sprite.anchor.set(0.5);
                 sprite.interactive = true;
-                if (card.isDivestable) {
+                if (!card.isDivestable) {
                     sprite.filters = [grayscaleFilter];
                 }
                 sprite.position.set(cardStartX + cardWidth / 2, playerY + cardHeight/2);

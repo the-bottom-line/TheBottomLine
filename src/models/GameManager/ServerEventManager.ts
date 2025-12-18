@@ -759,17 +759,68 @@ class ServerEventManager {
                 }
         );
     }
+    
+    private divestCardFromPlayer(
+        stakeholder: Player,
+        target: Player,
+        asset_idx: number,
+        paid_amount: number
+    ) {
+        const card = target.assetList[asset_idx];
 
-    youDivestedAnAsset(_data: Extract<DirectResponse, { action: "YouDivestedAnAsset" }>['data']){
-        if (this.uiManager.popUpManager.popupContainer) {
-            this.uiManager.popupContainer.destroy({ children: true })
-            this.uiManager.popupContainer = new Container();
+        if (card) {
+            target.assetList.splice(asset_idx, 1);
+            stakeholder.cash -= paid_amount;
+            
+            this.gameManager.updateAllPlayerStats();
+            
+            return card;
+        } else {
+            console.error(`card index ${asset_idx} is invalid`)
         }
-        if (this.gameManager.activePopup) {
-            this.gameManager.activePopup.destroy({ children: true });
-            this.gameManager.activePopup = null;
+    }
+
+    assetDivested(data: Extract<UniqueResponse, { action: 'AssetDivested' }>['data']) {
+        const stakeholder = this.gameState.getPlayerById(data.player_id);
+        const target = this.gameState.getPlayerById(data.target_id);
+
+        if (stakeholder && target) {
+            const _asset = this.divestCardFromPlayer(
+                stakeholder,
+                target,
+                data.asset_idx,
+                data.paid_gold
+            );
+            if (_asset) {
+                // TODO: display popup to everyone that a certain asset was divested
+            }
+        } else {
+            console.error(
+                `target id ${data.target_id} or stakeholder id ${data.player_id} is not valid`
+            );
         }
-        this.gameManager.switchToMainPhase();
+    }
+
+    youDivestedAnAsset(data: Extract<DirectResponse, { action: 'YouDivestedAnAsset' }>['data']) {
+        const stakeholder = this.gameState.getLocalPlayer();
+        const target = this.gameState.getPlayerById(data.target_id);
+
+        if (target) {
+            this.divestCardFromPlayer(stakeholder, target, data.asset_idx, data.gold_cost);
+
+            if (this.uiManager.popUpManager.popupContainer) {
+                this.uiManager.popupContainer.destroy({ children: true });
+                this.uiManager.popupContainer = new Container();
+            }
+            if (this.gameManager.activePopup) {
+                this.gameManager.activePopup.destroy({ children: true });
+                this.gameManager.activePopup = null;
+            }
+
+            this.gameManager.switchToMainPhase();
+        } else {
+            console.error(`tried divesting asset but target with id ${data.target_id} is invalid`);
+        }
     }
 
     async youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
