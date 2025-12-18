@@ -9,6 +9,7 @@ import Asset from '../Asset.js';
 import Liability from '../Liability.js';
 import type GameManager from '../GameManager.js';
 import type { DivestmentTarget } from '../GameManager.js';
+import type { IncomingResponse } from '../NetworkManager.js';
 
 class ServerEventManager {
     app: Application;
@@ -717,6 +718,11 @@ class ServerEventManager {
         if (localPlayer) {
             this.uiManager.popUpManager.updateEndGameScore(localPlayer.name, data.new_score);
         }
+    }
+    minusedIntoPlus(data: Extract<IncomingResponse, { action: "MinusedIntoPlus" }>['data']) {
+        let playerID = data.player_id;
+        let score = data.new_score;
+
     }
 
     youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){

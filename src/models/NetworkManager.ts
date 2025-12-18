@@ -75,10 +75,10 @@ class NetworkManager {
             YouRedeemedLiability: r => this.gameManager!.serverEventManager.youRedeemedLiability(r.data),
             YouEndedTurn: _ => this.gameManager!.playerActionManager.youEndedTurn(),
             YouMinusedIntoPlus: r => this.gameManager!.serverEventManager.youMinusedIntoPlus(r.data),
+            MinusedIntoPlus: r => this.gameManager!.serverEventManager.minusedIntoPlus(r.data),
             YouSilveredIntoGold: () => { }, // TODO: handle
             YouChangedAssetColor: () => { }, // TODO: handle
             YouConfirmedAssetAbility: () => { }, // TODO: handle
-            MinusedIntoPlus: () => { }, // TODO: handle
             SilveredIntoGold: _ => { }, // TODO: handle
             ChangedAssetColor: _ => { }, // TODO: handle 
             ConfirmedAssetAbility: _ => { }, // TODO: handle
