@@ -1,8 +1,9 @@
-import { Application } from "pixi.js";
+import { Application, Container } from "pixi.js";
 import GameManager from "./models/GameManager.js";
 import GameState from "./models/GameState.js";
 import UIManager from "./models/UIManager.js";
 import NetworkManager from "./models/NetworkManager.js";
+import playerHand from "./models/containers/playerHand.js"
 
 (async () => {
     const app = new Application();
@@ -16,12 +17,14 @@ import NetworkManager from "./models/NetworkManager.js";
     app.canvas.style.position = "absolute";
     document.body.appendChild(app.canvas);
 
-    const gameState = new GameState();
-    const uiManager = new UIManager(app);
-    const networkManager = new NetworkManager('ws://localhost:3000/websocket'); //192.168.67.151
-    const gameManager = new GameManager(gameState, uiManager, networkManager);
+    // const gameState = new GameState();
+    // const uiManager = new UIManager(app);
+    // const networkManager = new NetworkManager('ws://localhost:3000/websocket'); //192.168.67.151
+    // const gameManager = new GameManager(gameState, uiManager, networkManager);
 
-    networkManager.setGameManager(gameManager);
+    // networkManager.setGameManager(gameManager);
 
-    gameManager.playerActionManager.initLobby();
+    // gameManager.playerActionManager.initLobby();
+    
+    app.stage.addChild(await playerHand(app));
 })();    
