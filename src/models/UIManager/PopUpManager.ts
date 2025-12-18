@@ -1119,12 +1119,18 @@ class PopUpManager {
             const totalWidth = target.assets.length * cardWidth + (target.assets.length - 1) * cardSpacing;
             let cardStartX = playerX - totalWidth / 2;
 
+            const grayscaleFilter = new ColorMatrixFilter();
+            grayscaleFilter.grayscale(0.2, true);
+
             for(const card of target.assets){
                 const tex = await Assets.load(card.asset.texturePath);
                 const sprite = new Sprite(tex);
                 sprite.scale.set(cardScale);
                 sprite.anchor.set(0.5);
                 sprite.interactive = true;
+                if (card.isDivestable) {
+                    sprite.filters = [grayscaleFilter];
+                }
                 sprite.position.set(cardStartX + cardWidth / 2, playerY + cardHeight/2);
                 sprite.on('mousedown', () => onSelectCallback(target.player.playerID, target.player.assetList.indexOf(card.asset)));
                 tempContainer.addChild(sprite);
