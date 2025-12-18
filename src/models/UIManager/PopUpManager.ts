@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application, ColorMatrixFilter } from 'pixi.js';
 import { FancyButton } from '../FancyButton.js';
 import type Player from '../Player.js';
 import type Character from '../Characters.js';

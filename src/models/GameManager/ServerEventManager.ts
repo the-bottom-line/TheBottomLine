@@ -8,7 +8,7 @@ import Player from '../Player.js';
 import Asset from '../Asset.js';
 import Liability from '../Liability.js';
 import type GameManager from '../GameManager.js';
-import type { DivestmentTarget } from '../GameManager.js';
+import type { DivestmentAsset, DivestmentTarget } from '../GameManager.js';
 
 class ServerEventManager {
     app: Application;
@@ -718,34 +718,40 @@ class ServerEventManager {
             // now throws error when frontend gives back invalid player id
             const player = this.gameState.getPlayerById(option.player_id)!;
             
-            const divestibleAssets: { asset: Asset, cost: number }[] = [];
+            const divestableAssets: DivestmentAsset[] = [];
             // TODO: coordinate with backend to actually get the data you want without needing this
             // conversion
             option.assets.forEach(divestOption => {
-                const playerAsset = player.assetList.find(pa =>
-                    pa.title === divestOption.asset.title &&
-                    pa.gold === divestOption.asset.gold_value &&
-                    pa.silver === divestOption.asset.silver_value
-                );
+                const playerAsset = player.assetList.at(divestOption.asset_idx);
                 if (playerAsset) {
                     // We'll show all assets and let the UI handle interactiveness based on cost/rules if needed later.
-                    divestibleAssets.push({ asset: playerAsset, cost: divestOption.divest_cost });
+                    const divestmentAsset: DivestmentAsset = {
+                        asset: playerAsset,
+                        cost: divestOption.divest_cost,
+                        isDivestable: divestOption.is_divestable
+                    };
+                    divestableAssets.push(divestmentAsset);
+                } else {
+                    console.error(`Asset idx ${divestOption.asset_idx} was sent but is not available on frontend`)
                 }
             });
 
-            return { player, assets: divestibleAssets };
+            return { player, assets: divestableAssets };
         }).filter(target => target.assets.length > 0);
         console.log(divestmentTargets)
         this.uiManager.popUpManager.youAreDivesting(
             divestmentTargets,
             (playerID,cardID) => {
                     this.networkManager.sendCommand("DivestAsset", { "target_player_id": playerID,"card_idx":cardID });
-                  
                 }
         );
     }
 
     youDivestedAnAsset(_data: Extract<DirectResponse, { action: "YouDivestedAnAsset" }>['data']){
+        if (this.uiManager.popUpManager.popupContainer) {
+            this.uiManager.popupContainer.destroy({ children: true })
+            this.uiManager.popupContainer = new Container();
+        }
         if (this.gameManager.activePopup) {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;

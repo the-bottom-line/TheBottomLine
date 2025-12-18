@@ -280,7 +280,7 @@ export type DivestAsset = {
 /**
  * The asset in question.
  */
-asset: AssetCard, 
+asset_idx: number, 
 /**
  * The cost of divisting this asset based.
  */
