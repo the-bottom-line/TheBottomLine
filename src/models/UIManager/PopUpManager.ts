@@ -93,6 +93,64 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
+    async announceClosedCharacter(character: Character) {
+        const tempContainer = this._createPopupBase();
+        const x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 250;
+
+        const texture = await Assets.load("./miscellaneous/ChairmanIcon.png");
+        const chairmanIcon = new Sprite(texture);
+        chairmanIcon.position.set(x, y);
+        chairmanIcon.width = 200;
+        chairmanIcon.height = 240;
+        chairmanIcon.anchor.set(0.5);
+        y += 140;
+
+        const titleBackground = new Graphics()
+            .roundRect(x - 150, y - 25, 300, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+
+        const titleText = new Text({
+            text: "The Chairman",
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        titleText.anchor.set(0.5);
+        titleText.position.set(x, y);
+        y += 70;
+
+        const infoText = new Text({
+            text: "This is the closed character. They will be avalibe for the last player",
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont', align: 'center' }
+        });
+        infoText.anchor.set(0.5);
+        infoText.position.set(x, y);
+
+        const infoBackground = new Graphics()
+            .roundRect(x - (infoText.width + 40) / 2, y - 30, infoText.width + 40, 60, 5)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+        y += 180;
+
+        const charTexture = await Assets.load(character.texturePath);
+        const charSprite = new Sprite(charTexture);
+        charSprite.scale.set(0.3    );
+        charSprite.anchor.set(0.5);
+        charSprite.position.set(x, y);
+
+        tempContainer.addChild(chairmanIcon);
+        tempContainer.addChild(titleBackground);
+        tempContainer.addChild(titleText);
+        tempContainer.addChild(infoBackground);
+        tempContainer.addChild(infoText);
+        tempContainer.addChild(charSprite);
+
+        this._addPopupCloseButton(tempContainer);
+        this.popupContainer.addChild(tempContainer);
+    }
+
+   
+
     async StakeholdersPerk(characters: Character[], onSelectCallback: (_: Character) => void) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
@@ -375,7 +433,7 @@ class PopUpManager {
         });
 
         const breakdownContainer = new Container();
-        let rowY = 0;
+        let rowY = 0; 
         const bgPadding = 20;
         const tableInnerWidth = contentWidth - (bgPadding * 2);
         
@@ -631,7 +689,7 @@ class PopUpManager {
         const tableContainer = new Container();
         tableContainer.addChild(breakdownBg);
         tableContainer.addChild(breakdownContainer);
-        tableContainer.position.set(40, 40);
+        tableContainer.position.set(40, 110);
         tempContainer.addChild(tableContainer);
 
         this.updateBankerSellTable = (data) => {
@@ -785,7 +843,7 @@ class PopUpManager {
         const tableContainer = new Container();
         tableContainer.addChild(breakdownBg);
         tableContainer.addChild(breakdownContainer);
-        tableContainer.position.set(40, 40);
+        tableContainer.position.set(40, 110);
         tempContainer.addChild(tableContainer);
 
         this.updateBankerSellTable = (data) => {
