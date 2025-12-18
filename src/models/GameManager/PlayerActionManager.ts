@@ -53,7 +53,7 @@ class PlayerActionManager {
     showLocalPlayerPicking(player: Player){
         this.uiManager.showScreen('picking');
         this.uiManager.displayTempCards(player);
-        this.uiManager.statsText.text = `${player.name} is ${player.character!.name} and is picking cards`;
+        //this.uiManager.statsText.text = `${player.name} is ${player.character!.name} and is picking cards`;
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         player.positionCardsInHand();
     }
@@ -82,6 +82,7 @@ class PlayerActionManager {
                 card.makeUnplayable();
             }
         });
+        this.gameManager.updateUI();
         localPlayer.positionCardsInHand();
     }
 

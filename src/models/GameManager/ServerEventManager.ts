@@ -40,6 +40,7 @@ class ServerEventManager {
         this.gameManager.initPlayers(data.player_info);
          this.uiManager.hudManager.showMarket(this.gameState.marketState , this.uiManager.marketContainer);
 
+        this.gameManager.updateUI();
         if (!localPlayer) {
             console.error("Could not find the local player in server data!");
             return;
@@ -271,9 +272,11 @@ class ServerEventManager {
             const player = new Player(username, index,this.app);
             this.gameState.players.push(player);
         });
-        this.uiManager.displayLobbyPlayers(this.gameState.players, () => {
-            this.networkManager.sendCommand("StartGame");
-        });
+        this.uiManager.displayLobbyPlayers(
+            this.gameState.players,
+            () => { this.networkManager.sendCommand("StartGame"); },
+            this.gameState.channel,
+        );
         
     }
 
@@ -281,9 +284,9 @@ class ServerEventManager {
         this.uiManager.showScreen("character");
         this.gameState.resetForNewRound();
 
-        const localPlayer = this.gameState.getPlayerById(data.chairman_id)!;
-        this.uiManager.statsText.text = `${localPlayer.name} is choosing their character`;
-        localPlayer.isChaiman = true;
+        const chairmanPlayer = this.gameState.getPlayerById(data.chairman_id)!;
+        //`${localPlayer.name} is choosing their character`;
+        chairmanPlayer.isChaiman = true;
         console.log("Received selectable characters:", data);
 
         this.gameState.openCharacters = this.gameState.characters.filter(character =>
@@ -291,7 +294,8 @@ class ServerEventManager {
         );
         
 
-        if (localPlayer.playerID === this.gameState.myId) {
+        this.uiManager.displayPlayerChoosingMessage(this.uiManager.characterCardsContainer, `${chairmanPlayer.name} is choosing their character`);
+        if (chairmanPlayer.playerID === this.gameState.myId) {
             const selectable_characters = data.selectable_characters;
             if (selectable_characters) {
                 this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
@@ -328,7 +332,8 @@ class ServerEventManager {
         console.log("Received selectable characters:", data);
         
         const currentPlayer = this.gameState.getPlayerById(data.currently_picking_id)!;
-        this.uiManager.statsText.text = `${currentPlayer.name} is choosing their character`;
+        this.uiManager.displayPlayerChoosingMessage(this.uiManager.characterCardsContainer, `${currentPlayer.name} is choosing their character`);
+        //`${currentPlayer.name} is choosing their character`;
         if (currentPlayer.playerID === this.gameState.myId) {
             const selectable_characters = data.selectable_characters;
             if (selectable_characters) {
@@ -383,10 +388,11 @@ class ServerEventManager {
             currentPlayer.reveal = true;
             currentPlayer.drawableCards = drawableCards;
 
-            this.uiManager.statsText.text = `${currentPlayer.name}'s turn`; // `${player.name} is ${player.character.name} and is picking cards`;
+            //this.uiManager.statsText.text = `${currentPlayer.name}'s turn`; // `${player.name} is ${player.character.name} and is picking cards`;
             
             
             this.gameManager.startTurnPlayerVisibilty();
+            this.gameManager.updateUI();
 
         } else {
             console.error(`Player with ID ${data.player_turn} not found.`);
@@ -418,8 +424,9 @@ class ServerEventManager {
         player.positionAssetsToPile();
         this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
         
-        this.gameManager.playerActionManager.updateHandPlayability();
-        this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
+        this.gameManager.updateAllPlayerStats();
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         this.gameManager.updateUI();
       
     }
@@ -444,10 +451,11 @@ class ServerEventManager {
             await newCard.initializeSprite();
             player.assetList.push(newCard);
             player.positionAssetsToPile();
+            player.cash -= newCard.gold;
             player.othersHand.splice(assetIndex,1);
             //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this into a function 
-            this.gameManager.otherCards();
-            this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.elseTurnContainer, this.gameState.getCurrentPlayer());
+            this.gameManager.otherCards(); // This already calls updateUI
+            this.gameManager.updateAllPlayerStats();
             this.gameManager.updateUI();
             
         }
@@ -474,9 +482,9 @@ class ServerEventManager {
             this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
         });
         this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
-        
-        this.gameManager.playerActionManager.updateHandPlayability();
-        this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        this.gameManager.updateAllPlayerStats();
+        this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         this.gameManager.updateUI();
        
@@ -495,8 +503,9 @@ class ServerEventManager {
         player.liabilityList.splice(data.liability_idx, 1);
         player.playableLiabilities--;
         
-        this.gameManager.playerActionManager.updateHandPlayability();
-        this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
+        this.gameManager.updateAllPlayerStats();
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         player.positionLiabilitiesToPile();
         this.gameManager.updateUI();    
@@ -508,8 +517,8 @@ class ServerEventManager {
             const liability = player.liabilityList[data.liability_idx]!;
             player.liabilityList.splice(data.liability_idx, 1); // remove liability from player
             player.cash -= liability.gold;
-            
-            player.positionLiabilitiesToPile();
+            this.gameManager.updateAllPlayerStats();
+            player.positionLiabilitiesToPile(); // This already calls updateUI
             this.gameManager.otherCards();
             this.gameManager.updateUI();
             
@@ -529,10 +538,12 @@ class ServerEventManager {
             );
             await newCard.initializeSprite();
             player.liabilityList.push(newCard);
+            player.cash += newCard.gold;
             player.positionLiabilitiesToPile();
             player.othersHand.splice(liabilityIndex,1);
-            //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this a function like displayOtherPlayerHand
+            //this.uiManager.playedCardsContainer.addChild(newCard.sprite); // make this a function like displayOtherPlayerHand // This already calls updateUI
             this.gameManager.otherCards();
+            this.gameManager.updateAllPlayerStats();
             this.gameManager.updateUI();
             
         }
@@ -625,7 +636,7 @@ class ServerEventManager {
                     localPlayer.hand.splice(item.card_idx, 1);
                    
                     this.uiManager.hudManager.addCardToPlayedContainer(newLiability, this.uiManager.playedCardsContainer);
-                    localPlayer.positionLiabilitiesToPile();
+                    localPlayer.positionLiabilitiesToPile(); // This already calls updateUI
                 }
             });
             }
@@ -634,8 +645,10 @@ class ServerEventManager {
             banker.cash = data.new_banker_cash;
         }
         
-        this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liablities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`;
+        //this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liablities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`; // This already calls updateUI
+        this.gameManager.updateAllPlayerStats();
         this.gameManager.updateUI();
+        
 
         if (banker) {
             this.uiManager.popUpManager.displayBankerPaymentNotification(localPlayer, banker, amountPaid, banker.playerID === this.gameState.myId, true, data.sold_assets, data.issued_liabilities);
@@ -660,7 +673,7 @@ class ServerEventManager {
                 }
             });
             targetPlayer.positionAssetsToPile();
-                
+            // This already calls updateUI
             for (const item of issuedLiabilities) {
                 const cardData = item.liability;
                 const newCard = new Liability(
@@ -677,7 +690,7 @@ class ServerEventManager {
                 }
             }
             
-            targetPlayer.positionLiabilitiesToPile();
+            targetPlayer.positionLiabilitiesToPile(); // This already calls updateUI
             // For remote players, we remove the liability from their abstract hand count
             this.gameManager.otherCards();
                 
@@ -686,8 +699,8 @@ class ServerEventManager {
         if (banker) {
             banker.cash = data.new_banker_cash;
         }
-
-        this.gameManager.updateUI();
+        this.gameManager.updateAllPlayerStats();
+        this.gameManager.updateUI(); 
 
         if (targetPlayer && banker) {
             this.uiManager.popUpManager.displayBankerPaymentNotification(targetPlayer, banker, amountPaid, banker.playerID === this.gameState.myId, targetPlayer.playerID === this.gameState.myId,data.sold_assets,data.issued_liabilities,);
@@ -888,7 +901,7 @@ class ServerEventManager {
         // Set how many cards the player needs to draw and switch to the picking screen.
         localPlayer.drawableCards = data.cards_to_draw;
         this.uiManager.showScreen('picking');
-        this.uiManager.statsText.text = `Your turn: Draw ${localPlayer.drawableCards} cards.`;
+        //this.uiManager.statsText.text = `Your turn: Draw ${localPlayer.drawableCards} cards.`;
         this.uiManager.displayTempCards(localPlayer);
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         localPlayer.positionCardsInHand();

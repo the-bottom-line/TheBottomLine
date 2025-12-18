@@ -33,20 +33,20 @@ class UIManager {
     purpleCardsContainer = new Container();
     errorContainers: Container[] = [];
     
-    statsText = new Text({
+    /*statsText = new Text({
         text: '',
         style: {
             fill: '#ffffff',
             fontSize: 36,
             fontFamily: 'MyFont',
         }
-    });
+    });*/
     
     constructor(app: Application) {
         this.app = app;
 
-        this.statsText.anchor.set(0.5);
-        this.statsText.position.set(this.app.screen.width / 2, 30);
+        //this.statsText.anchor.set(0.5);
+        //this.statsText.position.set(this.app.screen.width / 2, 30);
 
         this._setupContainers();
 
@@ -97,7 +97,7 @@ class UIManager {
             this.mainContainer,
             this.elseTurnContainer,
             this.lobbyContainer,
-            this.statsText,
+            //this.statsText,
             this.resultsContainer,
             this.marketContainer,
             this.purpleCardsContainer,
@@ -172,9 +172,10 @@ class UIManager {
             text: "Join",
             width: 300,
             height: 80,
+            fontSize: 48,
             onPress: onPressCallback
         });
-
+        
         joinButton.view.position.set(this.app.screen.width  / 2 - (joinButton.view.width / 2), this.app.screen.height / 2 + 100);
 
         this.loginContainer.addChild(joinButton.view);
@@ -182,7 +183,7 @@ class UIManager {
     
     displayGameName(container: Container){
         container.removeChildren();
-
+        
         const titleText = new Text({
             text: 'The Bottom (on)Line',
             style: { fill: '#ffffff', fontSize: 56, fontFamily: 'MyFont' }
@@ -196,9 +197,10 @@ class UIManager {
        titleText.position.set(this.app.screen.width / 2 - (titleText.width / 2), 100);
        container.addChild(bgText, titleText);
     }
-    async displayLobbyPlayers(players: Player[], onStartGameCallback: () => void) {
+    async displayLobbyPlayers(players: Player[], onStartGameCallback: () => void, channel?: string) {
         this.lobbyContainer.removeChildren();
-        this.displayGameName(this.lobbyContainer);
+        this.displayPlayerChoosingMessage(this.lobbyContainer,"The Bottom (on)Line")
+        //this.displayGameName(this.lobbyContainer);
 
 
         let nameplateTexture;
@@ -230,9 +232,9 @@ class UIManager {
             playerText.anchor.set(0.5);
             playerText.position.set(x, y - 120);
             this.lobbyContainer.addChild(playerText);
-
+            
             const lobbycode = new Text({
-                text: "123",
+                text: channel ? channel : player.playerID.toString(), // here
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             })
             lobbycode.anchor.set(0.5);
@@ -248,6 +250,7 @@ class UIManager {
             text: "Start",
             width: 270,
             height: 80,
+            fontSize: 48, // Added this line to make the font bigger
             onPress: onPressCallback,
         });
         startGameButton.view.position.set(this.app.screen.width - (startGameButton.view.width) - 50, this.app.screen.height - (this.app.screen.height / 7));
@@ -407,6 +410,29 @@ class UIManager {
         });
 
     }
+    displayPlayerChoosingMessage(container: Container, message: string) {
+        container.removeChildren(); // Clear previous content in the container
+
+        const titleText = new Text({
+            text: message,
+            style: { fill: '#ffffff', fontSize: 56, fontFamily: 'MyFont' }
+        });
+
+        // Calculate background dimensions based on text and padding
+        const padding = 25;
+        const bg = new Graphics()
+            .roundRect(
+                (this.app.screen.width / 2 - (titleText.width / 2)) - padding,
+                75, 
+                titleText.width + (padding * 2),
+                titleText.height + (padding * 2),
+                15 
+            )
+            .fill({ color: 0x000000, alpha: 0.5 });
+
+        titleText.position.set(this.app.screen.width / 2 - (titleText.width / 2), 100); 
+        container.addChild(bg, titleText);
+    }
     async createDummyPlayerWithPurpleCards(app: Application) {
             const player = new Player("Dummy", 1, app); // This line is causing the error
             const cardsData = [
@@ -435,10 +461,6 @@ class UIManager {
     }
 
     async gameEnded(scores: PlayerScore[]) {
-        
-
-       
-        
         const container = this.resultsContainer;
     
         // Vertical spacing between lines
