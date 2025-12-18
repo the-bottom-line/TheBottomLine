@@ -9,7 +9,6 @@ class GameState {
     channel?: string;
     currentPlayerIndex = 0;
     characters = getAllCharacters();
-    faceUpCharacters: Character[] = [];
     openCharacters: Character[] = [];
     marketState?: MarketCard;
     currentPhase = 'lobby';
@@ -36,7 +35,6 @@ class GameState {
         this.players.forEach(p => {
             p.resetForNewRound();
         });
-        this.faceUpCharacters = [];
     }
     
 }

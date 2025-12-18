@@ -199,8 +199,27 @@ class UIManager {
     }
     async displayLobbyPlayers(players: Player[], onStartGameCallback: () => void, channel?: string) {
         this.lobbyContainer.removeChildren();
-        this.displayPlayerChoosingMessage(this.lobbyContainer,"The Bottom (on)Line")
-        //this.displayGameName(this.lobbyContainer);
+
+        const titleText = new Text({
+            text: "The Bottom (on)Line",
+            style: { fill: '#ffffff', fontSize: 56, fontFamily: 'MyFont' }
+        });
+
+        // Calculate background dimensions based on text and padding
+        const padding = 25;
+        const bg = new Graphics()
+            .roundRect(
+                (this.app.screen.width / 2 - (titleText.width / 2)) - padding,
+                75, 
+                titleText.width + (padding * 2),
+                titleText.height + (padding * 2),
+                15 
+            )
+            .fill({ color: 0x000000, alpha: 0.5 });
+
+        titleText.position.set(this.app.screen.width / 2 - (titleText.width / 2), 100); 
+        this.lobbyContainer.addChild(bg, titleText);
+        
 
 
         let nameplateTexture;
@@ -234,7 +253,7 @@ class UIManager {
             this.lobbyContainer.addChild(playerText);
             
             const lobbycode = new Text({
-                text: channel ? channel : player.playerID.toString(), // here
+                text: channel ? channel : player.playerID.toString(),
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             })
             lobbycode.anchor.set(0.5);
@@ -276,29 +295,19 @@ class UIManager {
         this.decksContainer.addChild(liabilityDeckSprite);
     }
 
-    //-----------------------------------------------------------------------------------------------------------------------
-
-    async displayCharacterSelection(faceUpCharacters: Character[],openCharacters: Character[], onSelectCallback: (_: Character) => void,closedCharacter?: Character) {
+    async displayCharacterSelection(openCharacters: Character[], onSelectCallback: (_: Character) => void,faceUpCharacters?: Character[],closedCharacter?: Character,player?:Player) {
         this.characterCardsContainer.removeChildren();
         const spacing = 100;
-        const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
-        const grayscaleFilter = new ColorMatrixFilter();
-        grayscaleFilter.grayscale(0.2, true);
 
-        if(closedCharacter != null){
-            const texture = await Assets.load(closedCharacter.texturePath);
-            const closedCard = new Sprite(texture);
-            closedCard.interactive = true;
-            closedCard.scale.set(0.3);
-            closedCard.anchor.set(0.5);
-            closedCard.x = this.app.screen.width / 2;
-            closedCard.y = this.app.screen.height / 2-300;
-
-            this.characterCardsContainer.addChild(closedCard);
+        if (closedCharacter != null) {
+            await this.popUpManager.announceClosedCharacter(closedCharacter);
         }
-        
-
-        faceUpCharacters.forEach(async (character, index) => {
+        if(!faceUpCharacters && player){
+            this.displayPlayerChoosingMessage(this.characterCardsContainer, `${player.name} is choosing their character`);
+        }
+        if(faceUpCharacters){
+            const startX = (this.app.screen.width - ((faceUpCharacters.length - 1) * spacing)) / 2;
+            faceUpCharacters.forEach(async (character, index) => {
             const texture = await Assets.load(character.texturePath);
             const faceUpCard = new Sprite(texture);
             faceUpCard.interactive = true;
@@ -312,31 +321,55 @@ class UIManager {
             const midIndex = (faceUpCharacters.length - 1) / 2;
             const distanceFromMid = Math.abs(index - midIndex);
             const maxDistance = midIndex;
-            const yOffset = -Math.pow(distanceFromMid / maxDistance, 2) * -50; // Adjust for height difference at the sides
+            const yOffset = -Math.pow(distanceFromMid / maxDistance, 2) * -50;
             faceUpCard.y = this.app.screen.height / 2 + yOffset;
             faceUpCard.on('mousedown', () => onSelectCallback(character)); 
             this.characterCardsContainer.addChild(faceUpCard);
             
         });
+        }
+        
+        
 
-       
-        const openX = (this.app.screen.width - ((openCharacters.length - 1) * spacing)) / 2;
-        openCharacters.forEach(async (character, index) =>{
-           
-            const texture = await Assets.load(character.texturePath);
-            const openCard = new Sprite(texture);
-            openCard.interactive = true;
-            openCard.scale.set(0.3);
-            openCard.anchor.set(0.5);
-            openCard.filters = [grayscaleFilter];
-            openCard.x = openX + index * spacing;
-            openCard.y = this.app.screen.height / 2 + 300;
-            this.characterCardsContainer.addChild(openCard);
-        });
+        if (openCharacters && openCharacters.length > 0) {
+            let spacing = 150;
+
+            openCharacters.forEach(async (character, index) =>{                
+                const texture = await Assets.load(character.texturePath);
+                const openCard = new Sprite(texture);
+                openCard.interactive = false;
+                openCard.scale.set(0.2);
+                openCard.anchor.set(0.5);
+                openCard.x = this.app.screen.width / 2 - 75 + index * spacing;
+                openCard.y = this.app.screen.height / 2 - 300;
+                this.characterCardsContainer.addChild(openCard);
+            });
+
+            const infoText = new Text({
+                text: "These characters are not available this round",
+                style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont', align: 'center' }
+            });
+            infoText.anchor.set(0.5);
+            infoText.position.set(this.app.screen.width / 2, this.app.screen.height / 2 -190);
+
+            const infoBackground = new Graphics()
+                .roundRect(
+                    this.app.screen.width / 2 - (infoText.width + 20) / 2,
+                    this.app.screen.height / 2 - 410,
+                    infoText.width + 20,
+                    230,
+                    5
+                )
+                .fill(0x323232)
+                .stroke({ width: 2, color: 0x000000 });
+        
+            this.characterCardsContainer.addChild(infoBackground);
+            this.characterCardsContainer.addChild(infoText);
+        }
+        
     }
 
-    //-----------------------------------------------------------------------------------------------------------------------------------------
-
+    
     displayTempCards(player: Player) {
         this.tempCardsContainer.removeChildren();
         const tempCards = player.hand.filter(c => c.isTemporary);
@@ -423,14 +456,14 @@ class UIManager {
         const bg = new Graphics()
             .roundRect(
                 (this.app.screen.width / 2 - (titleText.width / 2)) - padding,
-                75, 
+                (this.app.screen.height / 2 - (titleText.height / 2)) - padding, 
                 titleText.width + (padding * 2),
                 titleText.height + (padding * 2),
                 15 
             )
             .fill({ color: 0x000000, alpha: 0.5 });
 
-        titleText.position.set(this.app.screen.width / 2 - (titleText.width / 2), 100); 
+        titleText.position.set(this.app.screen.width / 2 - (titleText.width / 2), this.app.screen.height / 2 - (titleText.height / 2)); 
         container.addChild(bg, titleText);
     }
     async createDummyPlayerWithPurpleCards(app: Application) {

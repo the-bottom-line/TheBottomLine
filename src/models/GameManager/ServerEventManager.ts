@@ -293,35 +293,34 @@ class ServerEventManager {
             data.open_characters.includes(character.characterType)
         );
         
-
-        this.uiManager.displayPlayerChoosingMessage(this.uiManager.characterCardsContainer, `${chairmanPlayer.name} is choosing their character`);
-        if (chairmanPlayer.playerID === this.gameState.myId) {
-            const selectable_characters = data.selectable_characters;
-            if (selectable_characters) {
-                this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                    selectable_characters.includes(character.characterType)
-                );
-            }
-            let closedCharacter: Character | undefined;
-            
-            const closed_character = data.closed_character;
-            if (closed_character) {
-                closedCharacter = this.gameState.characters.find(character =>
-                    closed_character.includes(character.characterType)
-                )!;
-            }
-            console.log(closedCharacter);
-
-            this.uiManager.displayCharacterSelection(
-                this.gameState.faceUpCharacters,
-                this.gameState.openCharacters,
-                (character) => {
-                    this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
-                    console.log(`Selected character: ${character.characterType}`);
-                    this.uiManager.characterCardsContainer.removeChildren();
-                }, 
-                closedCharacter);
+        let faceUpCharacters:Character[] | undefined;
+        
+        const selectable_characters = data.selectable_characters;
+        if (selectable_characters) {
+            faceUpCharacters = this.gameState.characters.filter(character =>
+                selectable_characters.includes(character.characterType)
+            );
         }
+        let closedCharacter: Character | undefined;
+        
+        const closed_character = data.closed_character;
+        if (closed_character) {
+            closedCharacter = this.gameState.characters.find(character =>
+                closed_character.includes(character.characterType)
+            )!;
+        }
+
+        this.uiManager.displayCharacterSelection(
+            this.gameState.openCharacters,
+            (character) => {
+                this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
+                this.uiManager.characterCardsContainer.removeChildren();
+            }, 
+            faceUpCharacters,
+            closedCharacter,
+            chairmanPlayer
+        );
+        
     }
 
     receiveSelectableCharacters(data: Extract<UniqueResponse, { action: "SelectedCharacter" }>['data']) {
@@ -334,23 +333,26 @@ class ServerEventManager {
         const currentPlayer = this.gameState.getPlayerById(data.currently_picking_id)!;
         this.uiManager.displayPlayerChoosingMessage(this.uiManager.characterCardsContainer, `${currentPlayer.name} is choosing their character`);
         //`${currentPlayer.name} is choosing their character`;
-        if (currentPlayer.playerID === this.gameState.myId) {
-            const selectable_characters = data.selectable_characters;
-            if (selectable_characters) {
-                this.gameState.faceUpCharacters = this.gameState.characters.filter(character =>
-                    selectable_characters.map(c => c.toString()).includes(character.characterType)
-                );
-            }
-
-            this.uiManager.displayCharacterSelection(this.gameState.faceUpCharacters, this.gameState.openCharacters, (character) => {
-                this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
-                console.log(`Selected character: ${character.characterType}`);
-                this.uiManager.characterCardsContainer.removeChildren();
-            });
-        } else {
-            console.log("Not player's turn for character selection.");
-           
+        let faceUpCharacters: Character[] | undefined;
+        const selectable_characters = data.selectable_characters;
+        if (selectable_characters) {
+            faceUpCharacters = this.gameState.characters.filter(character =>
+                selectable_characters.map(c => c.toString()).includes(character.characterType)
+            );
         }
+
+        this.uiManager.displayCharacterSelection(
+            this.gameState.openCharacters, 
+            (character) => { 
+                this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
+                this.uiManager.characterCardsContainer.removeChildren();
+            },
+            faceUpCharacters, 
+            undefined,
+            currentPlayer
+
+        );
+        
     }
 
     youSelectedCharacter(data: Extract<DirectResponse, { action: "YouSelectedCharacter" }>['data']) {
@@ -607,7 +609,7 @@ class ServerEventManager {
     youPaidBanker(data: Extract<DirectResponse, { action: "YouPaidBanker" }>['data']) {
         const localPlayer = this.gameState.getLocalPlayer();
         const banker = this.gameState.getPlayerById(data.banker_id);
-        const amountPaid = data.paid_amount; // here same fix
+        const amountPaid = data.paid_amount; 
 
         if (localPlayer) {
             localPlayer.cash = data.your_new_cash;
