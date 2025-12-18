@@ -189,13 +189,21 @@ perk: string, } } | { "action": "YouBoughtAsset", "data": {
  */
 asset: AssetCard, 
 /**
+ * The index of the asset in the player's hand this player bought.
+ */
+card_idx: number, 
+/**
  * If the market changed, a list of events and a new market is returned.
  */
 market_change: MarketChange | null, } } | { "action": "YouIssuedLiability", "data": { 
 /**
  * The liability the player issued.
  */
-liability: LiabilityCard, } } | { "action": "YouAreFiringSomeone", "data": { 
+liability: LiabilityCard, 
+/**
+ * The index of the liability in the player's hand this player issued.
+ */
+card_idx: number, } } | { "action": "YouAreFiringSomeone", "data": { 
 /**
  * The list of available characters to fire.
  */
@@ -831,6 +839,10 @@ player_id: PlayerId,
  */
 asset: AssetCard, 
 /**
+ * The index of the asset in the player's hand that the player bought.
+ */
+card_idx: number, 
+/**
  * If buying the asset changed the market, sends a list of events as well as the new
  * market.
  */
@@ -842,7 +854,11 @@ player_id: PlayerId,
 /**
  * The liability this player issued.
  */
-liability: LiabilityCard, } } | { "action": "RedeemedLiability", "data": { 
+liability: LiabilityCard, 
+/**
+ * The index of the liability in the player's hand that the player issued.
+ */
+card_idx: number, } } | { "action": "RedeemedLiability", "data": { 
 /**
  * The id of the player who
  */
