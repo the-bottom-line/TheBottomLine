@@ -10,12 +10,15 @@ import type { EitherAssetLiability, PlayerInfo } from '@shared-types';
 import PlayerActionManager from './GameManager/PlayerActionManager.js';
 import ServerEventManager from './GameManager/ServerEventManager.js';
 
+export type DivestmentAsset = {
+    asset: Asset,
+    cost: number,
+    isDivestable: boolean,
+};
+
 export type DivestmentTarget = {
     player: Player;
-    assets: {
-        asset: Asset;
-        cost: number;
-    }[];
+    assets: DivestmentAsset[];
 };
 
 class GameManager {

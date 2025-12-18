@@ -6,7 +6,6 @@ import type Player from '../Player.js';
 import Asset from '../Asset.js';
 import Liability from '../Liability.js';
 import type GameManager from '../GameManager.js';
-import type { MarketCard } from '@shared-types';
 
 class PlayerActionManager {
     app: Application;

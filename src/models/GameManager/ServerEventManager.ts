@@ -8,7 +8,7 @@ import Player from '../Player.js';
 import Asset from '../Asset.js';
 import Liability from '../Liability.js';
 import type GameManager from '../GameManager.js';
-import type { DivestmentTarget } from '../GameManager.js';
+import type { DivestmentAsset, DivestmentTarget } from '../GameManager.js';
 
 class ServerEventManager {
     app: Application;
@@ -731,45 +731,102 @@ class ServerEventManager {
             // now throws error when frontend gives back invalid player id
             const player = this.gameState.getPlayerById(option.player_id)!;
             
-            const divestibleAssets: { asset: Asset, cost: number }[] = [];
+            const divestableAssets: DivestmentAsset[] = [];
             // TODO: coordinate with backend to actually get the data you want without needing this
             // conversion
             option.assets.forEach(divestOption => {
-                const playerAsset = player.assetList.find(pa =>
-                    pa.title === divestOption.asset.title &&
-                    pa.gold === divestOption.asset.gold_value &&
-                    pa.silver === divestOption.asset.silver_value
-                );
+                const playerAsset = player.assetList.at(divestOption.asset_idx);
                 if (playerAsset) {
                     // We'll show all assets and let the UI handle interactiveness based on cost/rules if needed later.
-                    divestibleAssets.push({ asset: playerAsset, cost: divestOption.divest_cost });
+                    const divestmentAsset: DivestmentAsset = {
+                        asset: playerAsset,
+                        cost: divestOption.divest_cost,
+                        isDivestable: divestOption.is_divestable
+                    };
+                    divestableAssets.push(divestmentAsset);
+                } else {
+                    console.error(`Asset idx ${divestOption.asset_idx} was sent but is not available on frontend`)
                 }
             });
 
-            return { player, assets: divestibleAssets };
+            return { player, assets: divestableAssets };
         }).filter(target => target.assets.length > 0);
         console.log(divestmentTargets)
         this.uiManager.popUpManager.youAreDivesting(
             divestmentTargets,
             (playerID,cardID) => {
                     this.networkManager.sendCommand("DivestAsset", { "target_player_id": playerID,"card_idx":cardID });
-                  
                 }
         );
     }
+    
+    private divestCardFromPlayer(
+        stakeholder: Player,
+        target: Player,
+        asset_idx: number,
+        paid_amount: number
+    ) {
+        const card = target.assetList[asset_idx];
 
-    youDivestedAnAsset(_data: Extract<DirectResponse, { action: "YouDivestedAnAsset" }>['data']){
-        if (this.gameManager.activePopup) {
-            this.gameManager.activePopup.destroy({ children: true });
-            this.gameManager.activePopup = null;
+        if (card) {
+            target.assetList.splice(asset_idx, 1);
+            stakeholder.cash -= paid_amount;
+            
+            this.gameManager.updateAllPlayerStats();
+            
+            return card;
+        } else {
+            console.error(`card index ${asset_idx} is invalid`)
         }
-        this.gameManager.switchToMainPhase();
+    }
+
+    assetDivested(data: Extract<UniqueResponse, { action: 'AssetDivested' }>['data']) {
+        const stakeholder = this.gameState.getPlayerById(data.player_id);
+        const target = this.gameState.getPlayerById(data.target_id);
+
+        if (stakeholder && target) {
+            const _asset = this.divestCardFromPlayer(
+                stakeholder,
+                target,
+                data.asset_idx,
+                data.paid_gold
+            );
+            if (_asset) {
+                // TODO: display popup to everyone that a certain asset was divested
+            }
+        } else {
+            console.error(
+                `target id ${data.target_id} or stakeholder id ${data.player_id} is not valid`
+            );
+        }
+    }
+
+    youDivestedAnAsset(data: Extract<DirectResponse, { action: 'YouDivestedAnAsset' }>['data']) {
+        const stakeholder = this.gameState.getLocalPlayer();
+        const target = this.gameState.getPlayerById(data.target_id);
+
+        if (target) {
+            this.divestCardFromPlayer(stakeholder, target, data.asset_idx, data.gold_cost);
+
+            if (this.uiManager.popUpManager.popupContainer) {
+                this.uiManager.popupContainer.destroy({ children: true });
+                this.uiManager.popupContainer = new Container();
+            }
+            if (this.gameManager.activePopup) {
+                this.gameManager.activePopup.destroy({ children: true });
+                this.gameManager.activePopup = null;
+            }
+
+            this.gameManager.switchToMainPhase();
+        } else {
+            console.error(`tried divesting asset but target with id ${data.target_id} is invalid`);
+        }
     }
 
     async youAreTerminatingSomeone(data: Extract<DirectResponse, { action: "YouAreTerminatingSomeone" }>['data']){
         //data:"{\"action\":\"YouAreTerminatingSomeone\",\"data\":{\"characters\":[\"CEO\",\"CFO\",\"CSO\",\"HeadRnD\"],\"character\":\"Banker\",\"perk\":\"You can force a player to give you cash based on the amount of different color assets they have +1\"}}"
         const characters = this.gameState.characters.filter(character => data.characters.includes(character.characterType));
-        let perk = data.perk
+        const perk = data.perk
         
             this.uiManager.popUpManager.youAreTerminatingSomeone(
                 characters,
@@ -928,7 +985,7 @@ class ServerEventManager {
         console.log("Game ended!", data.scores);
         const player = this.gameState.getLocalPlayer();
         const marketState = this.gameState.marketState!;
-        const score = data.scores;
+        const _score = data.scores;
         console.log(player.assetList);
 
         this.uiManager.displayPurpleCards(player, marketState,

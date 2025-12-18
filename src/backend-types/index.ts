@@ -209,6 +209,14 @@ character: CharacterType,
  */
 perk: string, } } | { "action": "YouDivestedAnAsset", "data": { 
 /**
+ * The id of the player who is forced to divest one of their assets.
+ */
+target_id: PlayerId, 
+/**
+ * The index of the asset they are forced to divest.
+ */
+asset_idx: number, 
+/**
  * The amount of gold it cost to divest this asset.
  */
 gold_cost: number, } } | { "action": "YouAreTerminatingSomeone", "data": { 
@@ -280,7 +288,7 @@ export type DivestAsset = {
 /**
  * The asset in question.
  */
-asset: AssetCard, 
+asset_idx: number, 
 /**
  * The cost of divisting this asset based.
  */
@@ -890,7 +898,7 @@ target_id: PlayerId,
 /**
  * The index of the asset they are forced to divest.
  */
-card_idx: number, 
+asset_idx: number, 
 /**
  * The amount of gold the stakeholder paid to divest this asset.
  */

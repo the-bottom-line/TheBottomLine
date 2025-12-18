@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application, TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
@@ -9,7 +9,6 @@ import type Character from './Characters.js';
 import type {  Color, PlayerScore,MarketCard } from '@shared-types';
 import PopUpManager from './UIManager/PopUpManager.js';
 import HudManager from './UIManager/HudManager.js';
-import GameState from './GameState.js';
 
 class UIManager {
     app: Application;
@@ -57,7 +56,7 @@ class UIManager {
 
     async _setupContainers() {
         const sprites = new Container();
-        let backgroundDisplay: any;
+        let backgroundDisplay: Sprite | Graphics;
         try {
             const texture = await Assets.load('./miscellaneous/lobbybg.png');
             const bgSprite = new Sprite(texture);
@@ -368,7 +367,7 @@ class UIManager {
     displayPurpleCards(player: Player, marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void,confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
         this.purpleCardsContainer.removeChildren();
         player.assetList.filter(card => card.ability)
-        let cards = player.assetList.filter(card => card.ability);
+        const cards = player.assetList.filter(card => card.ability);
         const title = new Text({
             text: 'End Game Abilities',
             style: { fill: '#ffffff', fontSize: 48, fontFamily: 'MyFont' }
@@ -455,7 +454,7 @@ class UIManager {
             return player;
         }
     async debugPurpleCards(marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
-        let player = await this.createDummyPlayerWithPurpleCards(this.app);
+        const player = await this.createDummyPlayerWithPurpleCards(this.app);
 
         this.displayPurpleCards(player, marketState, minusIntoPlusCall,confirmAssetAbilityCall, confirmColorChangeCall,silverIntoGoldCall);
         this.showScreen('purpleCards');
