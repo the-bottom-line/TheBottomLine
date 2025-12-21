@@ -4,30 +4,30 @@ import type Player from '../Player.js';
 import type Character from '../Characters.js';
 import Liability from '../Liability.js';
 import Asset from '../Asset.js';
+import AssetCards from "../AssetCards.js";
+import LiabilityCards from "../LiabilityCards.js";
+import type PopUpManager from './PopUpManager.js';
 import type { CardType, MarketCard } from '@shared-types';
-import { GlowFilter } from 'pixi-filters';
-
 
 
 class HudManager {
     app: Application;
     _nextPlayedCardZIndex = 1;
 
-    /*statsText = new Text({
-        text: '',
-        style: {
-            fill: '#ffffff',
-            fontSize: 36,
-            fontFamily: 'MyFont',
-        }
-    });*/
     constructor(app: Application) {
-            this.app = app;
-    
-            //this.statsText.anchor.set(0.5);
-            //this.statsText.position.set(this.app.screen.width / 2, 30);
-    
+            this.app = app;    
         }
+
+    getColorHex(color: string): number {
+        switch (color.toLowerCase()) {
+            case 'yellow': return 0xEBB324;
+            case 'blue': return 0x73A9D9;
+            case 'green': return 0x7FAE63;
+            case 'purple': return 0x6E5DAA;
+            case 'red': return 0xAD3A25;
+            default: return 0xFFFFFF;
+        }
+    }
 
     displayAllPlayerStats(players: Player[], container: Container, currentPlayer: Player,localPlayer:Player) { 
         const existingStats = this.app.stage.getChildByLabel("playerStatsGroup");
@@ -136,7 +136,7 @@ class HudManager {
 
                 const type = new Graphics()
                     .roundRect(startX + index * 50, 230, 30, 30)
-                    .fill(color)
+                    .fill(this.getColorHex(color))
                     .stroke({ width: 3, color: 0x000000 });
                 statsContainer.addChild(type);
 
@@ -464,7 +464,7 @@ class HudManager {
             const circleX = startX + index * spacing;
             const circle = new Graphics()
                 .circle(0, 0, circleRadius)
-                .fill(colorInfo.name.toLowerCase())
+                .fill(this.getColorHex(colorInfo.name))
                 .stroke({ width: 2, color: 0x000000 });
             circle.position.set(circleX, circleY);
             circle.label = colorInfo.name;
@@ -540,17 +540,7 @@ class HudManager {
                 onIconClick(player.character!)
             });
         }
-
-        characterIcon.filters =[
-            
-            new GlowFilter({
-                distance: 40,
-                outerStrength: 1,
-                innerStrength: 0,
-                color: 0xf2e8d9, 
-            })
-        ];
-        characterIcon.scale.set(0.3);
+        characterIcon.scale.set(0.25);
         characterIcon.anchor.set(0.5, 1);
         
 
@@ -570,70 +560,88 @@ class HudManager {
         const nameBackground = new Graphics()
             .roundRect(0, 0, nameText.width + 20, nameText.height + 15, 10)
             .fill(0x60594C); 
-
-        
-        nameBackground.filters =[
-            
-            new GlowFilter({
-                distance: 40,
-                outerStrength: 1,
-                innerStrength: 0,
-                color: 0xf2e8d9, 
-            })
-        ];
         nameBackground.pivot.set(nameBackground.width / 2, 0);
         nameBackground.position.set(0, 5);
 
         tempContainer.addChild(nameBackground, nameText);
         tempContainer.position.set((tempContainer.width / 2) + 50, this.app.screen.height - 80);
     }
-    async displayRevealedCharacters(players: Player[], container: Container) {
+    async createAssetDeck(onPressCallback: () => void, container: Container, x: number, y: number) {
+        const assetDeck = new AssetCards();
+        const assetDeckSprite = await assetDeck.initializeDeckSprite();
+        assetDeck.setDeckPosition(x, y);
+        assetDeckSprite.on('mousedown', onPressCallback);
+        container.addChild(assetDeckSprite);
+    }
 
-        const sortedPlayerList = [...players].sort((a, b) => {
-            const aIsRevealed = a.reveal && a.character;
-            const bIsRevealed = b.reveal && b.character;
+    async createLiabilityDeck(onPressCallback: () => void, container: Container, x: number, y: number) {
+        const liabilityDeck = new LiabilityCards();
+        const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
+        liabilityDeck.setDeckPosition(x, y);
+        liabilityDeckSprite.on('mousedown', onPressCallback);
+        container.addChild(liabilityDeckSprite);
+    }
 
-            // TODO: reveal is pobably redundent 
-            if (a.reveal && a.character && b.reveal && b.character) {
-               
-                return a.character.order - b.character.order;
-            } else if (aIsRevealed) {
-               
-                return -1;
-            } else if (bIsRevealed) {
+    displayTempCards(player: Player, container: Container, screenWidth: number, screenHeight: number) {
+        container.removeChildren();
+        const tempCards = player.hand.filter(c => c.isTemporary);
+
+        const cardWidth = 590 * 0.25;
+        const cardHeight = 940 * 0.25;
+        const spacing = 180;
+        const startX = (screenWidth - (player.drawableCards * spacing)) / 2 + spacing / 2;
+        const y = screenHeight / 2;
+
+        for (let i = 0; i < player.drawableCards; i++) {
+            const backdrop = new Graphics()
+                .roundRect(0, 0, cardWidth + 10, cardHeight + 10, 15)
+                .stroke({ width: 4, color: 0xCBC28E }) // 0xCBC28E -> gold color
+                .fill({ alpha: 0 });
+            backdrop.position.set(startX + (i * spacing), y);
+            backdrop.pivot.set((cardWidth + 10) / 2, (cardHeight + 10) / 2);
+            container.addChild(backdrop);
+        }
+
+        tempCards.forEach(card => {
+            container.addChild(card.sprite);
+            if (card.discardButton) container.addChild(card.discardButton);
+        });
+        player.positionTempCards();
+    }
+
+    displayPurpleCards(player: Player, container: Container, marketState: MarketCard, screenWidth: number, screenHeight: number, callbacks: any, popUpManager: PopUpManager) {
+        container.removeChildren();
+        const cards = player.assetList.filter(card => card.ability);
+        const title = new Text({
+            text: 'End Game Abilities',
+            style: { fill: '#ffffff', fontSize: 48, fontFamily: 'MyFont' }
+        });
+        title.anchor.set(0.5);
+        title.position.set(screenWidth / 2, 100);
+        container.addChild(title);
+
+        const spacing = 250;
+        const startX = (screenWidth - ((cards.length - 1) * spacing)) / 2;
+        const y = screenHeight / 2;
+
+        cards.forEach((card, index) => {
+            if (card.sprite) {
+                card.sprite.position.set(startX + index * spacing, y);
+                container.addChild(card.sprite);
                 
-                return 1;
-            } else {
-               
-                return 0; 
+                card.sprite.interactive = true;
+                card.sprite.cursor = 'pointer';
+                card.sprite.removeAllListeners('mousedown');
+
+                if (card.title == "R&D Lab") {
+                    card.sprite.on('mousedown', () => popUpManager.marketPopups.displayRnDPopup(marketState, callbacks.minusIntoPlusCall, callbacks.confirmAssetAbilityCall, player.assetList.indexOf(card)));
+                } else if (card.title == "Pilot Plant") {
+                    card.sprite.on('mousedown', () => popUpManager.marketPopups.displayPilotPlantPopup(player, callbacks.confirmColorChangeCall, callbacks.confirmAssetAbilityCall, player.assetList.indexOf(card)));
+                } else if (card.title == "Application Lab") {
+                    card.sprite.on('mousedown', () => popUpManager.marketPopups.displayApplicationLabPopup(player, callbacks.silverIntoGoldCall, callbacks.confirmAssetAbilityCall, player.assetList.indexOf(card)));
+                }
             }
         });
-       
-        let index = 0;
-        for (const player of sortedPlayerList) {
-            let texturePath;
-            
-            if (player.reveal && player.character) {
-               
-                texturePath = player.character.texturePath;
-            } else {
-                
-                texturePath = "./miscellaneous/character_back.webp";
-            }
-           
-            const texture = await Assets.load(texturePath);
-            const characterCard = new Sprite(texture);
-            
-            const y = 50 + index * 100; 
-            characterCard.x = this.app.screen.width - 100;
-            characterCard.y = y;
-            characterCard.scale.set(0.15);
-            characterCard.anchor.set(0.5);
-            characterCard.rotation = 90 * Math.PI / 180;
-            container.addChild(characterCard);
-
-            index++;
-        }
     }
     
 }

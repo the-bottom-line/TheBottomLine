@@ -1,9 +1,7 @@
 import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
-import AssetCards from "./AssetCards.js";
 import Asset from "./Asset.js";
-import LiabilityCards from "./LiabilityCards.js";
 import Player from './Player.js';
 import type Character from './Characters.js';
 import type {  Color, PlayerScore,MarketCard } from '@shared-types';
@@ -33,20 +31,9 @@ class UIManager {
     purpleCardsContainer = new Container();
     errorContainers: Container[] = [];
     
-    /*statsText = new Text({
-        text: '',
-        style: {
-            fill: '#ffffff',
-            fontSize: 36,
-            fontFamily: 'MyFont',
-        }
-    });*/
     
     constructor(app: Application) {
         this.app = app;
-
-        //this.statsText.anchor.set(0.5);
-        //this.statsText.position.set(this.app.screen.width / 2, 30);
 
         this._setupContainers();
 
@@ -97,7 +84,6 @@ class UIManager {
             this.mainContainer,
             this.elseTurnContainer,
             this.lobbyContainer,
-            //this.statsText,
             this.resultsContainer,
             this.marketContainer,
             this.purpleCardsContainer,
@@ -279,28 +265,12 @@ class UIManager {
 
     //-------------------------------------------------------------------------------------------------------------------
 
-    async createAssetDeck(onPressCallback: () => void) {
-        const assetDeck = new AssetCards();
-        const assetDeckSprite = await assetDeck.initializeDeckSprite();
-        assetDeck.setDeckPosition(this.app.screen.width / 2 - 150, 70);
-        assetDeckSprite.on('mousedown', onPressCallback);
-        this.decksContainer.addChild(assetDeckSprite);
-    }
-
-    async createLiabilityDeck(onPressCallback: () => void) {
-        const liabilityDeck = new LiabilityCards();
-        const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
-        liabilityDeck.setDeckPosition(this.app.screen.width / 2 + 150, 70);
-        liabilityDeckSprite.on('mousedown', onPressCallback);
-        this.decksContainer.addChild(liabilityDeckSprite);
-    }
-
     async displayCharacterSelection(openCharacters: Character[], onSelectCallback: (_: Character) => void,faceUpCharacters?: Character[],closedCharacter?: Character,player?:Player) {
         this.characterCardsContainer.removeChildren();
         const spacing = 100;
 
         if (closedCharacter != null) {
-            await this.popUpManager.announceClosedCharacter(closedCharacter);
+            await this.popUpManager.characterPopups.announceClosedCharacter(closedCharacter);
         }
         if(!faceUpCharacters && player){
             this.displayPlayerChoosingMessage(this.characterCardsContainer, `${player.name} is choosing their character`);
@@ -369,79 +339,20 @@ class UIManager {
         
     }
 
-    
     displayTempCards(player: Player) {
-        this.tempCardsContainer.removeChildren();
-        const tempCards = player.hand.filter(c => c.isTemporary);
-
-        const cardWidth = 590 * 0.25;
-        const cardHeight = 940 * 0.25;
-        const spacing = 180;
-        const startX = (this.app.screen.width - (player.drawableCards * spacing)) / 2 + spacing / 2;
-        const y = this.app.screen.height / 2;
-
-        for (let i = 0; i < player.drawableCards; i++) {
-            const backdrop = new Graphics()
-                .roundRect(0, 0, cardWidth + 10, cardHeight + 10, 15)
-                .stroke({ width: 4, color: 0xCBC28E }) // 0xCBC28E -> gold color
-                .fill({ alpha: 0 });
-            backdrop.position.set(startX + (i * spacing), y);
-            backdrop.pivot.set((cardWidth + 10) / 2, (cardHeight + 10) / 2);
-            this.tempCardsContainer.addChild(backdrop);
-        }
-
-        tempCards.forEach(card => {
-            this.tempCardsContainer.addChild(card.sprite);
-            if (card.discardButton) this.tempCardsContainer.addChild(card.discardButton);
-        });
-        player.positionTempCards();
+        this.hudManager.displayTempCards(player, this.tempCardsContainer, this.app.screen.width, this.app.screen.height);
     }
 
     displayPurpleCards(player: Player, marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (color: number) => void,confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
-        this.purpleCardsContainer.removeChildren();
-        player.assetList.filter(card => card.ability)
-        const cards = player.assetList.filter(card => card.ability);
-        const title = new Text({
-            text: 'End Game Abilities',
-            style: { fill: '#ffffff', fontSize: 48, fontFamily: 'MyFont' }
-        });
-        title.anchor.set(0.5);
-        title.position.set(this.app.screen.width /2, 100);
-        this.purpleCardsContainer.addChild(title);
-
-        const spacing = 250;
-        const startX = (this.app.screen.width - ((cards.length - 1) * spacing)) / 2;
-        const y = this.app.screen.height / 2;
-
-        cards.forEach((card, index) => {
-            if (card.sprite) {
-                card.sprite.position.set(startX + index * spacing, y);
-                this.purpleCardsContainer.addChild(card.sprite);
-                if(card.title == "R&D Lab"){
-                    card.sprite.interactive = true;
-                    card.sprite.cursor = 'pointer';
-                    card.sprite.on('mousedown', () => {
-                        this.popUpManager.displayRnDPopup(marketState, minusIntoPlusCall, confirmAssetAbilityCall, player.assetList.indexOf(card));
-                    });
-                }
-                else if( card.title == "Pilot Plant"){
-                    card.sprite.interactive = true;
-                    card.sprite.cursor = 'pointer';
-                    card.sprite.on('mousedown', () => {
-                        this.popUpManager.displayPilotPlantPopup(player,confirmColorChangeCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
-                    });
-                }
-                else if( card.title == "Application Lab"){
-                    card.sprite.interactive = true;
-                    card.sprite.cursor = 'pointer';
-                    card.sprite.on('mousedown', () => {
-                        this.popUpManager.displayApplicationLabPopup(player,silverIntoGoldCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
-                    });
-                }
-
-            }
-        });
-
+        this.hudManager.displayPurpleCards(
+            player, 
+            this.purpleCardsContainer, 
+            marketState, 
+            this.app.screen.width, 
+            this.app.screen.height, 
+            { minusIntoPlusCall, confirmAssetAbilityCall, confirmColorChangeCall, silverIntoGoldCall },
+            this.popUpManager
+        );
     }
     displayPlayerChoosingMessage(container: Container, message: string) {
         container.removeChildren(); // Clear previous content in the container
@@ -466,33 +377,6 @@ class UIManager {
         titleText.position.set(this.app.screen.width / 2 - (titleText.width / 2), this.app.screen.height / 2 - (titleText.height / 2)); 
         container.addChild(bg, titleText);
     }
-    async createDummyPlayerWithPurpleCards(app: Application) {
-            const player = new Player("Dummy", 1, app); // This line is causing the error
-            const cardsData = [
-                
-                { title: "Application Lab", path: "assets/applicationLab_4-2.webp",ability: "Application" },
-                { title: "Pilot Plant", path: "assets/pilotPlant_5-1.webp",ability: "Pilot" },
-                { title: "R&D Lab", path: "assets/rndLab_3-3.webp",ability: "R&D" },
-                { title: "Water Treatment", path: "assets/waterTreatment_2-2.webp",ability: '' }
-            ];
-    
-            for (const data of cardsData) {
-                const card = new Asset(data.title, "Purple", 0, 0, data.ability, data.path);
-                const texture = await Assets.load(card.texturePath);
-                card.sprite = new Sprite(texture);
-                card.sprite.scale.set(0.25);
-                card.sprite.anchor.set(0.5);
-                player.assetList.push(card);
-            }
-            return player;
-        }
-    async debugPurpleCards(marketState: MarketCard, minusIntoPlusCall: (color: Color) => void, confirmAssetAbilityCall: (index: number) => void, confirmColorChangeCall: (cardIndex: number, color: Color) => void, silverIntoGoldCall: (index: number) => void) {
-        const player = await this.createDummyPlayerWithPurpleCards(this.app);
-
-        this.displayPurpleCards(player, marketState, minusIntoPlusCall,confirmAssetAbilityCall, confirmColorChangeCall,silverIntoGoldCall);
-        this.showScreen('purpleCards');
-    }
-
     async gameEnded(scores: PlayerScore[]) {
         const container = this.resultsContainer;
     

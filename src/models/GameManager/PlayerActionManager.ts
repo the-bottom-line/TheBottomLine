@@ -40,20 +40,11 @@ class PlayerActionManager {
         };
 
         this.uiManager.createJoinButton(joinGame);
-        
-        /*this.uiManager.debugPurpleCards(
-            this.gameState.marketState,
-            (color) => { this.networkManager.sendCommand("MinusIntoPlus", { color: color }); },
-            (index)=> { this.networkManager.sendCommand("ConfirmAssetAbility",{asset_idx:index}); },
-            (index,color) => {this.networkManager.sendCommand("ChangeAssetColor",{ asset_idx: index, color: color }); },
-            (index) => {this.networkManager.sendCommand("SilverIntoGold",{asset_idx: index})}
-        );*/
     }
 
     showLocalPlayerPicking(player: Player){
         this.uiManager.showScreen('picking');
         this.uiManager.displayTempCards(player);
-        //this.uiManager.statsText.text = `${player.name} is ${player.character!.name} and is picking cards`;
         this.uiManager.pickingContainer.addChild(this.uiManager.handContainer);
         player.positionCardsInHand();
     }
@@ -71,11 +62,8 @@ class PlayerActionManager {
 
         localPlayer.hand.forEach(card => {
             this.setupCardInteractions(card); // Re-attach listeners
-            // Determine if the card should be playable
-            const canPlayAsset = card instanceof Asset && localPlayer.playableAssets > 0;
-            const canPlayLiability = card instanceof Liability && localPlayer.playableLiabilities > 0;
-            const canPlay = canPlayAsset || canPlayLiability;
-
+           
+            const canPlay = this.isCardPlayable(card, localPlayer);
             if (canPlay) {
                 card.makePlayable();
             } else {
@@ -84,6 +72,12 @@ class PlayerActionManager {
         });
         this.gameManager.updateUI();
         localPlayer.positionCardsInHand();
+    }
+
+    private isCardPlayable(card: Asset | Liability, player: Player): boolean {
+        const canPlayAsset = card instanceof Asset && player.playableAssets > 0;
+        const canPlayLiability = card instanceof Liability && player.playableLiabilities > 0;
+        return canPlayAsset || canPlayLiability;
     }
 
     setupCardInteractions(card: Asset | Liability) {
