@@ -13,12 +13,10 @@ import dotenv from 'dotenv';
         antialias: true,
         resolution: window.devicePixelRatio || 1,
     });
-
     app.canvas.style.position = "absolute";
     document.body.appendChild(app.canvas);
-
-    dotenv.config();  // Load environment variables from .env file 
-    let url = process.env.BOTTOM_ONLINE_BACKEND_URL;
+    console.log(import.meta.env.BOTTOM_ONLINE_BACKEND_URL)
+    let url = import.meta.env.BOTTOM_ONLINE_BACKEND_URL;
     if (url === undefined){
         url = "http://localhost:3000/websocket"
     }
