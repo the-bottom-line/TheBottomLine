@@ -10,7 +10,7 @@ jobs:
         steps:
         # checkout the repo
         - name: 'Checkout GitHub Action'
-          uses: actions/checkout@main
+          uses: actions/checkout@cd
 
         - name: Install dependencies
           run: npm install
