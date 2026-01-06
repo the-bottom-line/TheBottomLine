@@ -15,9 +15,11 @@
   "type": "module",
   "dependencies": {
     "@pixi/ui": "^2.2.7",
+    "dotenv": "^17.2.3",
     "pixi": "^0.3.1",
     "pixi-filters": "^6.0.0",
-    "pixi.js": "^8.13.2"
+    "pixi.js": "^8.13.2",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
