@@ -3,7 +3,6 @@ import GameManager from "./models/GameManager.js";
 import GameState from "./models/GameState.js";
 import UIManager from "./models/UIManager.js";
 import NetworkManager from "./models/NetworkManager.js";
-import dotenv from 'dotenv'; 
 
 (async () => {
     const app = new Application();
@@ -15,11 +14,7 @@ import dotenv from 'dotenv';
     });
     app.canvas.style.position = "absolute";
     document.body.appendChild(app.canvas);
-    console.log(import.meta.env.BOTTOM_ONLINE_BACKEND_URL)
-    let url = import.meta.env.BOTTOM_ONLINE_BACKEND_URL;
-    if (url === undefined){
-        url = "http://localhost:3000/websocket"
-    }
+    let url = import.meta.env.VITE_BOTTOM_ONLINE_BACKEND_URL;
     const gameState = new GameState();
     const uiManager = new UIManager(app);
     const networkManager = new NetworkManager(url); //192.168.67.151
