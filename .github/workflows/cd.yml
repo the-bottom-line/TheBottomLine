@@ -34,9 +34,9 @@ jobs:
             username: ${{ secrets.REGISTRY_USERNAME }}
             password: ${{ secrets.REGISTRY_PASSWORD }}
         - run: |
-            docker build .
-              --build-arg VITE_BOTTOM_ONLINE_BACKEND_URL=${{ secrets.BACKEND_URL }}
-              --build-arg VITE_TEST=3
+            docker build . \
+              --build-arg VITE_BOTTOM_ONLINE_BACKEND_URL=${{ secrets.BACKEND_URL }} \
+              --build-arg VITE_TEST=3 \
               -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/frontend:${{ github.sha }}
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/frontend:${{ github.sha }}
 
