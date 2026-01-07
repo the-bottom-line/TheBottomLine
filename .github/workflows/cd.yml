@@ -7,6 +7,8 @@ on:
 jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
+        env:
+          VITE_BOTTOM_ONLINE_BACKEND_URL: ${{ secrets.BACKEND_URL }}
         steps:
         # checkout the repo
         - name: 'Checkout GitHub Action'
