@@ -15,6 +15,8 @@ import NetworkManager from "./models/NetworkManager.js";
     app.canvas.style.position = "absolute";
     document.body.appendChild(app.canvas);
     let url = import.meta.env.VITE_BOTTOM_ONLINE_BACKEND_URL;
+    console.log(import.meta.env.VITE_TEST)
+    console.log(url)
     const gameState = new GameState();
     const uiManager = new UIManager(app);
     const networkManager = new NetworkManager(url); //192.168.67.151
