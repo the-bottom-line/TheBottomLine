@@ -2,7 +2,7 @@ import { Container, Graphics, Text, TextStyle, Ticker, type Application } from '
 import type GameState from '../GameState.js';
 import type UIManager from '../UIManager.js';
 import type NetworkManager from '../NetworkManager.js';
-import type { DirectResponse, UniqueResponse } from '@shared-types';
+import type { CardType, DirectResponse, UniqueResponse } from '@shared-types';
 import Character from '../Characters.js';
 import Player from '../Player.js';
 import Asset from '../Asset.js';
@@ -589,6 +589,7 @@ class ServerEventManager {
                 targetPlayer, 
                 data.cash_to_be_paid, 
                 localPlayer.playerID === targetPlayer.playerID,
+                data.is_possible_to_pay_banker,
                 (amount) => this.networkManager.sendCommand("PayBanker", {cash: amount}),
                 (index) => this.networkManager.sendCommand("SelectAssetToDivest",{asset_id: index}),
                 (index) => this.networkManager.sendCommand("UnselectAssetToDivest",{asset_id: index}),
@@ -904,10 +905,23 @@ class ServerEventManager {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;
         }
-
+        const localPlayer = this.gameState.getLocalPlayer();
+        const effecterdPlayerID = data.target_player_id;
+        const effecterPlayer= this.gameState.getPlayerById(effecterdPlayerID);
+        let hand: CardType[] = [];
+        localPlayer.hand.forEach(card => {
+            if (card instanceof Asset){
+                hand.push("Asset")
+            }
+            else if(card instanceof Liability){
+                hand.push("Liability")
+            }
+            
+        });
+        effecterPlayer!.othersHand = hand;
         await this.gameManager._updateHandFromServer(data.new_cards);
         
-        const localPlayer = this.gameState.getLocalPlayer();
+        
         this.uiManager.popUpManager.displayYouSwappedNotification(localPlayer);
 
         this.gameManager.switchToMainPhase();
