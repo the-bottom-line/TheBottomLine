@@ -89,7 +89,8 @@ class NetworkManager {
             PlayerTargetedByBanker: r => this.gameManager!.serverEventManager.playerTargetedByBanker(r.data),
             YouPaidBanker: r => this.gameManager!.serverEventManager.youPaidBanker(r.data),
             PlayerPaidBanker: r => this.gameManager!.serverEventManager.playerPaidBanker(r.data),
-
+            PlayerGotBonusCash: _ => { },
+            YouBonusCash: _ => { },
         };
     }
     

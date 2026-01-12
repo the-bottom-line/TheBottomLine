@@ -2,7 +2,7 @@ import { Container, Graphics, Text, TextStyle, Ticker, type Application } from '
 import type GameState from '../GameState.js';
 import type UIManager from '../UIManager.js';
 import type NetworkManager from '../NetworkManager.js';
-import type { DirectResponse, UniqueResponse } from '@shared-types';
+import type { CardType, DirectResponse, UniqueResponse } from '@shared-types';
 import Character from '../Characters.js';
 import Player from '../Player.js';
 import Asset from '../Asset.js';
@@ -287,7 +287,7 @@ class ServerEventManager {
 
         const chairmanPlayer = this.gameState.getPlayerById(data.chairman_id)!;
         //`${localPlayer.name} is choosing their character`;
-        chairmanPlayer.isChaiman = true;
+        
         console.log("Received selectable characters:", data);
 
         this.gameState.openCharacters = this.gameState.characters.filter(character =>
@@ -407,11 +407,9 @@ class ServerEventManager {
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
 
-        const card = player.hand.filter(c => c instanceof Asset).find(c => c.title === data.asset.title && c.gold === data.asset.gold_value && c.silver === data.asset.silver_value);
-        if (!card) return;
+        const card = player.hand.at(data.card_idx);
+        if (!card || card instanceof Liability) return; // TODO: handle desync. Should not happen
 
-        const cardIndex = player.hand.indexOf(card);
-        if (cardIndex === -1) return;
         if (data.market_change) {
             this.uiManager.hudManager.showMarket(data.market_change.new_market, this.uiManager.marketContainer);
         }
@@ -420,7 +418,7 @@ class ServerEventManager {
         player.gold += card.gold;
         player.silver += card.silver;
         player.assetList.push(card);
-        player.hand.splice(cardIndex, 1);
+        player.hand.splice(data.card_idx, 1);
         player.playableAssets--;
 
         player.positionCardsInHand();
@@ -468,15 +466,12 @@ class ServerEventManager {
         const player = this.gameState.getLocalPlayer();
         if (!player) return;
 
-        const card = player.hand.filter(c => c instanceof Liability).find(c => c.title === data.liability.rfr_type && c.gold === data.liability.value);
-        if (!card) return;
-
-        const cardIndex = player.hand.indexOf(card);
-        if (cardIndex === -1) return;
+        const card = player.hand.at(data.card_idx);
+        if (!card || card instanceof Asset) return; // TODO: handle desync. Should not happen tho
 
         player.cash += card.gold;
         player.liabilityList.push(card);
-        player.hand.splice(cardIndex, 1);
+        player.hand.splice(data.card_idx, 1);
         player.playableLiabilities--;
 
         player.positionCardsInHand();
@@ -594,6 +589,7 @@ class ServerEventManager {
                 targetPlayer, 
                 data.cash_to_be_paid, 
                 localPlayer.playerID === targetPlayer.playerID,
+                data.is_possible_to_pay_banker,
                 (amount) => this.networkManager.sendCommand("PayBanker", {cash: amount}),
                 (index) => this.networkManager.sendCommand("SelectAssetToDivest",{asset_id: index}),
                 (index) => this.networkManager.sendCommand("UnselectAssetToDivest",{asset_id: index}),
@@ -909,10 +905,23 @@ class ServerEventManager {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;
         }
-
+        const localPlayer = this.gameState.getLocalPlayer();
+        const effecterdPlayerID = data.target_player_id;
+        const effecterPlayer= this.gameState.getPlayerById(effecterdPlayerID);
+        let hand: CardType[] = [];
+        localPlayer.hand.forEach(card => {
+            if (card instanceof Asset){
+                hand.push("Asset")
+            }
+            else if(card instanceof Liability){
+                hand.push("Liability")
+            }
+            
+        });
+        effecterPlayer!.othersHand = hand;
         await this.gameManager._updateHandFromServer(data.new_cards);
         
-        const localPlayer = this.gameState.getLocalPlayer();
+        
         this.uiManager.popUpManager.displayYouSwappedNotification(localPlayer);
 
         this.gameManager.switchToMainPhase();
