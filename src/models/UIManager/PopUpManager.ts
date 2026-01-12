@@ -376,7 +376,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnelectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
+    async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean,isPossbilrToPayBanker: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnelectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 300;
@@ -785,7 +785,7 @@ class PopUpManager {
             height: 60,
             onPress: () => {
                 if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
-                this.playerTargetedByBanker(targetPlayer, cashDue, true, onPayCallback, onSelectCallback, onUnselectCallback,onSelectLiablityCallback,onUnselectLiablityCallback,);
+                this.playerTargetedByBanker(targetPlayer, cashDue, true,true, onPayCallback, onSelectCallback, onUnselectCallback,onSelectLiablityCallback,onUnselectLiablityCallback,);
             }
         });
         backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);
@@ -947,7 +947,7 @@ class PopUpManager {
             height: 60,
             onPress: () => {
                 if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
-                this.playerTargetedByBanker(targetPlayer, cashDue, true, onPayCallback, onSelectCallback, onUnselectCallback, onSelectLiablityCallback, onUnselectLiablityCallback);
+                this.playerTargetedByBanker(targetPlayer, cashDue, true,true, onPayCallback, onSelectCallback, onUnselectCallback, onSelectLiablityCallback, onUnselectLiablityCallback);
             }
         });
         backButton.view.position.set(this.app.screen.width / 2 - (backButton.view.width / 2), this.app.screen.height - 100);

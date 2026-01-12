@@ -17,7 +17,7 @@ class Player {
     playableLiabilities = 1;
     character: Character | null = null;
     othersHand: CardType[] = [];
-    isChaiman = false;
+   
 
     assetList: Asset[] = [];
     cash = 0;
@@ -164,7 +164,7 @@ class Player {
     resetForNewRound(){
         this.character = null;
         this.reveal = false;
-        this.isChaiman = false;
+        
         this.playableAssets = 1;
         this.playableLiabilities = 1;
         this.maxTempCards = 3;
