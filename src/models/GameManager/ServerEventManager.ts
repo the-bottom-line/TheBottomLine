@@ -287,7 +287,7 @@ class ServerEventManager {
 
         const chairmanPlayer = this.gameState.getPlayerById(data.chairman_id)!;
         //`${localPlayer.name} is choosing their character`;
-        chairmanPlayer.isChaiman = true;
+        
         console.log("Received selectable characters:", data);
 
         this.gameState.openCharacters = this.gameState.characters.filter(character =>
