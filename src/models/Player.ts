@@ -17,7 +17,7 @@ class Player {
     playableLiabilities = 1;
     character: Character | null = null;
     othersHand: CardType[] = [];
-    isChaiman = false;
+   
 
     assetList: Asset[] = [];
     cash = 0;
@@ -127,7 +127,6 @@ class Player {
         });
     }
     positionLiabilitiesToPile() {
-        
 
         const baseY = this.app.screen.height / 2 - 50;
         const spacing = 60; 
@@ -161,6 +160,15 @@ class Player {
         if (this.character) {
             this.character.used = false;
         }
+    }
+    resetForNewRound(){
+        this.character = null;
+        this.reveal = false;
+        
+        this.playableAssets = 1;
+        this.playableLiabilities = 1;
+        this.maxTempCards = 3;
+        this.maxKeepCards = 2;
     }
 }
 

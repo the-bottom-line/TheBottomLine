@@ -1,16 +1,16 @@
 import Character, { getAllCharacters } from './Characters.js';
 import type Player from './Player.ts';
-
-
+import type { MarketCard } from '@shared-types';
 
 class GameState {
     players: Player[] = [];
     myId?: number;
     username?: string;
+    channel?: string;
     currentPlayerIndex = 0;
     characters = getAllCharacters();
-    faceUpCharacters: Character[] = [];
     openCharacters: Character[] = [];
+    marketState?: MarketCard;
     currentPhase = 'lobby';
 
     setCurrentPlayerIndex(index: number) {
@@ -28,24 +28,15 @@ class GameState {
     }
 
     getLocalPlayer() {
-        // TODO: think about whether this should throw upon failure
         return this.getPlayerById(this.myId!)!;
     }
 
     resetForNewRound() {
-        // TODO: move to Player.reset()
         this.players.forEach(p => {
-            p.character = null;
-            p.reveal = false;
-            p.isChaiman = false;
-            p.playableAssets = 1;
-            p.playableLiabilities = 1;
-            p.maxTempCards = 3;
-            p.maxKeepCards = 2;
-            
+            p.resetForNewRound();
         });
-        this.faceUpCharacters = [];
     }
+    
 }
 
 export default GameState;
