@@ -282,7 +282,47 @@ perk: string, } } | { "action": "YouRedeemedLiability", "data": {
 /**
  * The index of the liability that was redeemed.
  */
-liability_idx: number, } } | { "action": "YouEndedTurn" } | { "action": "YouMinusedIntoPlus", "data": { 
+liability_idx: number, } } | { "action": "YouEndedTurn" } | { "action": "YouJoinedGame", "data": { 
+/**
+ * Your connected username.
+ */
+username: string, 
+/**
+ * The channel you're connected to.
+ */
+channel: string, } } | { "action": "YouRejoined" } | { "action": "YouResynced", "data": { 
+/**
+ * This player's personal id.
+ */
+id: PlayerId, 
+/**
+ * The amount of cash this player has.
+ */
+cash: number, 
+/**
+ * The player's hand.
+ */
+hand: Array<EitherAssetLiability>, 
+/**
+ * The assets already played by the player
+ */
+assets: Array<AssetCard>, 
+/**
+ * The liabilities already played by the player
+ */
+liabilities: Array<LiabilityCard>, 
+/**
+ * Public info about every other player.
+ */
+player_info: Array<PlayerInfo>, 
+/**
+ * The current market.
+ */
+market: MarketCard, 
+/**
+ * A response containing the current gamestate
+ */
+phase: ResyncData, } } | { "action": "YouMinusedIntoPlus", "data": { 
 /**
  * The market color that was changed,
  */
@@ -1138,7 +1178,11 @@ player_id: PlayerId, } } | { "action": "GameEnded", "data": {
 /**
  * A list of player scores.
  */
-scores: Array<PlayerScore>, } } | { "action": "MinusedIntoPlus", "data": { 
+scores: Array<PlayerScore>, } } | { "action": "Rejoined", "data": { 
+/**
+ * Id of the rejoining player
+ */
+player_id: PlayerId, } } | { "action": "MinusedIntoPlus", "data": { 
 /**
  * The id of the player which changed one of their market colors.
  */

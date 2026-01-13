@@ -40,9 +40,9 @@ class NetworkManager {
         this.commandList = {
             Error: r => this.gameManager!.serverEventManager.error(r.data),
             YouJoinedGame: r => this.joinSuccess(r.data),
-            YouRejoined: _ => this.gameManager!.rejoinGame(),
-            Rejoined: r => this.gameManager!.playerRejoined(r.data),
-            YouResynced: r => this.gameManager!.resync(r.data),
+            YouRejoined: _ => this.gameManager!.serverEventManager.rejoinGame(),
+            Rejoined: r => this.gameManager!.serverEventManager.playerRejoined(r.data),
+            YouResynced: r => this.gameManager!.serverEventManager.resync(r.data),
             PlayersInLobby: r => this.gameManager!.serverEventManager.newPlayer(r.data),
             StartGame: r => this.gameManager!.serverEventManager.messageStartGame(r.data),
             SelectingCharacters: r => this.gameManager!.serverEventManager.chairmanSelectCharacter(r.data),
