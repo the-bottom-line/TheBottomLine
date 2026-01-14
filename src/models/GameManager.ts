@@ -103,7 +103,7 @@ class GameManager {
         const currentPlayer = this.gameState.getCurrentPlayer();
         const localPlayer = this.gameState.getLocalPlayer();
         const container = currentPlayer.playerID === this.gameState.myId ? this.uiManager.mainContainer : this.uiManager.elseTurnContainer;
-        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getLocalPlayer(),this.uiManager.mainContainer)
+        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getLocalPlayer(),container)
         this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, container, currentPlayer,localPlayer);
     }
     switchToMainPhase() {

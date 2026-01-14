@@ -608,8 +608,8 @@ class HudManager {
         statsGroup.label = "playerInfoGroup";
         const statData = [
             { value: localPlayer.cash, iconPath: './miscellaneous/cashIcon2.svg' },
-            { value: localPlayer.playableAssets, iconPath: './miscellaneous/assetIcon.svg' },
-            { value: localPlayer.playableLiabilities, iconPath: './miscellaneous/liabilityIcon.svg' }
+            { value: localPlayer.playableAssets, iconPath: './miscellaneous/playableAssets.svg' },
+            { value: localPlayer.playableLiabilities, iconPath: './miscellaneous/playableLiabilities.svg' }
         ];
                 let currentX = 0;
         const blobSpacing = 10;
