@@ -390,6 +390,9 @@ class ServerEventManager {
             currentPlayer.cash += recieveCash;
             currentPlayer.reveal = true;
             currentPlayer.drawableCards = drawableCards;
+            
+            currentPlayer.hasDrawnCards = false;
+            currentPlayer.hasCollectedBonusCash = false;
 
             //this.uiManager.statsText.text = `${currentPlayer.name}'s turn`; // `${player.name} is ${player.character.name} and is picking cards`;
             
@@ -427,7 +430,6 @@ class ServerEventManager {
         
         this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
         this.gameManager.updateAllPlayerStats();
-        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
         this.gameManager.updateUI();
       
     }
@@ -995,6 +997,26 @@ class ServerEventManager {
             }
             this.gameManager.otherCards();
         }
+    }
+    playerGotBonusCash(data: Extract<UniqueResponse,{action: "PlayerGotBonusCash"}>['data']){
+        const player = this.gameState.getPlayerById(data.player_id)
+        
+        player!.cash += data.cash;
+        this.uiManager.popUpManager.announceBonusCash(player!, data.cash);
+        
+
+        this.gameManager.updateAllPlayerStats();
+        this.gameManager.updateUI();
+    }
+    youBonusCash(data: Extract<DirectResponse,{action: "YouBonusCash"}>['data']){
+        
+        const localPlayer = this.gameState.getLocalPlayer();
+        
+        localPlayer.cash += data.cash;
+        this.uiManager.popUpManager.announceBonusCash(localPlayer, data.cash);
+
+        this.gameManager.updateAllPlayerStats();
+        this.gameManager.updateUI();
     }
 
     gameEnded(data: Extract<UniqueResponse, { action: "GameEnded" }>['data']) {

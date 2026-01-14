@@ -13,20 +13,9 @@ class HudManager {
     app: Application;
     _nextPlayedCardZIndex = 1;
 
-    /*statsText = new Text({
-        text: '',
-        style: {
-            fill: '#ffffff',
-            fontSize: 36,
-            fontFamily: 'MyFont',
-        }
-    });*/
+    
     constructor(app: Application) {
             this.app = app;
-    
-            //this.statsText.anchor.set(0.5);
-            //this.statsText.position.set(this.app.screen.width / 2, 30);
-    
         }
 
     displayAllPlayerStats(players: Player[], container: Container, currentPlayer: Player,localPlayer:Player) { 
@@ -417,14 +406,37 @@ class HudManager {
     }
 
     createNextTurnButton(onPressCallback: () => void, mainContainer: Container) {
-        const nextButton = new FancyButton({
+        const button = new FancyButton({
             text: "END TURN",
             width: 200,
             height: 60,
             onPress: onPressCallback
         });
-        nextButton.view.position.set(this.app.screen.width - 150 - (nextButton.view.width / 2), this.app.screen.height - 100);
-        mainContainer.addChild(nextButton.view);
+        button.view.position.set(this.app.screen.width - 150 - (button.view.width / 2), this.app.screen.height - 100);
+        mainContainer.addChild(button.view);
+    }
+    createCardDrawButton(onPressCallback: () => void, mainContainer: Container, isEnabled: boolean = true) {    const button = new FancyButton({
+            text: "DRAW",
+            width: 200,
+            height: 60,
+            onPress: onPressCallback
+        });
+        button.enabled = isEnabled;
+        button.view.alpha = isEnabled ? 1 : 0.5;
+        button.view.position.set(this.app.screen.width - 150 - (button.view.width / 2), this.app.screen.height - 180);
+        mainContainer.addChild(button.view);
+    }
+    createColorGoldButton(onPressCallback: () => void, mainContainer: Container, isEnabled: boolean = true) {
+        const button = new FancyButton({
+            text: "COLLECT",
+            width: 200,
+            height: 60,
+            onPress: onPressCallback
+        });
+        button.enabled = isEnabled;
+        button.view.alpha = isEnabled ? 1 : 0.5;
+        button.view.position.set(this.app.screen.width - 150 - (button.view.width / 2), this.app.screen.height - 260);
+        mainContainer.addChild(button.view);
     }
 
     showMarket(marketData: MarketCard, marketContainer: Container){
@@ -585,56 +597,63 @@ class HudManager {
         nameBackground.position.set(0, 5);
 
         tempContainer.addChild(nameBackground, nameText);
-        tempContainer.position.set((tempContainer.width / 2) + 50, this.app.screen.height - 80);
+        tempContainer.position.set(140, this.app.screen.height - 100);
     }
-    async displayRevealedCharacters(players: Player[], container: Container) {
-
-        const sortedPlayerList = [...players].sort((a, b) => {
-            const aIsRevealed = a.reveal && a.character;
-            const bIsRevealed = b.reveal && b.character;
-
-            // TODO: reveal is pobably redundent 
-            if (a.reveal && a.character && b.reveal && b.character) {
-               
-                return a.character.order - b.character.order;
-            } else if (aIsRevealed) {
-               
-                return -1;
-            } else if (bIsRevealed) {
-                
-                return 1;
-            } else {
-               
-                return 0; 
-            }
-        });
-       
-        let index = 0;
-        for (const player of sortedPlayerList) {
-            let texturePath;
-            
-            if (player.reveal && player.character) {
-               
-                texturePath = player.character.texturePath;
-            } else {
-                
-                texturePath = "./miscellaneous/character_back.webp";
-            }
-           
-            const texture = await Assets.load(texturePath);
-            const characterCard = new Sprite(texture);
-            
-            const y = 50 + index * 100; 
-            characterCard.x = this.app.screen.width - 100;
-            characterCard.y = y;
-            characterCard.scale.set(0.15);
-            characterCard.anchor.set(0.5);
-            characterCard.rotation = 90 * Math.PI / 180;
-            container.addChild(characterCard);
-
-            index++;
+    async displayPlayerInfo(localPlayer:Player,container: Container){
+        const existingStats = this.app.stage.getChildByLabel("playerInfoGroup");
+        if (existingStats) {
+            existingStats.destroy({ children: true });
         }
+        const statsGroup = new Container(); 
+        statsGroup.label = "playerInfoGroup";
+        const statData = [
+            { value: localPlayer.cash, iconPath: './miscellaneous/cashIcon2.svg' },
+            { value: localPlayer.playableAssets, iconPath: './miscellaneous/playableAssets.svg' },
+            { value: localPlayer.playableLiabilities, iconPath: './miscellaneous/playableLiabilities.svg' }
+        ];
+                let currentX = 0;
+        const blobSpacing = 10;
+
+        for (const stat of statData) {
+            const blob = new Container();
+
+            const text = new Text({
+                text: stat.value.toString(),
+                style: {
+                    fill: '#f2e8d5',
+                    fontSize: 24,
+                    fontFamily: 'MyFont',
+                }
+            });
+        const iconTexture = await Assets.load(stat.iconPath);
+            const icon = new Sprite(iconTexture);
+            icon.width = 30;
+            icon.height = 30;
+            icon.anchor.set(0.5);
+
+            const bgWidth = text.width + icon.width + 35;
+            const bgHeight = Math.max(text.height, icon.height) + 10;
+
+            const bg = new Graphics()
+                .roundRect(0, 0, bgWidth, bgHeight, 15)
+                .fill(0x60594C);
+
+            icon.position.set(20, bgHeight / 2);
+            text.anchor.set(0, 0.5);
+            text.position.set(40, bgHeight / 2);
+
+            blob.addChild(bg, icon, text);
+            blob.x = currentX;
+            statsGroup.addChild(blob);
+
+            currentX += bgWidth + blobSpacing;
+        }
+
+        statsGroup.pivot.x = statsGroup.width / 2;
+        statsGroup.position.set(140, this.app.screen.height - 50);
+        container.addChild(statsGroup);
     }
+    
     
 }
 export default HudManager;
