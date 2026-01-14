@@ -77,7 +77,8 @@ class GameManager {
 
         if (player.playerID == this.gameState.myId) { // Use player.playerID for comparison
             this.uiManager.popUpManager.anounceCharacter(player);
-            this.playerActionManager.showLocalPlayerPicking(player);
+            this.switchToMainPhase()
+           // this.playerActionManager.showLocalPlayerPicking(player);
             
         } else {
             this.otherPlayerScreenSetup(player);
@@ -96,12 +97,13 @@ class GameManager {
         this.uiManager.hudManager.displayPlayerCharacter(player, this.uiManager.elseTurnContainer, () => {
             //this.networkManager.sendCommand("UseAbility");
         });
-        this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
+        //this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
     }
     updateAllPlayerStats(){
         const currentPlayer = this.gameState.getCurrentPlayer();
         const localPlayer = this.gameState.getLocalPlayer();
         const container = currentPlayer.playerID === this.gameState.myId ? this.uiManager.mainContainer : this.uiManager.elseTurnContainer;
+        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getLocalPlayer(),this.uiManager.mainContainer)
         this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, container, currentPlayer,localPlayer);
     }
     switchToMainPhase() {
@@ -112,8 +114,17 @@ class GameManager {
         this.uiManager.playedCardsContainer.removeChildren();
 
         this.uiManager.hudManager.createNextTurnButton(() => this.networkManager.sendCommand("EndTurn"), this.uiManager.mainContainer);
+        this.uiManager.hudManager.createCardDrawButton(() => {
+            this.gameState.getCurrentPlayer().hasDrawnCards = true;
+            this.playerActionManager.showLocalPlayerPicking(this.gameState.getCurrentPlayer());
+        }, this.uiManager.mainContainer, !this.gameState.getCurrentPlayer().hasDrawnCards);
+        this.uiManager.hudManager.createColorGoldButton(() => {
+            this.gameState.getCurrentPlayer().hasCollectedBonusCash = true;
+            this.networkManager.sendCommand("GetBonusCash");
+            this.switchToMainPhase();
+        }, this.uiManager.mainContainer, !this.gameState.getCurrentPlayer().hasCollectedBonusCash);
         this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer(),this.gameState.getLocalPlayer());
-        
+        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getLocalPlayer(),this.uiManager.mainContainer)
 
         this.uiManager.hudManager.displayPlayerCharacter(
             this.gameState.getCurrentPlayer(),
@@ -123,7 +134,7 @@ class GameManager {
             }
         );
         
-        this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
+        //this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
 
         const currentPlayer = this.gameState.getCurrentPlayer();
         currentPlayer.hand.forEach(card => {
