@@ -279,9 +279,12 @@ class ServerEventManager {
                         this.gameManager.playerActionManager.makeCardDiscardable(card);
                         console.log("Turned temporary: " + cardID);
                         console.log(hand[cardID]);
+                        //
                         this.uiManager.displayTempCards(currentPlayer);
                     }
                 }
+                await this.sleep(1000);
+                this.uiManager.displayTempCards(currentPlayer);
 
             // If we're not currently playing
             } else {
@@ -294,6 +297,11 @@ class ServerEventManager {
             this.gameManager.otherPlayerScreenSetup(currentPlayer);
             this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
         }
+    }
+
+    async sleep(ms: number): Promise<void> {
+    return new Promise(
+        (resolve) => setTimeout(resolve, ms));
     }
 
     async youDrewCard(data: Extract<DirectResponse, { action: "YouDrewCard" }>['data']) {
