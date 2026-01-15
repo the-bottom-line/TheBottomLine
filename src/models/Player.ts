@@ -36,6 +36,8 @@ class Player {
     drawableCards = this.maxTempCards;
     skipNextTurn = false;
     reveal = false;
+    hasDrawnCards = false;
+    hasCollectedBonusCash = false;
 
     _nextZIndex = 0;
     

@@ -149,6 +149,62 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
+    async announceBonusCash(player: Player, amount: number) {
+        const tempContainer = this._createPopupBase();
+        let x = this.app.screen.width / 2;
+        let y = this.app.screen.height / 2 - 120;
+
+        let texture = await Assets.load("./miscellaneous/ChairmanIcon.png");
+        const chairmanIcon = new Sprite(texture);
+
+        chairmanIcon.position.set(x, y);
+        chairmanIcon.width = 200;
+        chairmanIcon.height = 240;
+        chairmanIcon.anchor.set(0.5);
+        y += 100;
+
+        const textChairmanBackground = new Graphics()
+            .roundRect(x - 120, y - 25, 240, 50, 5)
+            .fill(0x60584C)
+            .stroke({ width: 2, color: 0x000000 });
+
+        const chairmanText = new Text({
+            text: "The Chairman ",
+            style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont' }
+        });
+        chairmanText.anchor.set(0.5);
+        chairmanText.position.set(x, y);
+        x += 50;
+        y += 100;
+
+        const textPlayerBackground = new Graphics()
+            .roundRect(x - 200, y - 20, 350, 60, 5)
+            .fill(0x323232)
+            .stroke({ width: 2, color: 0x000000 });
+
+        const infoText = new Text({
+            text: `${player.name} received ${amount} Gold`,
+            style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont' }
+        });
+        infoText.anchor.set(0, 0.5);
+        infoText.position.set(x - 140, y);
+        tempContainer.addChild(chairmanIcon, textChairmanBackground, chairmanText, textPlayerBackground, infoText);
+        if (player.character) {
+            texture = await Assets.load(player.character.iconPath);
+            const characterIcon = new Sprite(texture);
+            characterIcon.position.set(x - 200, y);
+            characterIcon.width = 80;
+            characterIcon.height = 90;
+            characterIcon.anchor.set(0.5);
+            tempContainer.addChild(characterIcon);
+        }
+
+        
+
+        this._addPopupCloseButton(tempContainer);
+
+        this.popupContainer.addChild(tempContainer);
+    }
    
 
     async StakeholdersPerk(characters: Character[], onSelectCallback: (_: Character) => void) {
