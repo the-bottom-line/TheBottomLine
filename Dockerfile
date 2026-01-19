@@ -1,4 +1,5 @@
 FROM node:20 AS build
+LABEL org.opencontainers.image.source="https://github.com/the-bottom-line/TheBottomLine"
 WORKDIR /app/frontend
 
 COPY package.json package-lock.json ./
