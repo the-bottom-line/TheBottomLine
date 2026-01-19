@@ -7,3 +7,13 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+export {};
+
+declare global {
+  interface Window {
+    RUNTIME_CONFIG: {
+      BACKEND_URL: string;
+    };
+  }
+}

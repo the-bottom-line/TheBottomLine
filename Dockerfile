@@ -5,16 +5,12 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 
-ARG VITE_BOTTOM_ONLINE_BACKEND_URL
-ARG VITE_TEST
-
-ENV VITE_BOTTOM_ONLINE_BACKEND_URL=$VITE_BOTTOM_ONLINE_BACKEND_URL
-ENV VITE_TEST=$VITE_TEST
-
 RUN npm run build
 
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
+
+RUN apk add --no-cache gettext
 
 RUN rm -rf ./*
 
@@ -22,4 +18,4 @@ COPY --from=build /app/frontend/dist .
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["sh", "-c", "envsubst < /usr/share/nginx/html/index.html > /tmp/index.html && mv /tmp/index.html /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"]

@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Bottom Line</title>
-    <style>
-        body{
-            margin: 0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Bottom Line</title>
+  <style>
+    body {
+      margin: 0;
+    }
+  </style>
 </head>
 <body>
-    <script type="module" src="./src/main.js"></script>
+
+  <!-- Runtime env injected by envsubst -->
+  <script>
+    window.RUNTIME_CONFIG = {
+      BACKEND_URL: "$VITE_BOTTOM_ONLINE_BACKEND_URL"
+    };
+  </script>
+
+  <!-- Your app -->
+  <script type="module" src="/src/main.ts"></script>
+
 </body>
 </html>
