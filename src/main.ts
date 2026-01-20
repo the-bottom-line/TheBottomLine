@@ -15,6 +15,7 @@ import NetworkManager from "./models/NetworkManager.js";
     app.canvas.style.position = "absolute";
     document.body.appendChild(app.canvas);
     let url = window.RUNTIME_CONFIG.BACKEND_URL;
+    if (url === "") url = "http://localhost/websocket"
     console.log(url)
     const gameState = new GameState();
     const uiManager = new UIManager(app);
