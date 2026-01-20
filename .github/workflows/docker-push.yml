@@ -26,6 +26,6 @@ jobs:
         username: ${{github.actor}}
         password: ${{secrets.GITHUB_TOKEN}}
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ghcr.io/the-bottom-line/thebottomlinefrontend:latest
+      run: docker build . --file Dockerfile frontend --tag ghcr.io/the-bottom-line/thebottomlinefrontend:latest
     - name: Push docker image
       run: docker push ghcr.io/the-bottom-line/thebottomlinefrontend:latest
