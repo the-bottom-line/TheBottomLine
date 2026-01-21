@@ -82,7 +82,7 @@ class GameManager {
             
         } else {
             this.otherPlayerScreenSetup(player);
-            this.uiManager.popUpManager.anounceCharacter(player);
+            this.uiManager.popUpManager.announceCharacter(player);
         }
         this.updateUI();
     }
@@ -143,7 +143,7 @@ class GameManager {
 
         this.playerActionManager.updateHandPlayability();
         
-        //this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
+        //this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liabilities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         this.uiManager.handContainer.sortChildren();
         this.uiManager.hudManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList, this.uiManager.playedCardsContainer);
 

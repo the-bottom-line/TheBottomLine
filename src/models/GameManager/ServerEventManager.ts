@@ -244,7 +244,7 @@ class ServerEventManager {
             return
         }
 
-        // Setup the gamestate
+        // Setup the game state
         this.gameState.setCurrentPlayerIndex(nextPlayerIndex);
 
         // Fetch the current player and their character
@@ -550,7 +550,7 @@ class ServerEventManager {
 
     receiveSelectableCharacters(data: Extract<UniqueResponse, { action: "SelectedCharacter" }>['data']) {
         this.uiManager.showScreen('character');
-        if(data.currently_picking_id == null){ // is this still nececery?
+        if(data.currently_picking_id == null){ // is this still necessary?
             return;
         }
         console.log("Received selectable characters:", data);
@@ -593,7 +593,7 @@ class ServerEventManager {
         console.log("Received TurnStart data from server:", data);
 
         const drawableCards = data.draws_n_cards;
-        const recieveCash = data.player_turn_cash;
+        const receiveCash = data.player_turn_cash;
         const playableAssets = data.playable_assets.total;
         const playableLiabilities = data.playable_liabilities;
        
@@ -611,7 +611,7 @@ class ServerEventManager {
 
             currentPlayer.playableAssets = playableAssets;
             currentPlayer.playableLiabilities = playableLiabilities;
-            currentPlayer.cash += recieveCash;
+            currentPlayer.cash += receiveCash;
             currentPlayer.reveal = true;
             currentPlayer.drawableCards = drawableCards;
             
@@ -708,7 +708,7 @@ class ServerEventManager {
         this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
         this.gameManager.updateAllPlayerStats();
         this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
-        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liabilities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         this.gameManager.updateUI();
        
@@ -729,7 +729,7 @@ class ServerEventManager {
         
         this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
         this.gameManager.updateAllPlayerStats();
-        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liabilities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         player.positionLiabilitiesToPile();
         this.gameManager.updateUI();    
@@ -870,7 +870,7 @@ class ServerEventManager {
             banker.cash = data.new_banker_cash;
         }
         
-        //this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liablities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`; // This already calls updateUI
+        //this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liabilities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`; // This already calls updateUI
         this.gameManager.updateAllPlayerStats();
         this.gameManager.updateUI();
         
@@ -1098,7 +1098,7 @@ class ServerEventManager {
     }
 
     async swappedWithPlayer(data: Extract<UniqueResponse, { action: "SwappedWithPlayer" }>['data']){
-        console.log("swapedWithPlayer:", data);
+        console.log("swappedWithPlayer:", data);
         if (this.gameManager.activePopup) {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;
@@ -1132,8 +1132,8 @@ class ServerEventManager {
             this.gameManager.activePopup = null;
         }
         const localPlayer = this.gameState.getLocalPlayer();
-        const effecterdPlayerID = data.target_player_id;
-        const effecterPlayer= this.gameState.getPlayerById(effecterdPlayerID);
+        const affectedPlayerID = data.target_player_id;
+        const affectedPlayer= this.gameState.getPlayerById(affectedPlayerID);
         const hand: CardType[] = [];
         localPlayer.hand.forEach(card => {
             if (card instanceof Asset){
@@ -1144,7 +1144,7 @@ class ServerEventManager {
             }
             
         });
-        effecterPlayer!.othersHand = hand;
+        affectedPlayer!.othersHand = hand;
         await this.gameManager._updateHandFromServer(data.new_cards);
         
         

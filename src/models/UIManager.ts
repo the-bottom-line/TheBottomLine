@@ -61,7 +61,7 @@ class UIManager {
             const texture = await Assets.load('./miscellaneous/lobbybg.png');
             const bgSprite = new Sprite(texture);
 
-            const texW = 1557;//size of the lobbybg image
+            const texW = 1557;//size of the lobby bg image
             const texH = 1036;
 
             const scale = Math.max(
@@ -229,7 +229,7 @@ class UIManager {
         } catch (err) {
             nameplateTexture = null;
             console.warn(err);
-        }//laad nameplate foto
+        } // Load nameplate image
 
         players.forEach((player, index) => {
             const y = this.app.screen.height /1.43 + index ;
@@ -254,13 +254,13 @@ class UIManager {
             playerText.position.set(x, y - 120);
             this.lobbyContainer.addChild(playerText);
             
-            const lobbycode = new Text({
+            const lobbyCode = new Text({
                 text: channel ? channel : player.playerID.toString(),
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             })
-            lobbycode.anchor.set(0.5);
-            lobbycode.position.set(x, y + 47);
-            this.lobbyContainer.addChild(lobbycode);
+            lobbyCode.anchor.set(0.5);
+            lobbyCode.position.set(x, y + 47);
+            this.lobbyContainer.addChild(lobbyCode);
         });
 
         this.createStartGameBox(onStartGameCallback);

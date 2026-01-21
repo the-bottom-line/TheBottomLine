@@ -251,15 +251,15 @@ class HudManager {
                 .stroke({ width: 1, color: 0x60584C });
             statsContainer.addChild(liabilityCountBackdrop); 
 
-            let liablityCount;
+            let liabilityCount;
             if(player === localPlayer){
-                liablityCount = player.hand.filter(card => card instanceof Liability).length;
+                liabilityCount = player.hand.filter(card => card instanceof Liability).length;
             }else{
-                liablityCount = player.othersHand.filter(card => card === "Liability").length;
+                liabilityCount = player.othersHand.filter(card => card === "Liability").length;
             }
            
             const liabilityCountText = new Text({
-                text: liablityCount.toString(),
+                text: liabilityCount.toString(),
                 style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
             });
             liabilityCountText.anchor.set(0.5);

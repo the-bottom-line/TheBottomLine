@@ -163,7 +163,7 @@ export class CFO extends Character {
 export class CSO extends Character {
     constructor() {
         super(
-            "The Chief Sustainablity Officer",
+            "The Chief Sustainability Officer",
             "Strategic Master",
             "You can buy up to two assets if they are green or red",
             "CSO",
