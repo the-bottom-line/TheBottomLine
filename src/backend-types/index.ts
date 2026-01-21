@@ -282,7 +282,47 @@ perk: string, } } | { "action": "YouRedeemedLiability", "data": {
 /**
  * The index of the liability that was redeemed.
  */
-liability_idx: number, } } | { "action": "YouEndedTurn" } | { "action": "YouMinusedIntoPlus", "data": { 
+liability_idx: number, } } | { "action": "YouEndedTurn" } | { "action": "YouJoinedGame", "data": { 
+/**
+ * Your connected username.
+ */
+username: string, 
+/**
+ * The channel you're connected to.
+ */
+channel: string, } } | { "action": "YouRejoined" } | { "action": "YouResynced", "data": { 
+/**
+ * This player's personal id.
+ */
+id: PlayerId, 
+/**
+ * The amount of cash this player has.
+ */
+cash: number, 
+/**
+ * The player's hand.
+ */
+hand: Array<EitherAssetLiability>, 
+/**
+ * The assets already played by the player
+ */
+assets: Array<AssetCard>, 
+/**
+ * The liabilities already played by the player
+ */
+liabilities: Array<LiabilityCard>, 
+/**
+ * Public info about every other player.
+ */
+player_info: Array<PlayerInfo>, 
+/**
+ * The current market.
+ */
+market: MarketCard, 
+/**
+ * A response containing the current gamestate
+ */
+phase: ResyncData, } } | { "action": "YouMinusedIntoPlus", "data": { 
 /**
  * The market color that was changed,
  */
@@ -478,7 +518,7 @@ target_player_id: PlayerId,
 /**
  * The index of the asset that is to be divested.
  */
-card_idx: number, } } | { "action": "EndTurn" } | { "action": "MinusIntoPlus", "data": { 
+card_idx: number, } } | { "action": "EndTurn" } | { "action": "Resync" } | { "action": "MinusIntoPlus", "data": { 
 /**
  * The color to change the minus from.
  */
@@ -691,7 +731,11 @@ cash: number,
 /**
  * The character this player has chosen, if applicable.
  */
-character: CharacterType | null, };
+character: CharacterType | null, 
+/**
+ * This player is controlled by a human
+ */
+is_human: boolean, };
 
 /**
  * Representation of a player's final score, which contains their id as well as their score.
@@ -743,6 +787,84 @@ liability_count: number, };
  * The general error type that can be sent back in a response.
  */
 export type ResponseError = { "Game": GameError } | "GameNotYetStarted" | "GameAlreadyStarted" | "InvalidData";
+
+/**
+ * Custom data used for resyncing a client
+ */
+export type ResyncData = { "SelectingCharacters": { 
+/**
+ * The id of the chairman, or the person who selects a character first.
+ */
+chairman_id: PlayerId, 
+/**
+ * The id of the player currently selecting a character
+ */
+currently_picking_id: PlayerId, 
+/**
+ * If it's this player's turn, a list of characters that can be selected.
+ */
+selectable_characters: Array<CharacterType> | null, 
+/**
+ * A list of characters that cannot be selected by anyone.
+ */
+open_characters: Array<CharacterType>, 
+/**
+ * A character that only the chairman can see, but not select.
+ */
+closed_character: CharacterType | null, 
+/**
+ * The order each player selects a character in.
+ */
+turn_order: Array<PlayerId>, } } | { "PlayingRound": { 
+/**
+ * Player currently playing
+ */
+current_player_id: PlayerId, 
+/**
+ * The character of this player.
+ */
+player_character: CharacterType, 
+/**
+ * List of previous players and their characters
+ */
+had_turn: Array<[PlayerId, CharacterType]>, 
+/**
+ * The amount of cards this player draws.
+ */
+draws_n_cards: number, 
+/**
+ * The amount of cards this player has already drawn.
+ */
+cards_drawn: number, 
+/**
+ * The amount of cards this player gives back.
+ */
+gives_back_n_cards: number, 
+/**
+ * The amount of cards this player has already returned.
+ */
+cards_returned: number, 
+/**
+ * The cards that have already been drawn by the player
+ */
+drawn_cards: Array<number>, 
+/**
+ * Variable to track if the player has used their ability yet
+ */
+used_ability: boolean, 
+/**
+ * The amount of assets this player can play, where each color asset has a different 'unit
+ * cost' attached to it.
+ */
+playable_assets: PlayableAssets, 
+/**
+ * Amount of play credits remaining
+ */
+play_credits_remaining: number, 
+/**
+ * The amount of liabilities this player can play.
+ */
+playable_liabilities: number, } };
 
 /**
  * Errors that can happen while selecting characters.
@@ -1056,7 +1178,11 @@ player_id: PlayerId, } } | { "action": "GameEnded", "data": {
 /**
  * A list of player scores.
  */
-scores: Array<PlayerScore>, } } | { "action": "MinusedIntoPlus", "data": { 
+scores: Array<PlayerScore>, } } | { "action": "Rejoined", "data": { 
+/**
+ * Id of the rejoining player
+ */
+player_id: PlayerId, } } | { "action": "MinusedIntoPlus", "data": { 
 /**
  * The id of the player which changed one of their market colors.
  */

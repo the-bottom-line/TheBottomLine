@@ -2,7 +2,7 @@ import { Container, Graphics, Text, TextStyle, Ticker, type Application } from '
 import type GameState from '../GameState.js';
 import type UIManager from '../UIManager.js';
 import type NetworkManager from '../NetworkManager.js';
-import type { CardType, DirectResponse, UniqueResponse } from '@shared-types';
+import type { CardType, CharacterType, DirectResponse, PlayableAssets, PlayerId, UniqueResponse } from '@shared-types';
 import Character from '../Characters.js';
 import Player from '../Player.js';
 import Asset from '../Asset.js';
@@ -78,6 +78,230 @@ class ServerEventManager {
         localPlayer.positionCardsInHand();
         this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
         this.gameManager.initRound();
+    }
+
+    /// Called when the server tells us that we're rejoining
+    async rejoinGame() {
+        this.networkManager.sendCommand("Resync");
+    }
+
+    /// Called when the server notifies us that someone is rejoining
+    async playerRejoined(data: Extract<UniqueResponse, {action: "Rejoined"}>['data']) {
+        console.log(data);
+    }
+
+    /// Handles a full rejoin from any situation
+    async resync(data: Extract<DirectResponse, {action: "YouResynced"}>['data']) {
+        console.log("Received Resync data from server:", data);
+
+        // TODO: Check functionality of initRound with documentation (Oliver)
+        // Create the decks (I think?)
+        this.gameManager.initRound();
+
+        // Setup local player
+        this.gameState.players = [];
+        this.gameState.myId = data.id;
+        // TODO: pretty sure this is not set so this.gameState.username! will crash
+        const localPlayer = new Player(this.gameState.username!, data.id, this.app);
+        localPlayer.reveal = true;
+        localPlayer.cash = data.cash;
+
+        this.gameState.players.push(localPlayer);
+
+        // Handle played cards
+        for (const cardData of data.assets) {
+            const card = (await this.gameManager.createAsset(cardData))!;
+            this.gameManager.playAsset(localPlayer, card);
+        }
+        for (const cardData of data.liabilities) {
+            const card = (await this.gameManager.createLiability(cardData))!;
+            this.gameManager.playLiability(localPlayer, card);
+        }
+
+        // Handle cards in hand
+        for (const cardData of data.hand) {
+            const card = (await this.gameManager.createCard(cardData))!;
+            localPlayer.addCardToHand(card);
+
+            // Attach event listeners for playing/discarding cards
+            this.gameManager.playerActionManager.setupCardInteractions(card);
+
+            // Sync UI
+            this.uiManager.handContainer.addChild(card.sprite);
+        }
+
+        //localPlayer.positionCardsInHand();
+        //this.uiManager.handContainer.sortChildren(); // Sort initial hand cards
+        // Add the other players
+        this.gameManager.initPlayers(data.player_info);
+        for (const player_ of data.player_info) {
+            const info = player_;
+            const otherPlayer = this.gameState.getPlayerById(info.id)!;
+
+            // Set up their data
+            const character = this.gameState.characters.find(
+                character => character.characterType === info.character
+            )!;
+            otherPlayer.character = character;
+
+            // Handle already played cards
+            for (const asset of info.assets) {
+                const card = (await this.gameManager.createAsset(asset))!;
+                await this.gameManager.playCard(otherPlayer, card);
+            }
+            for (const liability of info.liabilities) {
+                const card = (await this.gameManager.createLiability(liability))!;
+                await this.gameManager.playCard(otherPlayer, card);
+            }
+
+            // Set up their graphics
+            otherPlayer.positionAssetsToPile();
+            otherPlayer.positionLiabilitiesToPile();
+            console.log(otherPlayer);
+        };
+
+        // The phase package contains phase specific data, in this if block we read through each package
+        if ("SelectingCharacters" in data.phase) {
+            // Get the selection data
+            const selecting = data.phase.SelectingCharacters;
+            this.resyncSelectingCharacterPhase(selecting);
+        }
+        if ("PlayingRound" in data.phase) {
+            const round = data.phase.PlayingRound;
+            await this.resyncPlayingPhase(round);
+        // TODO: Add correct turn phase syncing
+        }
+    }
+
+    /**
+     * Call to set up the selecting characters phase from any point
+     */
+    resyncSelectingCharacterPhase(selecting: {
+        chairman_id: PlayerId;
+        currently_picking_id: PlayerId;
+        selectable_characters: Array<CharacterType> | null;
+        open_characters: Array<CharacterType>;
+        closed_character: CharacterType | null;
+        turn_order: Array<PlayerId>;
+    }) {
+        // Switch screens to character select screen
+        this.uiManager.showScreen("character");
+
+        // Set the open characters
+        this.gameState.openCharacters = this.gameState.characters.filter(character => selecting.open_characters.includes(character.characterType));
+
+        // If there are selectable characters then assume the player is currently selecting a character
+        this.uiManager.displayCharacterSelection(
+            // Get all the open characters
+            this.gameState.openCharacters,
+            // Make them clickable
+            (character) => {
+                this.networkManager.sendCommand("SelectCharacter", { "character": character.characterType! });
+                console.log(`Selected character: ${character.characterType}`);
+                this.uiManager.characterCardsContainer.removeChildren();
+            },
+            // Get all the selectable characters
+            this.gameState.characters.filter(character => selecting.selectable_characters?.includes(character.characterType)),
+            // Show the closed character if it exists, otherwise pass undefined to indicate no closed character
+            selecting.closed_character ?
+                this.gameState.characters.filter(character => selecting.closed_character?.includes(character.characterType)).pop()
+                : undefined);
+    }
+
+    /**
+     * Call to set up the Playing Phase from any point
+     */
+    async resyncPlayingPhase(round: {
+        current_player_id: PlayerId;
+        player_character: CharacterType;
+        had_turn: Array<[PlayerId, CharacterType]>;
+        draws_n_cards: number;
+        cards_drawn: number;
+        gives_back_n_cards: number;
+        cards_returned: number;
+        drawn_cards: Array<number>;
+        used_ability: boolean;
+        playable_assets: PlayableAssets;
+        play_credits_remaining: number;
+        playable_liabilities: number;
+    }) {
+        // Reveal the characters that have already had their turn
+        round.had_turn.forEach(p => {
+            const player = this.gameState.getPlayerById(p[0]);
+            const character = this.gameState.characters.find(c => c.characterType === p[1]);
+            if (player != undefined && character != null) {
+                console.log(character);
+                player.character = character;
+                player.reveal = true;
+            }
+        })
+    
+        // Find the index of the current player
+        const nextPlayerIndex = this.gameState.players.findIndex(p => p.playerID == round.current_player_id);
+
+        // Check if it exists
+        if (nextPlayerIndex == -1) {
+            return
+        }
+
+        // Setup the game state
+        this.gameState.setCurrentPlayerIndex(nextPlayerIndex);
+
+        // Fetch the current player and their character
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        const character = this.gameState.characters.find(c => c.characterType === round.player_character);
+        if (character) {
+            currentPlayer.character = character;
+        } else {
+            console.error(`Character with name ${round.player_character} not found.`);
+        }
+
+        // Setup their round stats
+        currentPlayer.playableAssets = round.playable_assets.total;
+        currentPlayer.playableLiabilities = round.playable_liabilities;
+        currentPlayer.reveal = true;
+        currentPlayer.drawableCards = round.draws_n_cards;
+
+        // Check if it is us that is currently playing
+        if (currentPlayer.playerID == this.gameState.myId) {
+            // Check if we should be in the picking phase or have already picked and returned our cards.
+            if (round.cards_drawn < round.draws_n_cards || round.cards_returned < round.gives_back_n_cards) {
+                // Make the player visible
+                this.gameManager.startTurnPlayerVisibilty();
+
+                // Loop over all cards drawn this round
+                for (const cardID of round.drawn_cards) {
+                    const hand = currentPlayer.hand;
+                    const card = hand[cardID];
+                    // If the card exists make it temporary and discardable
+                    if (card) {
+                        card.isTemporary = true;
+                        this.gameManager.playerActionManager.makeCardDiscardable(card);
+                        console.log("Turned temporary: " + cardID);
+                        console.log(hand[cardID]);
+                        //
+                        this.uiManager.displayTempCards(currentPlayer);
+                    }
+                }
+                await this.sleep(1000);
+                this.uiManager.displayTempCards(currentPlayer);
+
+            // If we're not currently playing
+            } else {
+                this.gameManager.switchToMainPhase();
+                //this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
+                currentPlayer.positionCardsInHand();
+            }
+        } else {
+            console.log("Not our turn, ");
+            this.gameManager.otherPlayerScreenSetup(currentPlayer);
+            //this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
+        }
+    }
+
+    async sleep(ms: number): Promise<void> {
+    return new Promise(
+        (resolve) => setTimeout(resolve, ms));
     }
 
     async youDrewCard(data: Extract<DirectResponse, { action: "YouDrewCard" }>['data']) {
@@ -326,7 +550,7 @@ class ServerEventManager {
 
     receiveSelectableCharacters(data: Extract<UniqueResponse, { action: "SelectedCharacter" }>['data']) {
         this.uiManager.showScreen('character');
-        if(data.currently_picking_id == null){ // is this still nececery?
+        if(data.currently_picking_id == null){ // is this still necessary?
             return;
         }
         console.log("Received selectable characters:", data);
@@ -369,7 +593,7 @@ class ServerEventManager {
         console.log("Received TurnStart data from server:", data);
 
         const drawableCards = data.draws_n_cards;
-        const recieveCash = data.player_turn_cash;
+        const receiveCash = data.player_turn_cash;
         const playableAssets = data.playable_assets.total;
         const playableLiabilities = data.playable_liabilities;
        
@@ -387,7 +611,7 @@ class ServerEventManager {
 
             currentPlayer.playableAssets = playableAssets;
             currentPlayer.playableLiabilities = playableLiabilities;
-            currentPlayer.cash += recieveCash;
+            currentPlayer.cash += receiveCash;
             currentPlayer.reveal = true;
             currentPlayer.drawableCards = drawableCards;
             
@@ -484,7 +708,7 @@ class ServerEventManager {
         this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
         this.gameManager.updateAllPlayerStats();
         this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
-        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liabilities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         this.gameManager.updateUI();
        
@@ -505,7 +729,7 @@ class ServerEventManager {
         
         this.gameManager.playerActionManager.updateHandPlayability(); // This already calls updateUI
         this.gameManager.updateAllPlayerStats();
-        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liablities: ${player.playableLiabilities}, cash: ${player.cash}`;
+        //this.uiManager.statsText.text = `assets:${player.playableAssets}, liabilities: ${player.playableLiabilities}, cash: ${player.cash}`;
         
         player.positionLiabilitiesToPile();
         this.gameManager.updateUI();    
@@ -646,7 +870,7 @@ class ServerEventManager {
             banker.cash = data.new_banker_cash;
         }
         
-        //this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liablities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`; // This already calls updateUI
+        //this.uiManager.statsText.text = `assets:${localPlayer.playableAssets}, liabilities: ${localPlayer.playableLiabilities}, cash: ${localPlayer.cash}`; // This already calls updateUI
         this.gameManager.updateAllPlayerStats();
         this.gameManager.updateUI();
         
@@ -718,9 +942,9 @@ class ServerEventManager {
         }
     }
     minusedIntoPlus(data: Extract<IncomingResponse, { action: "MinusedIntoPlus" }>['data']) {
-        let playerID = data.player_id;
-        let score = data.new_score;
-
+        const playerID = data.player_id;
+        const score = data.new_score;
+        console.log(playerID + " - " + score);
     }
 
     youCharacterAbility(data: Extract<DirectResponse, { action: "YouCharacterAbility" }>['data']){
@@ -874,7 +1098,7 @@ class ServerEventManager {
     }
 
     async swappedWithPlayer(data: Extract<UniqueResponse, { action: "SwappedWithPlayer" }>['data']){
-        console.log("swapedWithPlayer:", data);
+        console.log("swappedWithPlayer:", data);
         if (this.gameManager.activePopup) {
             this.gameManager.activePopup.destroy({ children: true });
             this.gameManager.activePopup = null;
@@ -908,9 +1132,9 @@ class ServerEventManager {
             this.gameManager.activePopup = null;
         }
         const localPlayer = this.gameState.getLocalPlayer();
-        const effecterdPlayerID = data.target_player_id;
-        const effecterPlayer= this.gameState.getPlayerById(effecterdPlayerID);
-        let hand: CardType[] = [];
+        const affectedPlayerID = data.target_player_id;
+        const affectedPlayer= this.gameState.getPlayerById(affectedPlayerID);
+        const hand: CardType[] = [];
         localPlayer.hand.forEach(card => {
             if (card instanceof Asset){
                 hand.push("Asset")
@@ -920,7 +1144,7 @@ class ServerEventManager {
             }
             
         });
-        effecterPlayer!.othersHand = hand;
+        affectedPlayer!.othersHand = hand;
         await this.gameManager._updateHandFromServer(data.new_cards);
         
         

@@ -6,7 +6,7 @@ import type GameState from './GameState.js';
 import type UIManager from './UIManager.js';
 import type NetworkManager from './NetworkManager.js';
 import type { Application, Container } from 'pixi.js';
-import type { EitherAssetLiability, PlayerInfo } from '@shared-types';
+import type { AssetCard, EitherAssetLiability, LiabilityCard, PlayerInfo } from '@shared-types';
 import PlayerActionManager from './GameManager/PlayerActionManager.js';
 import ServerEventManager from './GameManager/ServerEventManager.js';
 
@@ -82,7 +82,7 @@ class GameManager {
             
         } else {
             this.otherPlayerScreenSetup(player);
-            this.uiManager.popUpManager.anounceCharacter(player);
+            this.uiManager.popUpManager.announceCharacter(player);
         }
         this.updateUI();
     }
@@ -143,7 +143,7 @@ class GameManager {
 
         this.playerActionManager.updateHandPlayability();
         
-        //this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
+        //this.uiManager.statsText.text = `assets:${currentPlayer.playableAssets}, liabilities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         this.uiManager.handContainer.sortChildren();
         this.uiManager.hudManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList, this.uiManager.playedCardsContainer);
 
@@ -174,7 +174,6 @@ class GameManager {
        
     }
 
-    
     async otherCards() {
         const currentPlayer = this.gameState.getCurrentPlayer();
 
@@ -185,6 +184,67 @@ class GameManager {
         this.uiManager.hudManager.displayOtherPlayerHand(assets, liabilities, this.uiManager.elseTurnContainer);
         this.uiManager.hudManager.displayPlayerPlayedCards(currentPlayer.assetList,currentPlayer.liabilityList, this.uiManager.playedCardsContainer);
     
+    }
+    async createAsset(cardData: AssetCard) {
+        const newCard:Asset = new Asset(
+            cardData.title,
+            cardData.color,
+            cardData.gold_value,
+            cardData.silver_value,
+            cardData.ability,
+            cardData.image_front_url
+        );
+        await newCard.initializeSprite();
+        return newCard
+    }
+    async createLiability(cardData: LiabilityCard) {
+        const newCard: Liability = new Liability(
+            cardData.rfr_type,
+            cardData.value,
+            cardData.image_front_url
+        );
+        await newCard.initializeSprite();
+        return newCard
+    }
+
+    async createCard(cardData: EitherAssetLiability) {
+        let newCard : Asset | Liability;
+        if (cardData.card_type === "asset") {
+            const { ...asset } = cardData;
+            newCard = await this.createAsset(asset);
+        } else //if (cardData.card_type === "liability")
+        {
+            const { ...liability } = cardData;
+            newCard = await this.createLiability(liability);
+        }
+
+        return newCard;
+    }
+
+    // Plays an assets and updates corresponding values
+    playAsset(player: Player, card: Asset) {
+        player.gold += card.gold;
+        player.silver += card.silver;
+        player.assetList.push(card);
+        player.positionAssetsToPile();
+    }
+
+    // Plays a liability and updates corresponding values
+    playLiability(player: Player, card: Asset | Liability) {
+        player.liabilityList.push(card);
+        player.positionLiabilitiesToPile();
+    }
+
+    // Plays the given card by cardData as the given player
+    async playCard(player: Player, card: Asset | Liability) {
+        // Push card to the correct pile
+        if (card instanceof Asset) {
+            this.playAsset(player, card);
+        } else if (card instanceof Liability) {
+            this.playLiability(player, card);
+        } else {
+            throw "unreachable";
+        }
     }
 
     initPlayers(player_info: PlayerInfo[]){
