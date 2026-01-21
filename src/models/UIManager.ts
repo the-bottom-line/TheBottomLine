@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
@@ -79,6 +79,7 @@ class UIManager {
             backgroundDisplay = bgSprite;
         } catch (err) {
             console.error("Failed to find lobby Background image")
+            console.warn(err);
             backgroundDisplay = new Graphics().rect(0, 0, this.app.screen.width, this.app.screen.height).fill(this.getGradient());
         }
 
@@ -227,6 +228,7 @@ class UIManager {
             nameplateTexture = await Assets.load('./miscellaneous/nameplate.svg');
         } catch (err) {
             nameplateTexture = null;
+            console.warn(err);
         }//laad nameplate foto
 
         players.forEach((player, index) => {
@@ -332,7 +334,7 @@ class UIManager {
         
 
         if (openCharacters && openCharacters.length > 0) {
-            let spacing = 150;
+            const spacing = 150;
 
             openCharacters.forEach(async (character, index) =>{                
                 const texture = await Assets.load(character.texturePath);

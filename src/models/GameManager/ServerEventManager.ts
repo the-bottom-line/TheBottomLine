@@ -289,13 +289,13 @@ class ServerEventManager {
             // If we're not currently playing
             } else {
                 this.gameManager.switchToMainPhase();
-                this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
+                //this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.mainContainer);
                 currentPlayer.positionCardsInHand();
             }
         } else {
             console.log("Not our turn, ");
             this.gameManager.otherPlayerScreenSetup(currentPlayer);
-            this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
+            //this.uiManager.hudManager.displayRevealedCharacters(this.gameState.players, this.uiManager.elseTurnContainer);
         }
     }
 
