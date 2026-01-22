@@ -4,8 +4,9 @@ import type Player from '../Player.js';
 import type Character from '../Characters.js';
 import Liability from '../Liability.js';
 import Asset from '../Asset.js';
-import type { CardType, MarketCard } from '@shared-types';
+import type { CardType, Color, MarketCard } from '@shared-types';
 import { GlowFilter } from 'pixi-filters';
+import { marketColors } from '../theme.js';
 
 
 
@@ -62,7 +63,6 @@ class HudManager {
             statsContainer.visible = false; 
             statsGroup.addChild(statsContainer);
 
-            const colors = [ "yellow", "blue", "green", "purple", "red"];
             const statsBackground = new Graphics()
                 .rect(0, 0, 870, 340)
                 .fill(0x2A2B2A)
@@ -120,16 +120,18 @@ class HudManager {
             statsContainer.addChild(cardsTitle);
 
             const startX = 109;
+            const colors = (Object.keys(marketColors) as Color[]).map(color => ({
+                name: color,
+                hex: marketColors[color],
+            })).reverse();
             colors.forEach((color, index) => {
-
-
                 const type = new Graphics()
-                    .roundRect(startX + index * 50, 230, 30, 30)
-                    .fill(color)
+                    .roundRect(startX + (4 - index) * 50, 230, 30, 30)
+                    .fill(color.hex)
                     .stroke({ width: 3, color: 0x000000 });
                 statsContainer.addChild(type);
 
-                const assetsOfColor = player.assetList.filter(asset => asset.color.toLowerCase() === color);
+                const assetsOfColor = player.assetList.filter(asset => asset.color === color.name);
                 const totalGold = assetsOfColor.reduce((sum, asset) => sum + asset.gold, 0);
                 const totalSilver = assetsOfColor.reduce((sum, asset) => sum + asset.silver, 0);
 
@@ -458,25 +460,22 @@ class HudManager {
         marketContainer.addChild(background);
 
         // Top half: 5 colored circles with status
-        const colors = [
-            { name: 'Yellow', value: marketData.Yellow },
-            { name: 'Blue', value: marketData.Blue },
-            { name: 'Green', value: marketData.Green },
-            { name: 'Purple', value: marketData.Purple },
-            { name: 'Red', value: marketData.Red }
-        ];
+        const colors = (Object.keys(marketColors) as Color[]).map(color => ({
+            name: color,
+            value: marketData[color],
+            hex: marketColors[color],
+        })).reverse();
 
         const circleRadius = 20;
         const circleY = height / 3-10;
         const spacing = 60;
         const totalCircleWidth = (colors.length - 1) * spacing;
         const startX = (width - totalCircleWidth) / 2;
-
         colors.forEach((colorInfo, index) => {
             const circleX = startX + index * spacing;
             const circle = new Graphics()
                 .circle(0, 0, circleRadius)
-                .fill(colorInfo.name.toLowerCase())
+                .fill(colorInfo.hex)
                 .stroke({ width: 2, color: 0x000000 });
             circle.position.set(circleX, circleY);
             circle.label = colorInfo.name;

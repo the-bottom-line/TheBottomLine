@@ -157,9 +157,12 @@ class NetworkManager {
     sendMessage(data: string) {
         if (this.connection!.readyState == WebSocket.OPEN) {
             // Catch and reject duplicate messages
-            if (this.messageInTransit || this.recentMessages.has(data)) {
-                console.error("Rejected duplicate message: " + data);
+            if (this.recentMessages.has(data)) {
+                console.warn("Rejected duplicate message: " + data);
                 return;
+            }
+            if (this.messageInTransit) {
+                console.warn("Previous message still in transit...");
             }
 
             this.messageInTransit = true;

@@ -517,8 +517,7 @@ class UIManager {
             container.addChild(playerName);
         });
     
-        container.x = this.app.screen.width / 2;
-        container.y = this.app.screen.height / 2;
+        container.position.set(20, this.app.screen.height / 2);
     }
     
 }

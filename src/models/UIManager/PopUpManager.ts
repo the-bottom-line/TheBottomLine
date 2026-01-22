@@ -8,6 +8,7 @@ import type { MarketCard } from '@shared-types';
 import type { DivestmentTarget } from '../GameManager.js';
 import type HudManager from './HudManager.js';
 import Liability from '../Liability.js';
+import { marketColors, themeColors } from '../theme.js';
 
 class PopUpManager {
     app: Application;
@@ -456,7 +457,7 @@ class PopUpManager {
 
         const titleBackground = new Graphics()
             .roundRect(x - contentWidth / 2, y - 25, contentWidth, 50, 5)
-            .fill(0x60584C)
+            .fill('#60584C')
             .stroke({ width: 2, color: 0x000000 });
         tempContainer.addChild(titleBackground);
 
@@ -1731,13 +1732,11 @@ class PopUpManager {
 
         marketContent.addChild(background);
 
-        const colors = [
-            { name: 'Yellow', value: marketState.Yellow },
-            { name: 'Blue', value: marketState.Blue },
-            { name: 'Green', value: marketState.Green },
-            { name: 'Purple', value: marketState.Purple },
-            { name: 'Red', value: marketState.Red }
-        ];
+        const colors = (Object.keys(marketColors) as Color[]).map(color => ({
+            name: color,
+            value: marketState[color],
+            hex: marketColors[color],
+        })).reverse();
 
         const circleRadius = 30;
         const circleY = height /2;
@@ -1750,8 +1749,8 @@ class PopUpManager {
             const circleX = startX + index * spacing;
             const circle = new Graphics()
                 .circle(0, 0, circleRadius)
-                .fill(colorInfo.name.toLowerCase())
-                .stroke({ width: 2, color: 0x000000 });
+                .fill(colorInfo.hex)
+                .stroke({ width: 2, color: themeColors.outline });
             circle.position.set(circleX, circleY);
             
             circle.interactive = true;
@@ -1890,7 +1889,7 @@ class PopUpManager {
                 .moveTo(centerX, centerY)
                 .arc(centerX, centerY, radius, startAngle, endAngle)
                 .closePath()
-                .fill(colors[index]!.color!);
+                .fill(marketColors[colors[index]!.name as Color]);
             
             if (isSelected) {
                 g.stroke({ width: 5, color: 0xFFFFFF });
@@ -1955,7 +1954,7 @@ class PopUpManager {
     displayApplicationLabPopup(localPlayer: Player, silverIntoGoldCall: (index: number) => void,confirmAssetAbilityCall: (index: number) => void,cardIndex: number){
         const tempContainer = this._createPopupBase();
 
-        const selectedCardIndex = -1;
+        //const selectedCardIndex = -1;
         const cardOutlines: Graphics[] = [];
 
         const totalAssetsWidth = (localPlayer.assetList.length - 1) * 200;
@@ -2014,7 +2013,7 @@ class PopUpManager {
         this.endGameScoresContainer = new Container();
         
         const x = 20;
-        let y = 20;
+        let y = this.app.screen.height / 2;
         
         const bg = new Graphics();
         this.endGameScoresContainer.addChild(bg);
