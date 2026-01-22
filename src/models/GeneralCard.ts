@@ -28,7 +28,7 @@ class GeneralCard {
         this.discardButton.anchor.set(0.5);
         this.discardButton.width = 30;
         this.discardButton.height = 30;
-        this.discardButton.on('pointerdown', () => { 
+        this.discardButton.on('pointertap', () => { 
             this.sprite.emit('cardDiscarded', this); 
         });
     }
@@ -49,7 +49,7 @@ class GeneralCard {
     makeUnplayable() {
         this.sprite.interactive = false;
         this.sprite.cursor = 'default';
-        this.sprite.off('pointerdown');
+        this.sprite.off('pointertap');
     }
 
     setPosition(x: number, y: number) {

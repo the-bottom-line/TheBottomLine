@@ -705,7 +705,7 @@ class ServerEventManager {
 
         player.positionCardsInHand();
         player.positionLiabilitiesToPile();
-        card.sprite.on('pointerdown', () => {
+        card.sprite.on('pointertap', () => {
             this.networkManager.sendCommand("RedeemLiability", { liability_idx:player.liabilityList.indexOf(card) })
         });
         this.uiManager.hudManager.addCardToPlayedContainer(card, this.uiManager.playedCardsContainer);
