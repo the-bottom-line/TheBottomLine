@@ -28,7 +28,7 @@ class GeneralCard {
         this.discardButton.anchor.set(0.5);
         this.discardButton.width = 30;
         this.discardButton.height = 30;
-        this.discardButton.on('mousedown', () => { 
+        this.discardButton.on('pointerdown', () => { 
             this.sprite.emit('cardDiscarded', this); 
         });
     }
@@ -36,10 +36,10 @@ class GeneralCard {
     makePlayable() {
         this.sprite.interactive = true;
         this.sprite.cursor = 'pointer';
-        this.sprite.on('mouseover', () => {
+        this.sprite.on('pointerover', () => {
             this.sprite.emit('cardHover', this);
         });
-        this.sprite.on('mouseout', () => {
+        this.sprite.on('pointerout', () => {
             this.sprite.emit('cardOut', this);
         });
 
@@ -49,7 +49,7 @@ class GeneralCard {
     makeUnplayable() {
         this.sprite.interactive = false;
         this.sprite.cursor = 'default';
-        this.sprite.off('mousedown');
+        this.sprite.off('pointerdown');
     }
 
     setPosition(x: number, y: number) {

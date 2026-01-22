@@ -90,8 +90,8 @@ class PlayerActionManager {
         const localPlayer = this.gameState.getLocalPlayer()!;
 
         // Setup click-to-play listener
-        card.sprite.removeAllListeners('mousedown'); // Clear old listeners to be safe
-        card.sprite.on('mousedown', () => {
+        card.sprite.removeAllListeners('pointerdown'); // Clear old listeners to be safe
+        card.sprite.on('pointerdown', () => {
             const cardIndex = localPlayer.hand.indexOf(card);
             if (cardIndex !== -1) {
                 // Check if the card is actually playable before sending command

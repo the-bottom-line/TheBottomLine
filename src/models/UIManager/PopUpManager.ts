@@ -282,7 +282,7 @@ class PopUpManager {
             
             faceUpCard.x = startX + index * (cardWidth + spacing);
             faceUpCard.y = y + (940 * cardScale) / 2;
-            faceUpCard.on('mousedown', () => onSelectCallback(character));
+            faceUpCard.on('pointerdown', () => onSelectCallback(character));
             tempContainer.addChild(faceUpCard);
             
         });
@@ -808,7 +808,7 @@ class PopUpManager {
 
             cardSprites.push({ sprite, originalPos: { x: originalX, y: originalY }, index: i });
 
-            sprite.on('mousedown', () => {
+            sprite.on('pointerdown', () => {
                 const selIdx = selectedIndices.indexOf(i);
                 if (selIdx === -1) {
                     selectedIndices.push(i);
@@ -970,7 +970,7 @@ class PopUpManager {
 
             cardSprites.push({ sprite, originalPos: { x: originalX, y: originalY }, index: index });
 
-            sprite.on('mousedown', () => {
+            sprite.on('pointerdown', () => {
                 const selIdx = selectedIndices.indexOf(index);
                 if (selIdx === -1) {
                     selectedIndices.push(index);
@@ -1088,7 +1088,7 @@ class PopUpManager {
             
             faceUpCard.x = startX + index * (cardWidth + spacing);
             faceUpCard.y = y + (940 * cardScale) / 2;
-            faceUpCard.on('mousedown', () => {
+            faceUpCard.on('pointerdown', () => {
                 onSelectCallback(character);
                 if (tempContainer.parent) {
                     tempContainer.parent.removeChild(tempContainer);
@@ -1247,7 +1247,7 @@ class PopUpManager {
                     sprite.filters = [grayscaleFilter];
                 }
                 sprite.position.set(cardStartX + cardWidth / 2, playerY + cardHeight/2);
-                sprite.on('mousedown', () => onSelectCallback(target.player.playerID, target.player.assetList.indexOf(card.asset)));
+                sprite.on('pointerdown', () => onSelectCallback(target.player.playerID, target.player.assetList.indexOf(card.asset)));
                 tempContainer.addChild(sprite);
                 cardStartX += cardWidth + cardSpacing;
             }
@@ -1347,7 +1347,7 @@ class PopUpManager {
             cardBack.anchor.set(0.5);
             cardBack.position.set(assetStartX, playerY + cardHeight / 2);
             cardBack.interactive = true;
-            cardBack.on('mousedown', () => onSelectCallback1(player.playerID));
+            cardBack.on('pointerdown', () => onSelectCallback1(player.playerID));
                
             tempContainer.addChild(cardBack);
             const assetCount = new Text({
@@ -1366,7 +1366,7 @@ class PopUpManager {
             cardBack.anchor.set(0.5);
             cardBack.position.set(liabilityStartX, playerY + cardHeight / 2);
             cardBack.interactive = true;
-            cardBack.on('mousedown', () => onSelectCallback1(player.playerID));
+            cardBack.on('pointerdown', () => onSelectCallback1(player.playerID));
             tempContainer.addChild(cardBack);
             const liabilityCount = new Text({
                 text: `${option.liability_count} X`,
@@ -1451,7 +1451,7 @@ class PopUpManager {
             outline.alpha = 0;
             tempContainer.addChild(outline);
 
-            cardSprite.on('mousedown', () => {
+            cardSprite.on('pointerdown', () => {
                 const selectionIndex = selectedIndices.indexOf(index);
                 if (selectionIndex > -1) {
                    
@@ -1736,7 +1736,7 @@ class PopUpManager {
             name: color,
             value: marketState[color],
             hex: marketColors[color],
-        })).reverse();
+        }));
 
         const circleRadius = 30;
         const circleY = height /2;
@@ -1755,7 +1755,7 @@ class PopUpManager {
             
             circle.interactive = true;
             circle.cursor = 'pointer';
-            circle.on('mousedown', () => onSelectCallback(colorInfo.name as Color));
+            circle.on('pointerdown', () => onSelectCallback(colorInfo.name as Color));
 
             marketContent.addChild(circle);
 
