@@ -285,7 +285,7 @@ class UIManager {
         const assetDeck = new AssetCards();
         const assetDeckSprite = await assetDeck.initializeDeckSprite();
         assetDeck.setDeckPosition(this.app.screen.width / 2 - 150, 70);
-        assetDeckSprite.on('mousedown', onPressCallback);
+        assetDeckSprite.on('pointerdown', onPressCallback);
         this.decksContainer.addChild(assetDeckSprite);
     }
 
@@ -293,7 +293,7 @@ class UIManager {
         const liabilityDeck = new LiabilityCards();
         const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
         liabilityDeck.setDeckPosition(this.app.screen.width / 2 + 150, 70);
-        liabilityDeckSprite.on('mousedown', onPressCallback);
+        liabilityDeckSprite.on('pointerdown', onPressCallback);
         this.decksContainer.addChild(liabilityDeckSprite);
     }
 
@@ -325,7 +325,7 @@ class UIManager {
             const maxDistance = midIndex;
             const yOffset = -Math.pow(distanceFromMid / maxDistance, 2) * -50;
             faceUpCard.y = this.app.screen.height / 2 + yOffset;
-            faceUpCard.on('mousedown', () => onSelectCallback(character)); 
+            faceUpCard.on('pointerdown', () => onSelectCallback(character)); 
             this.characterCardsContainer.addChild(faceUpCard);
             
         });
@@ -422,21 +422,21 @@ class UIManager {
                 if(card.title == "R&D Lab"){
                     card.sprite.interactive = true;
                     card.sprite.cursor = 'pointer';
-                    card.sprite.on('mousedown', () => {
+                    card.sprite.on('pointerdown', () => {
                         this.popUpManager.displayRnDPopup(marketState, minusIntoPlusCall, confirmAssetAbilityCall, player.assetList.indexOf(card));
                     });
                 }
                 else if( card.title == "Pilot Plant"){
                     card.sprite.interactive = true;
                     card.sprite.cursor = 'pointer';
-                    card.sprite.on('mousedown', () => {
+                    card.sprite.on('pointerdown', () => {
                         this.popUpManager.displayPilotPlantPopup(player,confirmColorChangeCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
                     });
                 }
                 else if( card.title == "Application Lab"){
                     card.sprite.interactive = true;
                     card.sprite.cursor = 'pointer';
-                    card.sprite.on('mousedown', () => {
+                    card.sprite.on('pointerdown', () => {
                         this.popUpManager.displayApplicationLabPopup(player,silverIntoGoldCall,confirmAssetAbilityCall, player.assetList.indexOf(card));
                     });
                 }
