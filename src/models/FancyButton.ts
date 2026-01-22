@@ -1,0 +1,45 @@
+import { Container, Graphics, Text } from 'pixi.js';
+import { Button } from '@pixi/ui';
+import { GlowFilter } from 'pixi-filters';
+
+export interface FancyButtonOptions {
+    text: string;
+    width?: number;
+    height?: number;
+    fontSize?: number; // Added fontSize to the interface
+    onPress?: () => void;
+}
+
+export class FancyButton extends Button {
+    constructor(options: FancyButtonOptions) {
+        const width = options.width || 200;
+        const height = options.height || 60;
+        const cornerRadius = 15;
+
+        const background = new Graphics()
+            .roundRect(0, 0, width, height, cornerRadius)
+            .fill(0xBFAB86) // Antique Gold
+            //.stroke({ width: 2, color: 0x000000 }); // Slight black outline
+        background.filters =[
+            
+            new GlowFilter({
+                distance: 20,
+                outerStrength: 1,
+                innerStrength: 0,
+                color: 0xf2e8d9, 
+            })
+        ];
+        const buttonText = new Text({
+            text:  options.text,
+            style: { fill: '#f2e8d5', fontSize:  options.fontSize || 32, fontFamily: 'MyFont' }
+        });
+        buttonText.anchor.set(0.5);
+        buttonText.position.set(width / 2, height / 2);
+
+        super(new Container({ children: [background, buttonText] }));
+
+        if (options.onPress) {
+            this.onPress.connect(options.onPress);
+        }
+    }
+}

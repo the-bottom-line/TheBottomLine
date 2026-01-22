@@ -1,0 +1,253 @@
+import type Asset from "./Asset.ts";
+import type Player from "./Player.ts";
+import type { CharacterType } from '@shared-types';
+
+export default class Character {
+    name: string;
+    ability: string;
+    description: string;
+    texturePath: string;
+    iconPath: string;
+    order: number;
+    characterType: CharacterType;
+    
+    used = false; 
+    
+    constructor(name: string, ability: string, description: string, characterType: CharacterType ,order: number) {
+        this.name = name;
+        this.ability = ability;
+        this.description = description;
+        this.characterType = characterType;
+        this.texturePath = `./miscellaneous/${characterType}.webp`;
+        this.iconPath = `./miscellaneous/${characterType}Icon.png`;
+        this.used = false; 
+        this.order = order;
+    }
+
+    useActive(_player: Player, _targetPlayer?: Player, _cardIndex?: number, _targetCardIndex?: number) {
+        if (this.used) return false;
+        this.used = true;
+        return true;
+    }
+    usePassive(player: Player) {
+        player.cash += 1;
+    }
+}
+
+export class Shareholder extends Character {
+    constructor() {
+        super(
+            "The Shareholder",
+            "Skip Master",
+            "Can choose a character and skip their turn",
+            "Shareholder",
+            1
+        );
+    }
+
+    useActive(player: Player, targetPlayer: Player) {
+        if (super.useActive(player)) {
+            targetPlayer.skipNextTurn = true;
+            return true;
+        }
+        return false;
+    }
+   
+}
+
+export class Banker extends Character {
+    constructor() {
+        super(
+            "The Banker",
+            "Fanum Tax",
+            "Takes gold from a player based on their asset colors",
+            "Banker",
+            2
+        );
+    }
+
+    useActive(player: Player, targetPlayer: Player) {
+        if (super.useActive(player)) {
+            const uniqueColors = new Set(targetPlayer.assetList.map((asset: Asset) => asset.color));
+            const goldToTake = uniqueColors.size;
+            targetPlayer.gold -= goldToTake;
+            player.gold += goldToTake;
+            return true;
+        }
+        return false;
+    }
+    
+}
+
+export class Regulator extends Character {
+    constructor() {
+        super(
+            "The Regulator",
+            "Card Swap",
+            "Can swap cards with another player",
+            "Regulator",
+            3
+        );
+    }
+
+    useActive(player: Player, targetPlayer: Player, cardIndex: number, targetCardIndex: number): boolean {
+        if (super.useActive(player)) {
+            const tempCard = player.hand[cardIndex]!;
+            player.hand[cardIndex] = targetPlayer.hand[targetCardIndex]!;
+            targetPlayer.hand[targetCardIndex] = tempCard;
+            player.positionCardsInHand();
+            targetPlayer.positionCardsInHand();
+            return true;
+        }
+        return false;
+    }
+   
+}
+
+export class CEO extends Character {
+    constructor() {
+        super(
+            "The Chief Executive Officer",
+            "Asset Master",
+            "Starts with 3 playable assets per turn",
+            "CEO",
+            4
+        );
+    }
+
+    // Applied at start, no active ability needed
+    useActive(player: Player) {
+        // TODO: return super.useActive
+        if (super.useActive(player)) {
+            return true; // Keep ability used tracking but do nothing
+        }
+        return false;
+    }
+
+    // New method to apply passive effect
+    usePassive(player: Player) {
+        super.usePassive(player);
+        player.playableAssets = 3;
+            
+        
+        
+        
+    }
+}
+
+export class CFO extends Character {
+    constructor() {
+        super(
+            "The Chief Financial Officer",
+            "Liability Master",
+            "Starts with 3 playable liabilities per turn",
+            "CFO",
+            5
+        );
+    }
+
+    useActive(player: Player) {
+        if (super.useActive(player)) {
+            return true;
+        }
+        return false;
+    }
+
+    usePassive(player: Player) {
+        super.usePassive(player);
+        player.playableLiabilities = 3;
+        
+    }
+}
+
+export class CSO extends Character {
+    constructor() {
+        super(
+            "The Chief Sustainability Officer",
+            "Strategic Master",
+            "You can buy up to two assets if they are green or red",
+            "CSO",
+            6
+        );
+    }   
+
+    useActive(player: Player) {
+        if (super.useActive(player)) {
+            return true;
+        }
+        return false;
+    }
+
+    usePassive(player: Player) {
+        super.usePassive(player);
+            player.playableAssets = 2;
+    }
+}
+
+export class HeadOfRD extends Character {
+    constructor() {
+        super(
+            "The Head of R&D",
+            "Research Master",
+            "Starts with increased card draw and keep limit",
+            "HeadRnD",
+            7
+        );
+    }
+
+    useActive(player: Player) {
+        if (super.useActive(player)) {
+            return true;
+        }
+        return false;
+    }
+
+    usePassive(player: Player) {
+        super.usePassive(player);
+        player.maxTempCards = 6;
+        player.maxKeepCards = 4;
+        
+    }
+}
+
+export class Stakeholder extends Character {
+    constructor() {
+        super(
+            "The Stakeholder",
+            "Forced Sale",
+            "Can force a player to sell an asset",
+            "Stakeholder",
+            8
+        );
+    }
+
+    useActive(player: Player, targetPlayer: Player, assetIndex: number) {
+        if (super.useActive(player)) {
+            const asset = targetPlayer.assetList[assetIndex];
+            if (asset) {
+                targetPlayer.assetList.splice(assetIndex, 1);
+                targetPlayer.cash += asset.gold;
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+    usePassive(player: Player) {
+        super.usePassive(player);
+    }
+}
+
+// Export a function to get all characters
+export function getAllCharacters() {
+    return [
+        new Shareholder(),
+        new Banker(),
+        new Regulator(),
+        new CEO(),
+        new CFO(),
+        new CSO(),
+        new HeadOfRD(),
+        new Stakeholder()
+    ];
+}
