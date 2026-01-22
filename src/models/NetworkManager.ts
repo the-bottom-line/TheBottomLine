@@ -39,6 +39,10 @@ class NetworkManager {
         this.gameManager = gameManager!;
         this.commandList = {
             Error: r => this.gameManager!.serverEventManager.error(r.data),
+            YouJoinedGame: r => this.joinSuccess(r.data),
+            YouRejoined: _ => this.gameManager!.serverEventManager.rejoinGame(),
+            Rejoined: r => this.gameManager!.serverEventManager.playerRejoined(r.data),
+            YouResynced: r => this.gameManager!.serverEventManager.resync(r.data),
             PlayersInLobby: r => this.gameManager!.serverEventManager.newPlayer(r.data),
             StartGame: r => this.gameManager!.serverEventManager.messageStartGame(r.data),
             SelectingCharacters: r => this.gameManager!.serverEventManager.chairmanSelectCharacter(r.data),
@@ -135,7 +139,7 @@ class NetworkManager {
     
     // helper function that provides type-safe wrapper around calling a command from the
     // `commandList`. Can't really figure out a way to just use one function.
-    private callHandler<A extends Action>(
+    callHandler<A extends Action>(
         action: A,
         message: IncomingResponse
     ): void {
@@ -177,6 +181,11 @@ class NetworkManager {
         const jsonData = JSON.stringify(packet, null, 0);
         console.log(jsonData);
         this.sendMessage(jsonData);
+    }
+
+    // Handles a successful join and sets up a cookie containing the returned information
+    joinSuccess(data: Extract<DirectResponse, { action: "YouJoinedGame" }>['data']) {
+        console.log(data)
     }
 }
 

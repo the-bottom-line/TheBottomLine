@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, Sprite, Assets, FillGradient, ColorMatrixFilter, Application } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets, FillGradient, Application } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { FancyButton } from './FancyButton.js';
 import AssetCards from "./AssetCards.js";
@@ -61,7 +61,7 @@ class UIManager {
             const texture = await Assets.load('./miscellaneous/lobbybg.png');
             const bgSprite = new Sprite(texture);
 
-            const texW = 1557;//size of the lobbybg image
+            const texW = 1557;//size of the lobby bg image
             const texH = 1036;
 
             const scale = Math.max(
@@ -79,6 +79,7 @@ class UIManager {
             backgroundDisplay = bgSprite;
         } catch (err) {
             console.error("Failed to find lobby Background image")
+            console.warn(err);
             backgroundDisplay = new Graphics().rect(0, 0, this.app.screen.width, this.app.screen.height).fill(this.getGradient());
         }
 
@@ -227,7 +228,8 @@ class UIManager {
             nameplateTexture = await Assets.load('./miscellaneous/nameplate.svg');
         } catch (err) {
             nameplateTexture = null;
-        }//laad nameplate foto
+            console.warn(err);
+        } // Load nameplate image
 
         players.forEach((player, index) => {
             const y = this.app.screen.height /1.43 + index ;
@@ -252,13 +254,13 @@ class UIManager {
             playerText.position.set(x, y - 120);
             this.lobbyContainer.addChild(playerText);
             
-            const lobbycode = new Text({
+            const lobbyCode = new Text({
                 text: channel ? channel : player.playerID.toString(),
                 style: { fill: '#ffffff', fontSize: 32, fontFamily: 'MyFont' }
             })
-            lobbycode.anchor.set(0.5);
-            lobbycode.position.set(x, y + 47);
-            this.lobbyContainer.addChild(lobbycode);
+            lobbyCode.anchor.set(0.5);
+            lobbyCode.position.set(x, y + 47);
+            this.lobbyContainer.addChild(lobbyCode);
         });
 
         this.createStartGameBox(onStartGameCallback);
@@ -332,7 +334,7 @@ class UIManager {
         
 
         if (openCharacters && openCharacters.length > 0) {
-            let spacing = 150;
+            const spacing = 150;
 
             openCharacters.forEach(async (character, index) =>{                
                 const texture = await Assets.load(character.texturePath);

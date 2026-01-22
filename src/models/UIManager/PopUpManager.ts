@@ -120,7 +120,7 @@ class PopUpManager {
         y += 70;
 
         const infoText = new Text({
-            text: "This is the closed character. They will be avalibe for the last player",
+            text: "This is the closed character. They will be available for the last player",
             style: { fill: '#ffffff', fontSize: 18, fontFamily: 'MyFont', align: 'center' }
         });
         infoText.anchor.set(0.5);
@@ -432,7 +432,7 @@ class PopUpManager {
         this.popupContainer.addChild(tempContainer);
     }
 
-    async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean,isPossbilrToPayBanker: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnelectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
+    async playerTargetedByBanker(targetPlayer: Player, cashDue: number, isSelf: boolean,isPossbilrToPayBanker: boolean, onPayCallback: (amount: number) => void, onSelectCallback: (index: number) => void, onUnselectCallback: (index: number) => void,onSelectLiablityCallback: (index: number) => void,onUnselectLiablityCallback: (index: number) => void ) {
         const tempContainer = this._createPopupBase();
         const x = this.app.screen.width / 2;
         let y = this.app.screen.height / 2 - 300;
@@ -582,7 +582,7 @@ class PopUpManager {
                     height: 60,
                     onPress: () => {
                         if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
-                        this.displayBankerSellAssets(targetPlayer, cashDue, onPayCallback, onSelectCallback, onUnelectCallback,onSelectLiablityCallback,onUnselectLiablityCallback);
+                        this.displayBankerSellAssets(targetPlayer, cashDue, onPayCallback, onSelectCallback, onUnselectCallback,onSelectLiablityCallback,onUnselectLiablityCallback);
                     }
                 });
                 sellButton.view.position.set(x - 100, y);
@@ -596,7 +596,7 @@ class PopUpManager {
                         height: 60,
                         onPress: () => {
                             if (tempContainer.parent) tempContainer.parent.removeChild(tempContainer);
-                            this.displayBankerIssueLiabilities(targetPlayer, cashDue, onPayCallback, onSelectCallback, onUnelectCallback, onSelectLiablityCallback, onUnselectLiablityCallback);
+                            this.displayBankerIssueLiabilities(targetPlayer, cashDue, onPayCallback, onSelectCallback, onUnselectCallback, onSelectLiablityCallback, onUnselectLiablityCallback);
                         }
                     });
                     issueButton.view.position.set(x - 100, y);
@@ -655,7 +655,7 @@ class PopUpManager {
         }
         if (liabilities && liabilities.length > 0) {
             const count = liabilities.length;
-            actions.push(`Issued ${count} liability${count > 1 ? 'ies' : ''}`); // English pluralization
+            actions.push(`Issued ${count} ${count > 1 ? 'liabilities' : 'liability'}`); // English pluralization
         }
 
         if (actions.length > 0) {
@@ -750,15 +750,15 @@ class PopUpManager {
 
         this.updateBankerSellTable = (data) => {
             let assetValue = 0;
-            let liablityValue = 0;
+            let liabilityValue = 0;
             if (data.assets) {
                 data.assets.forEach((item) => assetValue += item.market_value);
             }
             if (data.liabilities) {
-                data.liabilities.forEach((item) => liablityValue += item.liability.value);
+                data.liabilities.forEach((item) => liabilityValue += item.liability.value);
             }
             if (assetsValueRef.text) assetsValueRef.text.text = `${assetValue} Gold`;
-            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + assetValue + liablityValue - cashDue} Gold`;
+            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + assetValue + liabilityValue - cashDue} Gold`;
         };
 
         const titleText = new Text({
@@ -904,15 +904,15 @@ class PopUpManager {
 
         this.updateBankerSellTable = (data) => {
             let assetValue = 0;
-            let liablityValue = 0;
+            let liabilityValue = 0;
             if (data.assets) {
                 data.assets.forEach((item) => assetValue += item.market_value);
             }
             if (data.liabilities) {
-                data.liabilities.forEach((item) => liablityValue += item.liability.value);
+                data.liabilities.forEach((item) => liabilityValue += item.liability.value);
             }
-            if (liabilitiesValueRef.text) liabilitiesValueRef.text.text = `${liablityValue} Gold`;
-            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + assetValue + liablityValue - cashDue} Gold`;
+            if (liabilitiesValueRef.text) liabilitiesValueRef.text.text = `${liabilityValue} Gold`;
+            if (resultingCashRef.text) resultingCashRef.text.text = `${targetPlayer.cash + assetValue + liabilityValue - cashDue} Gold`;
         };
 
         const titleText = new Text({
@@ -1119,8 +1119,8 @@ class PopUpManager {
             text: perk,
             style: { fill: '#ffffff', fontSize: 20, fontFamily: 'MyFont', wordWrap: true, wordWrapWidth: 500, align: 'center' }
         });
-        const padding = 30;
-        const bgWidth = descriptionText.width + padding;
+        const bgPadding = 30;
+        const bgWidth = descriptionText.width + bgPadding;
 
         const titleText = new Text({
             text: `${character.characterType}’s perk`,
@@ -1128,10 +1128,10 @@ class PopUpManager {
         });
         titleText.anchor.set(0.5);
         titleText.position.set(x, y);
-        const padd = 20;
+        const titleTextPadding = 20;
 
         const titleBackground = new Graphics()
-            .roundRect(x - bgWidth / 2, y - (titleText.height + padd) / 2 , bgWidth, titleText.height + padd, 5)
+            .roundRect(x - bgWidth / 2, y - (titleText.height + titleTextPadding) / 2 , bgWidth, titleText.height + titleTextPadding, 5)
             .fill(0x60584C) 
             .stroke({ width: 2, color: 0x000000 });
         
@@ -1141,7 +1141,7 @@ class PopUpManager {
         descriptionText.position.set(x, y);
 
         const descriptionBackground = new Graphics()
-            .roundRect(0, 0 , bgWidth, descriptionText.height + padding, 5)
+            .roundRect(0, 0 , bgWidth, descriptionText.height + bgPadding, 5)
             .fill(0x323232) 
             .stroke({ width: 2, color: 0x000000 });
         descriptionBackground.pivot.set(descriptionBackground.width / 2, descriptionBackground.height / 2);
@@ -1285,7 +1285,7 @@ class PopUpManager {
 
         
         const perkText = new Text({
-            text: 'Regulators’s perk', 
+            text: 'Regulator\'s perk', 
             style: { fill: '#ffffff', fontSize: 24, fontFamily: 'MyFont' }
         });
         perkText.anchor.set(0.5);
