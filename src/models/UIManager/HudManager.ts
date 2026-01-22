@@ -599,7 +599,7 @@ class HudManager {
         tempContainer.addChild(nameBackground, nameText);
         tempContainer.position.set(140, this.app.screen.height - 100);
     }
-    async displayPlayerInfo(localPlayer:Player,container: Container){
+    async displayPlayerInfo(currentPlayer:Player,container: Container){
         const existingStats = this.app.stage.getChildByLabel("playerInfoGroup");
         if (existingStats) {
             existingStats.destroy({ children: true });
@@ -607,9 +607,9 @@ class HudManager {
         const statsGroup = new Container(); 
         statsGroup.label = "playerInfoGroup";
         const statData = [
-            { value: localPlayer.cash, iconPath: './miscellaneous/cashIcon2.svg' },
-            { value: localPlayer.playableAssets, iconPath: './miscellaneous/playableAssets.svg' },
-            { value: localPlayer.playableLiabilities, iconPath: './miscellaneous/playableLiabilities.svg' }
+            { value: currentPlayer.cash, iconPath: './miscellaneous/cashIcon2.svg' },
+            { value: currentPlayer.playableAssets, iconPath: './miscellaneous/playableAssets.svg' },
+            { value: currentPlayer.playableLiabilities, iconPath: './miscellaneous/playableLiabilities.svg' }
         ];
                 let currentX = 0;
         const blobSpacing = 10;

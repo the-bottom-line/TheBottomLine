@@ -82,7 +82,7 @@ class GameManager {
             
         } else {
             this.otherPlayerScreenSetup(player);
-            this.uiManager.popUpManager.announceCharacter(player);
+            this.uiManager.popUpManager.anounceCharacter(player);
         }
         this.updateUI();
     }
@@ -103,7 +103,7 @@ class GameManager {
         const currentPlayer = this.gameState.getCurrentPlayer();
         const localPlayer = this.gameState.getLocalPlayer();
         const container = currentPlayer.playerID === this.gameState.myId ? this.uiManager.mainContainer : this.uiManager.elseTurnContainer;
-        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getLocalPlayer(),container)
+        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getCurrentPlayer(),container)
         this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, container, currentPlayer,localPlayer);
     }
     switchToMainPhase() {
@@ -124,7 +124,7 @@ class GameManager {
             this.switchToMainPhase();
         }, this.uiManager.mainContainer, !this.gameState.getCurrentPlayer().hasCollectedBonusCash);
         this.uiManager.hudManager.displayAllPlayerStats(this.gameState.players, this.uiManager.mainContainer, this.gameState.getCurrentPlayer(),this.gameState.getLocalPlayer());
-        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getLocalPlayer(),this.uiManager.mainContainer)
+        this.uiManager.hudManager.displayPlayerInfo(this.gameState.getCurrentPlayer(),this.uiManager.mainContainer)
 
         this.uiManager.hudManager.displayPlayerCharacter(
             this.gameState.getCurrentPlayer(),
