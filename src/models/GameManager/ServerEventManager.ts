@@ -101,6 +101,9 @@ class ServerEventManager {
         // Setup local player
         this.gameState.players = [];
         this.gameState.myId = data.id;
+        this.gameState.marketState = data.market;
+        this.uiManager.hudManager.showMarket(this.gameState.marketState , this.uiManager.marketContainer);
+        
         // TODO: pretty sure this is not set so this.gameState.username! will crash
         const localPlayer = new Player(this.gameState.username!, data.id, this.app);
         localPlayer.reveal = true;
