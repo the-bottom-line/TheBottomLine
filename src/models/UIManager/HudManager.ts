@@ -547,7 +547,7 @@ class HudManager {
         if (onIconClick) {
             characterIcon.interactive = true;
             characterIcon.cursor = 'pointer';
-            characterIcon.on('pointerdown', () => {
+            characterIcon.on('pointertap', () => {
                 onIconClick(player.character!)
             });
         }
